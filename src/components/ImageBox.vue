@@ -6,7 +6,7 @@
 		<loading-overlay :loading="loading" />
 
 		<el-image
-			class="block w-full h-32 lg:h-60"
+			class="block w-full h-40 lg:h-60"
 			:src="src"
 			fit="cover"
 			hide-on-click-modal
