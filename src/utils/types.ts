@@ -11,6 +11,9 @@ export type UploadedImage = {
 	expiresAt: number
 }
 
+export interface AuthToken {
+	token: string
+}
 export interface ImgItem {
 	key : string
 	url : string

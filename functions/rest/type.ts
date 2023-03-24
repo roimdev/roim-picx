@@ -29,6 +29,22 @@ export interface Folder {
     name: string
 }
 
+export function NotAuth() : Result {
+    return <Result> {
+        code: StatusCode.NotAuth,
+        msg: "Not Authorization",
+        data: null
+    }
+}
+
+export function FailCode(msg : string, code: number) : Result {
+    return <Result> {
+        code: code,
+        msg: msg,
+        data: null
+    }
+}
+
 export function Fail(msg : string) : Result {
     return <Result> {
         code: StatusCode.ERROR,
@@ -52,6 +68,11 @@ export function Build(data : any, msg: string) : Result {
 }
 const StatusCode = {
     OK: 200,
-    ERROR: 500
+    ERROR: 500,
+    NotAuth: 401
+}
+
+export interface AuthToken {
+    token: string
 }
 export default StatusCode

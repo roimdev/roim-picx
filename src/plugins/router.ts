@@ -12,6 +12,10 @@ const router = createRouter({
 			component: () => import('../views/UploadImages.vue')
 		},
 		{
+			path: '/auth',
+			component: () => import('../views/auth.vue')
+		},
+		{
 			path: '/:path(.*)',
 			redirect: '/'
 		}

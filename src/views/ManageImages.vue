@@ -25,7 +25,7 @@
         <span v-else class="pl-2 text-gray-600"> {{ it }}</span>
       </div>
     </div>
-		<div class="grid gap-4 lg:grid-cols-4 grid-cols-2">
+		<div class="grid gap-2 lg:gap-4 lg:grid-cols-4 grid-cols-2">
 			<transition-group name="el-fade-in-linear">
 				<div
 					class="col-span-1 md:col-span-1"

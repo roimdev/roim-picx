@@ -1,12 +1,51 @@
 import { router } from '../router';
 import { Env } from '../[[path]]'
 import { json } from 'itty-router-extras';
-import { Ok, Fail, Build, ImgItem, ImgList, ImgReq, Folder } from "../type";
+import StatusCode, { Ok, Fail, Build, ImgItem, ImgList, ImgReq, Folder, AuthToken, FailCode, NotAuth } from "../type";
 import { checkFileType, getFileName, parseRange } from '../utils'
 import { R2ListOptions } from "@cloudflare/workers-types";
 
+const auth = async (request : Request, env : Env) => {
+    const method = request.method;
+    // console.log(method)
+    if (method == "GET" || method == "OPTIONS") {
+        return
+    }
+    // get user token
+    const token = request.headers.get('Authorization')
+    if (!token) {
+        return json(NotAuth())
+    }
+    // with kv equal
+    const authKey = await env.XK.get('PICX_AUTH_TOKEN')
+    if (!authKey) {
+        return json(Fail("system not auth setting"))
+    }
+    if (authKey != token) {
+        return json(FailCode("auth fail", StatusCode.NotAuth))
+    }
+    // return new Response('Not Authenticated', { status: 401 })
+}
+
+// 检测token是否有效
+router.post('/checkToken', async (req : Request, env : Env) => {
+    const data = await req.json() as AuthToken
+    const token = data.token
+    if (!token) {
+        return json(Ok(false))
+    }
+    const authKey = await env.XK.get('PICX_AUTH_TOKEN')
+    if (!authKey) {
+        return json(Ok(false))
+    }
+    if (authKey != token) {
+        return json(Ok(false))
+    }
+    return json(Ok(true))
+})
+
 // list image
-router.post('/list', async (req : Request, env : Env) => {
+router.post('/list', auth, async (req : Request, env : Env) => {
     const data = await req.json() as ImgReq
     if (!data.limit) {
         data.limit = 10
@@ -49,7 +88,7 @@ router.post('/list', async (req : Request, env : Env) => {
 })
 
 // batch upload file
-router.post('/upload', async (req: Request, env : Env) => {
+router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
     const images = files.getAll("files")
     const errs = []
@@ -81,22 +120,36 @@ router.post('/upload', async (req: Request, env : Env) => {
 })
 
 // 创建目录
-router.post("/folder", async (req: Request, env: Env) => {
+router.post("/folder",  auth, async (req: Request, env: Env) => {
     try {
         const data = await req.json() as Folder
         const regx = /^[A-Za-z_]+$/
         if (!regx.test(data.name)) {
             return json(Fail("Folder name error"))
         }
-        await env.PICX.put(data.name + '/', "")
+        await env.PICX.put(data.name + '/', null)
         return json(Ok("Success"))
     } catch (e) {
         return json(Fail("Create folder fail"))
     }
 })
 
+// 删除key
+router.get('/del/:id+', async (req : Request, env: Env) => {
+    const key = req.params.id
+    if (!key) {
+        return json(Fail("not delete key"))
+    }
+    try {
+        await env.PICX.delete(key)
+    } catch (e) {
+        console.log(`img delete error:${e.message}`,)
+    }
+    return json(Ok(key))
+})
+
 // delete image
-router.delete("/", async (req : Request, env: Env) => {
+router.delete("/",  auth, async (req : Request, env: Env) => {
     const params = await req.json()
     // console.log(params)
     const keys = params.keys;
