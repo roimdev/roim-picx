@@ -11,6 +11,9 @@
 * 不需要自己购买服务器，克隆代码后部署CloudFlare即可使用。
 * 独立部署不需要担心被第三方删除数据。
 
+## Token
+> 4xVSYkCKw2ExbPNEaMPjCnaaOowU9sTf
+
 ### 已实现功能
 * 图片批量上传
 * 图片列表查询
