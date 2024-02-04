@@ -48,7 +48,7 @@
 * 7.构建项目，提示成功即可访问
   ![Upload](https://oss.tuqu.me/roim/blog/cf/pages8.png)
 
-> 注意：Pages的函数变量名称需要于项目的变量名称一直，如果需要修改functions里面的Env名空间，对应的文件是`[[path]].ts`
+> 注意：Pages的函数变量名称需要于项目的变量名称一致，如果需要修改functions里面的Env名空间，对应的文件是`[[path]].ts`
 
 ### 图床截图
 ![Upload](https://oss.tuqu.me/roim/blog/5.png)

@@ -31,6 +31,12 @@
             </div>
           </div>
           <div class="w-full mb-2">
+            <label for="BBCode" class="block text-sm font-medium text-gray-700"> BBCode </label>
+            <div class="mt-1">
+              <input id="BBCode" :value="bbcodeLink(it.url, it.filename)" name="BBCode" class="cursor-pointer focus:none border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" readonly placeholder="bbcode link" @click="copyLink" />
+            </div>
+          </div>
+          <div class="w-full mb-2">
             <label for="LINK" class="block text-sm font-medium text-gray-700"> LINK </label>
             <div class="mt-1">
               <input id="LINK" :value="it.url" name="LINK" class="cursor-pointer focus:none border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" placeholder="link" @click="copyLink" readonly />
@@ -54,6 +60,9 @@ const imageError = ref(false)
 const loading = ref(false)
 const markdownLink = (link: String, filename: String) => {
   return `![${filename}](${link})`
+}
+const bbcodeLink = (link: String, filename: String) => {
+  return `[img]${link}[/img]`
 }
 const htmlLink = (link: String, filename: String) => {
   return `<a href="${link}" target="_blank" title="${filename}"><img src="${link}"></a>`
