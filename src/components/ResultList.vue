@@ -13,7 +13,12 @@
         {{ markdownLinks() }}
       </div>
     </el-tab-pane>
-    <el-tab-pane label="Link" name="fourth">
+    <el-tab-pane label="BBCode" name="fourth">
+      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
+        {{ bbcodeLinks() }}
+      </div>
+    </el-tab-pane>
+    <el-tab-pane label="Link" name="fifth">
       <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
         {{ viewLinks() }}
       </div>
@@ -52,6 +57,15 @@ const viewLinks = () => {
   return text
 }
 const markdownLinks = () => {
+  let text = ''
+  const length = props.imageList.length
+  for(let i = 0; i < length; i++) {
+    const it = props.imageList[i]
+    text += `![${it.filename}](${it.url})\n`
+  }
+  return text
+}
+const bbcodeLinks = () => {
   let text = ''
   const length = props.imageList.length
   for(let i = 0; i < length; i++) {
