@@ -46,7 +46,19 @@ router.post('/checkToken', async (req : Request, env : Env) => {
 
 // list image
 router.post('/list', auth, async (req : Request, env : Env) => {
-    const data = await req.json() as ImgReq
+    var data;
+    
+    try{
+        data= await req.json() as ImgReq
+
+    }catch(e){
+        let url=new URL(req.url)
+        data={
+            limit:url.searchParams.get("limit"),
+            delimiter:url.searchParams.get("delimiter"),
+        }
+    }
+    
     if (!data.limit) {
         data.limit = 10
     }
