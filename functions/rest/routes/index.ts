@@ -118,7 +118,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${item.size}`)
-        const object = await env.PICX.put(filename, item.stream(), {
+        const object = await env.PICX.put("runoilbus/"+filename, item.stream(), {
             httpMetadata: header,
         }) as R2Object
         if (object || object.key) {
