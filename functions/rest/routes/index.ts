@@ -123,7 +123,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
         }) as R2Object
         if (object || object.key) {
             urls.push({
-                key: 'runoilbus/'+object.key,
+                key: '/runoilbus/'+object.key,
                 size: object.size,
                 url: `${env.BASE_URL}/rest/${object.key}`,
                 filename: item.name
