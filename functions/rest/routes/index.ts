@@ -15,8 +15,6 @@ const auth = async (request : Request, env : Env) => {
     const token = request.headers.get('Authorization')
     if (!token) {
         return json(NotAuth())
-    }else if(!request.url.includes("list")){
-        return json(FailCode("list fail", StatusCode.NotAuth))
     }
     // with kv equal
     const authKey = await env.XK.get('PICX_AUTH_TOKEN')
@@ -24,7 +22,9 @@ const auth = async (request : Request, env : Env) => {
         return json(Fail("system not auth setting"))
     }
     if (authKey != token) {
-        return json(FailCode("auth fail", StatusCode.NotAuth))
+        if(!request.url.includes("list")){
+            return json(FailCode("auth fail"+request.url, StatusCode.NotAuth))
+        }
     }
     // return new Response('Not Authenticated', { status: 401 })
 }
