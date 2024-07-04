@@ -225,6 +225,7 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         return json(Ok("Success"))
     } catch (e) {
         console.log(e)
+        return json(e)
         return json(Fail("Create folder fail"))
     }
 })
