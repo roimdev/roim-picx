@@ -198,7 +198,25 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         if (!regx.test(data.name)) {
             return json(Fail("Folder name error"))
         }
-        await env.PICX.put(data.name + '/', null)
+
+
+        const imagePath = require('@/assets/prehold.png'); // 替换为你的图片路径
+        const response = await fetch(imagePath);
+        const blob = await response.blob();
+        // 将 Blob 转换为 File 对象
+
+        let file = new File([blob], 'your-image.jpg', { type: blob.type });
+
+
+        const header = new Headers()
+        header.set("content-type", file.type)
+        header.set("content-length", `${file.size}`)
+
+        console.log(file)
+        await env.PICX.put((data.name + '/').replace("//","/"), file.stream(), {
+            httpMetadata: header,
+        })
+
         return json(Ok("Success"))
     } catch (e) {
         return json(Fail("Create folder fail"))

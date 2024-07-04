@@ -10,7 +10,7 @@
 				</div>
 			</div>
       <div class="flex items-center justify-start" >
-        <font-awesome-icon :icon="faFolderPlus" v-if="0" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
+        <font-awesome-icon :icon="faFolderPlus" v-if="1" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
         <font-awesome-icon
             :icon="faRedoAlt"
             class="text-xl cursor-pointer text-indigo-400"
