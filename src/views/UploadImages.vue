@@ -228,10 +228,18 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
 }
 const updateDir = () => {
 	// return
+	console.log(147)
 	requestListDir()
 	.then(res=>{
 		console.log(res)
-	})
+	}).catch(e=>{
+		console.log("errr")
+		console.log(e)
+	}
+
+
+	
+	)
 }
 const removeImage = (tmpSrc: string) => {
 	convertedImages.value = convertedImages.value.filter((item) => item.tmpSrc !== tmpSrc)

@@ -110,8 +110,8 @@ router.post('/listdir', auth, async ( env : Env) => {
     }
     console.log(89)
     console.log(options)
-    const list = await env.PICX.list(options)
-    console.log(list)
+    // const list = await env.PICX.list(options)
+    // console.log(list)
 
     return 
 })
