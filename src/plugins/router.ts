@@ -14,6 +14,10 @@ const router = createRouter({
 		{
 			path: '/auth',
 			component: () => import('../views/auth.vue')
+			// component: () => import('../views/UploadImages.vue')
+			// component: () => import('../views/ManageImages.vue')
+
+			
 		},
 		{
 			path: '/:path(.*)',
