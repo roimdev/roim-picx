@@ -121,7 +121,7 @@ import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem } from '../utils/types'
 import { requestListImages, requestDeleteImage, createFolder } from '../utils/request'
-import type { ImgItem, ImgReq, Folder } from '../utils/types'
+import type { ImgReq, Folder } from '../utils/types'
 
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
