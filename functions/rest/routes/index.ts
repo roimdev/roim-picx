@@ -190,15 +190,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
     return json(Build(urls, errs.toString()))
 })
 
-async function getPreHold(){
-    const imagePath = new URL('@/assets/prehold.png', import.meta.url).href;
-    const response = await fetch(imagePath);
-    const blob = await response.blob();
-    // 将 Blob 转换为 File 对象
-    let file = new File([blob], 'your-image.jpg', { type: blob.type });
-    console.log(file)
-    return file
-  }
+
 
 // 创建目录
 router.post("/folder",  auth, async (req: Request, env: Env) => {
@@ -209,8 +201,7 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
             return json(Fail("Folder name error"))
         }
 
-
-        let file= await getPreHold()
+        let file=data.prehold;
 
 
         const header = new Headers()
@@ -218,14 +209,13 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         header.set("content-length", `${file.size}`)
 
         console.log(file)
-        await env.PICX.put((data.name + '/').replace("//","/"), file.stream(), {
+        await env.PICX.put((data.name + '/').replace("//","/")+file.name, file.stream(), {
             httpMetadata: header,
         })
 
         return json(Ok("Success"))
     } catch (e) {
         console.log(e)
-        return json(e)
         return json(Fail("Create folder fail"))
     }
 })

@@ -68,6 +68,7 @@ const changeFolder = (path : string) => {
   delimiter.value = path
   listImages()
 }
+
 const addFolder = () => {
   ElMessageBox.prompt('请输入目录名称，仅支持英文名称', '新增目录', {
     confirmButtonText: '创建',
@@ -76,17 +77,35 @@ const addFolder = () => {
     inputErrorMessage: '无效的目录名称',
   }).then(({ value }) => {
     loading.value = true
-    createFolder(<Folder> {
-      name: value
-    }).then((res) => {
-      console.log(res)
-      ElMessage.success('文件夹创建成功')
-      listImages()
-    }).catch(() => {
-      ElMessage.error('文件夹创建失败')
-    }).finally(() => {
-      loading.value = false
-    })
+
+    const imagePath = new URL('@/assets/prehold.png', import.meta.url).href;
+
+    const xhr = new XMLHttpRequest();
+      xhr.open('GET', imagePath, true);
+      xhr.responseType = 'blob';
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response;
+          let file = new File([blob], 'your-image.jpg', { type: blob.type });
+            
+          createFolder(<Folder> {
+              name: value,
+              prehold:file
+            }).then((res) => {
+              console.log(res)
+              ElMessage.success('文件夹创建成功')
+              listImages()
+            }).catch(() => {
+              ElMessage.error('文件夹创建失败')
+            }).finally(() => {
+              loading.value = false
+            })
+        }
+      };
+
+    
+
   }).catch(() => {})
 }
 const listImages = () => {
