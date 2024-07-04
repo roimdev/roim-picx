@@ -229,7 +229,7 @@ const updateDir = () => {
 	}
 	restaurants.value=q
 	console.log(q)
-  }).catch(() => {})
+  }).catch((e) => {console.log(e)})
 }
 const removeImage = (tmpSrc: string) => {
 	convertedImages.value = convertedImages.value.filter((item) => item.tmpSrc !== tmpSrc)
