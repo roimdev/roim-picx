@@ -256,8 +256,8 @@ const uploadImages = () => {
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)
 	}
-	console.log("ss"+prefix)
-	formData.append("prefix",prefix)
+	console.log("ss"+prefix.value)
+	formData.append("prefix",prefix.value)
 
 	requestUploadImages(formData)
 		.then((res) => {
