@@ -168,7 +168,6 @@ const onPaste = (e: ClipboardEvent) => {
 
 onMounted(() => {
 	document.onpaste = onPaste
-	restaurants.value = loadAll()
 	updateDir()
 })
 
