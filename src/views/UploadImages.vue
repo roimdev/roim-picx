@@ -225,7 +225,6 @@ const updateDir = () => {
 		dirs[index]={value:element}
 	}
 
-	console.log(q)
 	restaurants.value=dirs
   }).catch((e) => {console.log(e)})
 }
