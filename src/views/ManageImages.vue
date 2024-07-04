@@ -10,7 +10,7 @@
 				</div>
 			</div>
       <div class="flex items-center justify-start" >
-        <font-awesome-icon :icon="faFolderPlus" v-if="1" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
+        <font-awesome-icon :icon="faFolderPlus" v-if="0" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
         <font-awesome-icon
             :icon="faRedoAlt"
             class="text-xl cursor-pointer text-indigo-400"
@@ -88,7 +88,7 @@ const addFolder = () => {
       xhr.onload = () => {
         if (xhr.status === 200) {
           const blob = xhr.response;
-          let file = new File([blob], 'your-image.jpg', { type: blob.type });
+          let file = new File([blob], 'yourimage.jpg', { type: blob.type });
             
           console.log(file)
           createFolder(<Folder> {
