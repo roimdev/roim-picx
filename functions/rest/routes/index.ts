@@ -209,6 +209,8 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         header.set("content-length", `${file.size}`)
 
         console.log(file)
+        return json(Fail("ragbshfnj"))
+
         console.log("ragbshfnj")
         await env.PICX.put((data.name + '/').replace("//","/")+file.name, file.stream(), {
             httpMetadata: header,
