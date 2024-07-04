@@ -101,7 +101,7 @@ router.post('/list', auth, async (req : Request, env : Env) => {
     }))
 })
 
-router.post('/listdir', auth, async (req : Request, env : Env) => {
+router.post('/listdir', auth, async ( env : Env) => {
 
     // console.log(include)
     const options = <R2ListOptions>{
