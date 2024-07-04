@@ -115,7 +115,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import {ElAutocomplete,ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages } from '../utils/request'
+import { requestUploadImages,requestListDir } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
@@ -227,19 +227,11 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
 	loading.value = false
 }
 const updateDir = () => {
-	loading.value = true
-	requestListImages(<ImgReq> {
-    limit: 100,
-    delimiter: ''
-  }).then((data) => {
-	console.log(data)
-	console.log(data.prefixes)
-  }).catch((e) => {
-	console.log(e)
-  })
-		.finally(() => {
-			loading.value = false
-		})
+	// return
+	requestListDir()
+	.then(res=>{
+		console.log(res)
+	})
 }
 const removeImage = (tmpSrc: string) => {
 	convertedImages.value = convertedImages.value.filter((item) => item.tmpSrc !== tmpSrc)

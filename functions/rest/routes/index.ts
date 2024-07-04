@@ -101,6 +101,18 @@ router.post('/list', auth, async (req : Request, env : Env) => {
     }))
 })
 
+router.post('/listdir', auth, async (req : Request, env : Env) => {
+
+    // console.log(include)
+    const options = <R2ListOptions>{
+        prefix: '/'
+    }
+    const list = await env.PICX.list(options)
+    console.log(list)
+    const objs = list.objects
+
+    return objs
+})
 // batch upload file
 router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
