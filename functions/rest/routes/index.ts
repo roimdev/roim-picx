@@ -205,6 +205,7 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         const blob = await response.blob();
         // 将 Blob 转换为 File 对象
 
+        console.log(855)
         let file = new File([blob], 'your-image.jpg', { type: blob.type });
 
 
