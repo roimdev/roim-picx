@@ -137,7 +137,6 @@ const state1 = ref('')
 
 interface RestaurantItem {
   value: string
-  link: string
 }
 const createFilter = (queryString: string) => {
   return (restaurant: RestaurantItem) => {
@@ -146,17 +145,7 @@ const createFilter = (queryString: string) => {
     )
   }
 }
-const loadAll = () => {
-  return [
-    { value: 'vue', link: 'https://github.com/vuejs/vue' },
-    { value: 'element', link: 'https://github.com/ElemeFE/element' },
-    { value: 'cooking', link: 'https://github.com/ElemeFE/cooking' },
-    { value: 'mint-ui', link: 'https://github.com/ElemeFE/mint-ui' },
-    { value: 'vuex', link: 'https://github.com/vuejs/vuex' },
-    { value: 'vue-router', link: 'https://github.com/vuejs/vue-router' },
-    { value: 'babel', link: 'https://github.com/babel/babel' },
-  ]
-}
+
 
 const restaurants = ref<RestaurantItem[]>([])
 const querySearch = (queryString: string, cb: any) => {
@@ -231,6 +220,16 @@ const updateDir = () => {
     limit: 100,
   }).then((data) => {
 	console.log(data)
+	let q=[]
+	let dirs=data.prefixes
+	for (let index = 0; index < dirs.length; index++) {
+		let element = dirs[index];
+		q.append({
+			value:element
+		})
+	}
+	restaurants.value=q
+	console.log(q)
   }).catch(() => {})
 }
 const removeImage = (tmpSrc: string) => {
