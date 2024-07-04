@@ -190,6 +190,16 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
     return json(Build(urls, errs.toString()))
 })
 
+async function getPreHold(){
+    const imagePath = new URL('@/assets/prehold.png', import.meta.url).href;
+    const response = await fetch(imagePath);
+    const blob = await response.blob();
+    // 将 Blob 转换为 File 对象
+    let file = new File([blob], 'your-image.jpg', { type: blob.type });
+    console.log(file)
+    return file
+  }
+
 // 创建目录
 router.post("/folder",  auth, async (req: Request, env: Env) => {
     try {
@@ -200,13 +210,7 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         }
 
 
-        const imagePath = require('@/assets/prehold.png'); // 替换为你的图片路径
-        const response = await fetch(imagePath);
-        const blob = await response.blob();
-        // 将 Blob 转换为 File 对象
-
-        console.log(855)
-        let file = new File([blob], 'your-image.jpg', { type: blob.type });
+        let file= await getPreHold()
 
 
         const header = new Headers()
