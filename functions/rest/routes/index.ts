@@ -105,7 +105,9 @@ router.post('/listdir', auth, async ( env : Env) => {
 
     // console.log(include)
     const options = <R2ListOptions>{
-        prefix: '/'
+        prefix: '/',
+        limit: 100,
+        delimiter: '/',
     }
     const list = await env.PICX.list(options)
     console.log(list)
