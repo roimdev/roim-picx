@@ -100,21 +100,61 @@ router.post('/list', auth, async (req : Request, env : Env) => {
         prefixes: list.delimitedPrefixes
     }))
 })
+// list image
+router.post('/listdir', auth, async (req : Request, env : Env) => {
+    var data;
+    
+    try{
+        data= await req.json() as ImgReq
 
-router.post('/listdir', auth, async ( env : Env) => {
-
+    }catch(e){
+        let url=new URL(req.url)
+        data={
+            limit:url.searchParams.get("limit"),
+            delimiter:url.searchParams.get("delimiter"),
+        }
+    }
+    
+    if (!data.limit) {
+        data.limit = 10
+    }
+    if (data.limit > 100) {
+        data.limit = 100
+    }
+    if (!data.delimiter) {
+        data.delimiter = "/"
+    }
+    let include = undefined
+    if (data.delimiter != "/") {
+        include = data.delimiter
+    }
     // console.log(include)
     const options = <R2ListOptions>{
-        limit: 100,
-        delimiter: '/',
+        limit: data.limit,
+        cursor: data.cursor,
+        delimiter: data.delimiter,
+        prefix: include
     }
-    console.log(89)
-    console.log(options)
-    // const list = await env.PICX.list(options)
-    // console.log(list)
-
-    return 
+    const list = await env.PICX.list(options)
+    console.log(list)
+    const truncated = list.truncated ? list.truncated : false
+    const cursor = list.cursor
+    const objs = list.objects
+    const urls = objs.map(it => {
+        return <ImgItem> {
+            url: `${env.BASE_URL}/rest/${it.key}`,
+            key: it.key,
+            size: it.size
+        }
+    })
+    return json(Ok(<ImgList>{
+        list: urls,
+        next: truncated,
+        cursor: cursor,
+        prefixes: list.delimitedPrefixes
+    }))
 })
+
 // batch upload file
 router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
