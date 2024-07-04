@@ -159,6 +159,8 @@ router.post('/listdir', auth, async (req : Request, env : Env) => {
 router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
     const images = files.getAll("files")
+    let q = files.get("prefix")
+    const prefix= q?q:""
     const errs = []
     const urls = Array<ImgItem>()
     for (let item of images) {
@@ -172,7 +174,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${item.size}`)
-        const object = await env.PICX.put("runoilbus/"+filename, item.stream(), {
+        const object = await env.PICX.put(prefix+filename, item.stream(), {
             httpMetadata: header,
         }) as R2Object
         if (object || object.key) {

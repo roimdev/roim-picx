@@ -55,7 +55,7 @@
 			</div>
 			<div class="md:col-span-1 col-span-8">
 				<el-autocomplete
-        v-model="state1"
+        v-model="prefix"
         :fetch-suggestions="querySearch"
         clearable
         class="inline-input"
@@ -133,7 +133,7 @@ const imageSizeLimit = 20 * 1024 * 1024
 const input = ref<HTMLInputElement>()
 const loading = ref(false)
 const router = useRouter()
-const state1 = ref('')
+const prefix = ref('')
 
 interface RestaurantItem {
   value: string
@@ -256,6 +256,7 @@ const uploadImages = () => {
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)
 	}
+	formData.append("prefix",prefix)
 
 	requestUploadImages(formData)
 		.then((res) => {
