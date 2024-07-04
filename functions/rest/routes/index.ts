@@ -105,10 +105,11 @@ router.post('/listdir', auth, async ( env : Env) => {
 
     // console.log(include)
     const options = <R2ListOptions>{
-        prefix: '/',
         limit: 100,
         delimiter: '/',
     }
+    console.log(89)
+    console.log(options)
     const list = await env.PICX.list(options)
     console.log(list)
     const truncated = list.truncated ? list.truncated : false
