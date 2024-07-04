@@ -161,6 +161,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
     const images = files.getAll("files")
     let q = files.get("prefix")
     const prefix= q?q:""
+    console.log(prefix)
     const errs = []
     const urls = Array<ImgItem>()
     for (let item of images) {
