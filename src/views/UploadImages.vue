@@ -215,11 +215,27 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
 	loading.value = false
 }
 const updateDir = () => {
+
+// 	let dirs= Array( [
+//     "o/",
+//     "runoilbus/",
+//     "ss/"
+// ])
+
+// console.log(dirs)
+// for (let index = 0; index < dirs.length; index++) {
+// 	const element = dirs[index];
+// 	dirs[index]={value:element}
+// console.log({value:element})
+	
+// }
+// console.log(dirs)
+// restaurants.value=dirs
 	requestListImages(<ImgReq> {
     limit: 100,
   }).then((data) => {
 	console.log(data)
-	let dirs= Array(data.prefixes)
+	let dirs= (data.prefixes)
 	for (let index = 0; index < dirs.length; index++) {
 		let element = dirs[index];
 		dirs[index]={value:element}
