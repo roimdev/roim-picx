@@ -112,9 +112,7 @@ router.post('/listdir', auth, async ( env : Env) => {
     console.log(options)
     const list = await env.PICX.list(options)
     console.log(list)
-    const truncated = list.truncated ? list.truncated : false
-    const cursor = list.cursor
-    const objs = list.objects
+
     return 
 })
 // batch upload file
