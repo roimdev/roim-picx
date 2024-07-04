@@ -219,16 +219,14 @@ const updateDir = () => {
     limit: 100,
   }).then((data) => {
 	console.log(data)
-	let q=[]
-	let dirs=data.prefixes
+	let dirs= Array(data.prefixes)
 	for (let index = 0; index < dirs.length; index++) {
 		let element = dirs[index];
-		q.append({
-			value:element
-		})
+		dirs[index]={value:element}
 	}
-	restaurants.value=q
+
 	console.log(q)
+	restaurants.value=dirs
   }).catch((e) => {console.log(e)})
 }
 const removeImage = (tmpSrc: string) => {
