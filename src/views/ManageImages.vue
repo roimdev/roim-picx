@@ -80,10 +80,10 @@ const addFolder = () => {
       name: value
     }).then((res) => {
       console.log(res)
-      ElMessage.success('文件见创建成功')
+      ElMessage.success('文件夹创建成功')
       listImages()
     }).catch(() => {
-      ElMessage.error('文件见创建失败')
+      ElMessage.error('文件夹创建失败')
     }).finally(() => {
       loading.value = false
     })
