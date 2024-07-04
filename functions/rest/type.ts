@@ -26,7 +26,8 @@ export interface ImgReq {
 
 // 文件夹名称
 export interface Folder {
-    name: string
+	name: string,
+	prehold:File
 }
 
 export function NotAuth() : Result {
