@@ -82,23 +82,23 @@ router.post('/list', auth, async (req : Request, env : Env) => {
         prefix: include
     }
     const list = await env.PICX.list(options)
-    // console.log(list)
-    const truncated = list.truncated ? list.truncated : false
-    const cursor = list.cursor
-    const objs = list.objects
-    const urls = objs.map(it => {
-        return <ImgItem> {
-            url: `${env.BASE_URL}/rest/${it.key}`,
-            key: it.key,
-            size: it.size
-        }
-    })
-    return json(Ok(<ImgList>{
-        list: urls,
-        next: truncated,
-        cursor: cursor,
-        prefixes: list.delimitedPrefixes
-    }))
+    console.log(list)
+    // const truncated = list.truncated ? list.truncated : false
+    // const cursor = list.cursor
+    // const objs = list.objects
+    // const urls = objs.map(it => {
+    //     return <ImgItem> {
+    //         url: `${env.BASE_URL}/rest/${it.key}`,
+    //         key: it.key,
+    //         size: it.size
+    //     }
+    // })
+    // return json(Ok(<ImgList>{
+    //     list: urls,
+    //     next: truncated,
+    //     cursor: cursor,
+    //     prefixes: list.delimitedPrefixes
+    // }))
 })
 
 router.post('/listdir', auth, async ( env : Env) => {
@@ -110,10 +110,10 @@ router.post('/listdir', auth, async ( env : Env) => {
         delimiter: '/',
     }
     const list = await env.PICX.list(options)
-    console.log(list)
+    const truncated = list.truncated ? list.truncated : false
+    const cursor = list.cursor
     const objs = list.objects
-
-    return objs
+    return 
 })
 // batch upload file
 router.post('/upload',  auth, async (req: Request, env : Env) => {
