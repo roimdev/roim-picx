@@ -78,7 +78,8 @@ const addFolder = () => {
   }).then(({ value }) => {
     loading.value = true
 
-    const imagePath = new URL('@/assets/prehold.png', import.meta.url).href;
+    const imagePath = new URL('../assets/prehold.png', import.meta.url).href;
+
 
     const xhr = new XMLHttpRequest();
       xhr.open('GET', imagePath, true);
@@ -89,6 +90,7 @@ const addFolder = () => {
           const blob = xhr.response;
           let file = new File([blob], 'your-image.jpg', { type: blob.type });
             
+          console.log(file)
           createFolder(<Folder> {
               name: value,
               prehold:file
@@ -103,7 +105,7 @@ const addFolder = () => {
             })
         }
       };
-
+      xhr.send();
     
 
   }).catch(() => {})
