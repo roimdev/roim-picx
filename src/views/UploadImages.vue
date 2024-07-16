@@ -40,7 +40,7 @@
 				</transition-group>
 			</div>
 		</div>
-		<div class="w-full rounded-md shadow-sm overflow-hidden mt-4 grid grid-cols-8">
+		<div class="w-full rounded-md shadow-sm overflow-hidden mt-4 grid grid-cols-9">
 			<div class="md:col-span-1 col-span-8">
 				<div
 					class="w-full h-10 bg-blue-500 cursor-pointer flex items-center justify-center text-white"
@@ -53,7 +53,16 @@
 					选择图片
 				</div>
 			</div>
-
+			<div class="md:col-span-1 col-span-8">
+				<el-autocomplete
+        v-model="prefix"
+        :fetch-suggestions="querySearch"
+        clearable
+        class="inline-input"
+        placeholder="Please Input"
+        @select="handleSelect"
+      />
+			</div>
 			<div class="md:col-span-5 col-span-8">
 				<div class="w-full h-10 bg-slate-200 leading-10 px-4 text-center md:text-left">
 					已选择 {{ convertedImages.length }} 张，共 {{ formatBytes(imagesTotalSize) }}
@@ -105,12 +114,15 @@ import { faUpload } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
-import {ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages } from '../utils/request'
+import {ElAutocomplete,ElNotification as elNotify } from 'element-plus'
+import { requestUploadImages,requestListDir } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem } from '../utils/types'
+import { requestListImages, requestDeleteImage, createFolder } from '../utils/request'
+import type { ImgReq, Folder } from '../utils/types'
+
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
 const imagesTotalSize = computed(() =>
@@ -121,6 +133,28 @@ const imageSizeLimit = 20 * 1024 * 1024
 const input = ref<HTMLInputElement>()
 const loading = ref(false)
 const router = useRouter()
+const prefix = ref('')
+
+interface RestaurantItem {
+  value: string
+}
+const createFilter = (queryString: string) => {
+  return (restaurant: RestaurantItem) => {
+    return (
+      restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+    )
+  }
+}
+
+
+const restaurants = ref<RestaurantItem[]>([])
+const querySearch = (queryString: string, cb: any) => {
+  const results = queryString
+    ? restaurants.value.filter(createFilter(queryString))
+    : restaurants.value
+  // call callback function to return suggestions
+  cb(results)
+}
 
 const onInputChange = () => {
 	appendConvertedImages(input.value?.files)
@@ -134,6 +168,7 @@ const onPaste = (e: ClipboardEvent) => {
 
 onMounted(() => {
 	document.onpaste = onPaste
+	updateDir()
 })
 
 onUnmounted(() => {
@@ -179,7 +214,36 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
 	}
 	loading.value = false
 }
+const updateDir = () => {
 
+// 	let dirs= Array( [
+//     "o/",
+//     "runoilbus/",
+//     "ss/"
+// ])
+
+// console.log(dirs)
+// for (let index = 0; index < dirs.length; index++) {
+// 	const element = dirs[index];
+// 	dirs[index]={value:element}
+// console.log({value:element})
+	
+// }
+// console.log(dirs)
+// restaurants.value=dirs
+	requestListImages(<ImgReq> {
+    limit: 100,
+  }).then((data) => {
+	console.log(data)
+	let dirs= (data.prefixes)
+	for (let index = 0; index < dirs.length; index++) {
+		let element = dirs[index];
+		dirs[index]={value:element}
+	}
+
+	restaurants.value=dirs
+  }).catch((e) => {console.log(e)})
+}
 const removeImage = (tmpSrc: string) => {
 	convertedImages.value = convertedImages.value.filter((item) => item.tmpSrc !== tmpSrc)
 	URL.revokeObjectURL(tmpSrc)
@@ -192,6 +256,9 @@ const uploadImages = () => {
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)
 	}
+	let p=prefix.value+'/'
+	p=p.replace('//','/')
+	formData.append("prefix",p)
 
 	requestUploadImages(formData)
 		.then((res) => {

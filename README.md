@@ -29,26 +29,53 @@
 * 管理页面支持分页加载图片
 
 ### 使用教程
-* 1.fork项目到自己的github
-* 2.注册CloudFlare并开通R2服务
-![Upload](https://oss.tuqu.me/roim/blog/cf/r2.png)
-* 3.找到Pages选项并且创建项目
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages1.png)
-* 4.选择项目创建方式
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages2.png)
-* 4.链接Github或GitLab并选需要构建的项目
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages3.png)
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages4.png)
-* 5.设置环境变量
-> 因为cloudflare默认的node版本较低需要手动指定版本，否在会导致构建失败.
-    ![Upload](https://oss.tuqu.me/roim/blog/cf/pages5.png)
-* 6.设置项目的函数信息绑定R2和KV服务
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages6.png)
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages7.png)
-* 7.构建项目，提示成功即可访问
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages8.png)
+1. fork项目到自己的github
 
-> 注意：Pages的函数变量名称需要于项目的变量名称一致，如果需要修改functions里面的Env名空间，对应的文件是`[[path]].ts`
+2. 注册CloudFlare并开通R2服务
+   ![Upload](https://oss.tuqu.me/roim/blog/cf/r2.png)
+
+3. 找到Pages选项并且创建项目
+   ![Upload](https://oss.tuqu.me/roim/blog/cf/pages1.png)
+
+4. 选择项目创建方式
+   ![Upload](https://oss.tuqu.me/roim/blog/cf/pages2.png)
+
+5. 链接Github或GitLab并选需要构建的项目
+   ![Upload](https://oss.tuqu.me/roim/blog/cf/pages3.png)
+   ![Upload](https://oss.tuqu.me/roim/blog/cf/pages4.png)
+
+   链接到仓库后,,选择`Vue框架预设`,,保存并部署
+
+   <img src="https://s2.loli.net/2024/06/25/WZKh6XdIOvSHMLD.png" alt="image-20240625125904324" style="zoom:25%;" />
+
+6. 设置环境变量`BASE_URL`
+
+   <img src="https://s2.loli.net/2024/06/25/b7nU62XQANzuYjG.png" alt="image-20240625125627118" style="zoom:25%;" />
+
+7. 设置项目的函数信息，绑定R2和KV服务
+   <img src="https://s2.loli.net/2024/06/25/iZIyafXTYenpmtw.png" alt="image-20240625125529675" style="zoom:25%;" />
+
+   ```typescript
+   // 请确保变量名与`functions/rest/[[path]].ts`中一致
+   // ./functions/rest/[[path]].ts
+   
+   export interface Env {
+     BASE_URL: string
+     XK: KVNamespace
+     PICX: R2Bucket
+   }
+   ```
+
+   > 注意：Pages的函数变量名称需要于项目的变量名称一致，如果需要修改functions里面的Env名空间，对应的文件是`[[path]].ts`
+
+8. 设置`PICX_AUTH_TOKEN`
+
+   前往绑定的KV中，添加`PICX_AUTH_TOKEN`条目，填写Token
+
+   <img src="https://s2.loli.net/2024/06/25/q6VGMuQxsZ7gojA.png" alt="image-20240625130106257" style="zoom: 25%;" />
+
+9. 重试部署，提示成功即可使用
+
 
 ### 图床截图
 ![Upload](https://oss.tuqu.me/roim/blog/5.png)

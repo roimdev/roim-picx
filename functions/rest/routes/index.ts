@@ -22,7 +22,9 @@ const auth = async (request : Request, env : Env) => {
         return json(Fail("system not auth setting"))
     }
     if (authKey != token) {
-        return json(FailCode("auth fail", StatusCode.NotAuth))
+        if(!request.url.includes("list")){
+            return json(FailCode("auth fail"+request.url, StatusCode.NotAuth))
+        }
     }
     // return new Response('Not Authenticated', { status: 401 })
 }
@@ -46,7 +48,19 @@ router.post('/checkToken', async (req : Request, env : Env) => {
 
 // list image
 router.post('/list', auth, async (req : Request, env : Env) => {
-    const data = await req.json() as ImgReq
+    var data;
+    
+    try{
+        data= await req.json() as ImgReq
+
+    }catch(e){
+        let url=new URL(req.url)
+        data={
+            limit:url.searchParams.get("limit"),
+            delimiter:url.searchParams.get("delimiter"),
+        }
+    }
+    
     if (!data.limit) {
         data.limit = 10
     }
@@ -68,7 +82,61 @@ router.post('/list', auth, async (req : Request, env : Env) => {
         prefix: include
     }
     const list = await env.PICX.list(options)
-    // console.log(list)
+    console.log(list)
+    const truncated = list.truncated ? list.truncated : false
+    const cursor = list.cursor
+    const objs = list.objects
+    const urls = objs.map(it => {
+        return <ImgItem> {
+            url: `${env.BASE_URL}/rest/${it.key}`,
+            key: it.key,
+            size: it.size
+        }
+    })
+    return json(Ok(<ImgList>{
+        list: urls,
+        next: truncated,
+        cursor: cursor,
+        prefixes: list.delimitedPrefixes
+    }))
+})
+// list image
+router.post('/listdir', auth, async (req : Request, env : Env) => {
+    var data;
+    
+    try{
+        data= await req.json() as ImgReq
+
+    }catch(e){
+        let url=new URL(req.url)
+        data={
+            limit:url.searchParams.get("limit"),
+            delimiter:url.searchParams.get("delimiter"),
+        }
+    }
+    
+    if (!data.limit) {
+        data.limit = 10
+    }
+    if (data.limit > 100) {
+        data.limit = 100
+    }
+    if (!data.delimiter) {
+        data.delimiter = "/"
+    }
+    let include = undefined
+    if (data.delimiter != "/") {
+        include = data.delimiter
+    }
+    // console.log(include)
+    const options = <R2ListOptions>{
+        limit: data.limit,
+        cursor: data.cursor,
+        delimiter: data.delimiter,
+        prefix: include
+    }
+    const list = await env.PICX.list(options)
+    console.log(list)
     const truncated = list.truncated ? list.truncated : false
     const cursor = list.cursor
     const objs = list.objects
@@ -91,6 +159,9 @@ router.post('/list', auth, async (req : Request, env : Env) => {
 router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
     const images = files.getAll("files")
+    let q = files.get("prefix")
+    const prefix= q?q:""
+    console.log(prefix)
     const errs = []
     const urls = Array<ImgItem>()
     for (let item of images) {
@@ -104,20 +175,22 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${item.size}`)
-        const object = await env.PICX.put(filename, item.stream(), {
+        const object = await env.PICX.put(prefix+filename, item.stream(), {
             httpMetadata: header,
         }) as R2Object
         if (object || object.key) {
             urls.push({
-                key: object.key,
+                key: "123"+object.key,
                 size: object.size,
                 url: `${env.BASE_URL}/rest/${object.key}`,
-                filename: item.name
+                filename: "456"+item.name
             })
         }
     }
     return json(Build(urls, errs.toString()))
 })
+
+
 
 // 创建目录
 router.post("/folder",  auth, async (req: Request, env: Env) => {
@@ -127,9 +200,25 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         if (!regx.test(data.name)) {
             return json(Fail("Folder name error"))
         }
-        await env.PICX.put(data.name + '/', null)
+
+        let file=data.prehold;
+
+
+        const header = new Headers()
+        header.set("content-type", file.type)
+        header.set("content-length", `${file.size}`)
+
+        console.log(file)
+        return json(file)
+
+        console.log("ragbshfnj")
+        await env.PICX.put((data.name + '/').replace("//","/")+file.name, file.stream(), {
+            httpMetadata: header,
+        })
+
         return json(Ok("Success"))
     } catch (e) {
+        console.log(e)
         return json(Fail("Create folder fail"))
     }
 })

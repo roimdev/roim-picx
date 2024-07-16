@@ -40,5 +40,6 @@ export interface ImgReq {
 	limit: Number
 }
 export interface Folder {
-	name: string
+	name: string,
+	prehold:File
 }

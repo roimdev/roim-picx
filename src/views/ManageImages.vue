@@ -9,8 +9,8 @@
 					已上传 {{ uploadedImages.length }} 张图片，共 {{ formatBytes(imagesTotalSize) }}
 				</div>
 			</div>
-      <div class="flex items-center justify-start">
-        <font-awesome-icon :icon="faFolderPlus" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
+      <div class="flex items-center justify-start" >
+        <font-awesome-icon :icon="faFolderPlus" v-if="0" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
         <font-awesome-icon
             :icon="faRedoAlt"
             class="text-xl cursor-pointer text-indigo-400"
@@ -68,6 +68,7 @@ const changeFolder = (path : string) => {
   delimiter.value = path
   listImages()
 }
+
 const addFolder = () => {
   ElMessageBox.prompt('请输入目录名称，仅支持英文名称', '新增目录', {
     confirmButtonText: '创建',
@@ -76,17 +77,37 @@ const addFolder = () => {
     inputErrorMessage: '无效的目录名称',
   }).then(({ value }) => {
     loading.value = true
-    createFolder(<Folder> {
-      name: value
-    }).then((res) => {
-      console.log(res)
-      ElMessage.success('文件见创建成功')
-      listImages()
-    }).catch(() => {
-      ElMessage.error('文件见创建失败')
-    }).finally(() => {
-      loading.value = false
-    })
+
+    const imagePath = new URL('../assets/prehold.png', import.meta.url).href;
+
+
+    const xhr = new XMLHttpRequest();
+      xhr.open('GET', imagePath, true);
+      xhr.responseType = 'blob';
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response;
+          let file = new File([blob], 'yourimage.jpg', { type: blob.type });
+            
+          console.log(file)
+          createFolder(<Folder> {
+              name: value,
+              prehold:file
+            }).then((res) => {
+              console.log(res)
+              ElMessage.success('文件夹创建成功')
+              listImages()
+            }).catch(() => {
+              ElMessage.error('文件夹创建失败')
+            }).finally(() => {
+              loading.value = false
+            })
+        }
+      };
+      xhr.send();
+    
+
   }).catch(() => {})
 }
 const listImages = () => {
