@@ -160,6 +160,8 @@ app.post('/upload', auth, async (c) => {
     const files = await c.req.formData()
     const images = files.getAll("files")
     let customPath = files.get("path")
+    const keepName = files.get("keepName") === 'true'
+
     if (customPath) {
         customPath = customPath.toString()
         if (!customPath.endsWith('/')) {
@@ -184,7 +186,22 @@ app.post('/upload', auth, async (c) => {
         }
         const delToken = crypto.randomUUID()
         const time = new Date().getTime()
-        const filename = await getFileName(fileType, time)
+
+        let filename = ''
+        if (keepName && file.name) {
+            // Sanitize filename: replace non-alphanumeric chars (except ._-) with _
+            // This ensures compatibility with R2 keys and URLs
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+            if (safeName) {
+                filename = safeName
+            }
+        }
+
+        // Fallback or default filename generation
+        if (!filename) {
+            filename = await getFileName(fileType, time)
+        }
+
         const fullPath = customPath + filename
         const header = new Headers()
         header.set("content-type", fileType)

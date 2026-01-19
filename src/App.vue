@@ -14,7 +14,7 @@
 						</div>
 
 						<div class="flex items-center gap-2">
-							<div v-for="item in navItems" :key="item.path"
+							<div v-for="item in navItems" :key="item.path || item.label"
 								class="px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2"
 								:class="[
 									$route.path === item.path
@@ -55,7 +55,7 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { computed } from 'vue'
 import storage from './utils/storage'
 
-const repoLink = 'https://roim.app'
+const repoLink = 'https://github.com/roimdev'
 const repoName = 'roim-picx'
 const appName = 'PICX'
 
@@ -66,11 +66,20 @@ const route = useRoute()
 
 const isDeletePage = computed(() => route.path.startsWith('/delete/'))
 
-const navItems = [
-	{ path: '/up', label: '上传', icon: faUpload, action: null },
-	{ path: '/', label: '管理', icon: faCog, action: null },
-	{ path: '', label: '退出', icon: faSignOutAlt, action: 'logout' }
-]
+const hasToken = computed(() => !!storage.local.get('auth-token'))
+
+const navItems = computed(() => {
+	const items = [
+		{ path: '/up', label: '上传', icon: faUpload, action: null },
+		{ path: '/', label: '管理', icon: faCog, action: null }
+	]
+
+	if (hasToken.value) {
+		items.push({ path: '', label: '退出', icon: faSignOutAlt, action: 'logout' })
+	}
+
+	return items
+})
 
 const handleNavClick = (item: any) => {
 	if (item.action === 'logout') {

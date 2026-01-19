@@ -38,9 +38,9 @@
 		</div>
 
 		<!-- Custom Path Input -->
-		<div class="mt-4">
+		<div class="mt-4 flex flex-col sm:flex-row gap-3">
 			<el-autocomplete v-model="customPath" :fetch-suggestions="querySearch"
-				placeholder="自定义路径 (可选，例如: 2023/travel)" class="w-full" :trigger-on-focus="true" clearable>
+				placeholder="自定义路径 (可选，例如: 2023/travel)" class="flex-1" :trigger-on-focus="true" clearable>
 				<template #default="{ item }">
 					<div class="flex items-center gap-2">
 						<font-awesome-icon :icon="faFolder" class="text-amber-500" />
@@ -48,6 +48,11 @@
 					</div>
 				</template>
 			</el-autocomplete>
+
+			<div
+				class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-[32px] sm:h-[40px]">
+				<el-checkbox v-model="keepName" label="保留原名" size="large" class="!mr-0" />
+			</div>
 		</div>
 
 		<!-- Action Bar -->
@@ -111,7 +116,7 @@ import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
-import { ElAutocomplete } from 'element-plus'
+import { ElAutocomplete, ElCheckbox } from 'element-plus'
 
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
@@ -124,6 +129,7 @@ const input = ref<HTMLInputElement>()
 const loading = ref(false)
 const router = useRouter()
 const customPath = ref('')
+const keepName = ref(false)
 const directorySuggestions = ref<{ value: string }[]>([])
 
 const querySearch = (queryString: string, cb: any) => {
@@ -224,6 +230,9 @@ const uploadImages = () => {
 	const formData = new FormData()
 	if (customPath.value) {
 		formData.append('path', customPath.value)
+	}
+	if (keepName.value) {
+		formData.append('keepName', 'true')
 	}
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)

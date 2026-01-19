@@ -50,7 +50,7 @@
       </div>
 
       <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-        <a href="https://roim.app" target="_blank"
+        <a href="https://github.com/roimdev" target="_blank"
           class="text-sm text-gray-400 hover:text-indigo-500 transition-colors">
           Need help? Contact Support
         </a>
