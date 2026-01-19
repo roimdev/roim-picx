@@ -189,9 +189,9 @@ app.post('/upload', auth, async (c) => {
 
         let filename = ''
         if (keepName && file.name) {
-            // Sanitize filename: replace non-alphanumeric chars (except ._-) with _
+            // Sanitize filename: replace non-alphanumeric chars (except ._- and Chinese) with _
             // This ensures compatibility with R2 keys and URLs
-            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]/g, '_')
             if (safeName) {
                 filename = safeName
             }
@@ -238,10 +238,10 @@ app.post('/upload', auth, async (c) => {
 app.post("/folder", auth, async (c) => {
     try {
         const data = await c.req.json<Folder>()
-        // Allow letters, numbers, underscores, and hyphens
-        const regx = /^[A-Za-z0-9_-]+$/
+        // Allow letters, numbers, underscores, hyphens and Chinese
+        const regx = /^[A-Za-z0-9_-\u4e00-\u9fa5]+$/
         if (!data.name || !regx.test(data.name)) {
-            return c.json(Fail("Folder name error: only letters, numbers, underscores and hyphens allowed"))
+            return c.json(Fail("Folder name error: only letters, numbers, underscores, hyphens and Chinese allowed"))
         }
         await c.env.PICX.put(data.name + '/', null)
         return c.json(Ok("Success"))
