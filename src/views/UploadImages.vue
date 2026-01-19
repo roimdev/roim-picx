@@ -39,7 +39,7 @@
 
 		<!-- Custom Path Input -->
 		<div class="mt-4 flex flex-col sm:flex-row gap-3">
-			<el-autocomplete v-model="customPath" :fetch-suggestions="querySearch"
+			<el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
 				placeholder="自定义路径 (可选，例如: 2023/travel)" class="flex-1" :trigger-on-focus="true" clearable>
 				<template #default="{ item }">
 					<div class="flex items-center gap-2">
@@ -49,10 +49,25 @@
 				</template>
 			</el-autocomplete>
 
-			<div
-				class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-[32px] sm:h-[40px]">
-				<el-checkbox v-model="keepName" label="保留原名" size="large" class="!mr-0" />
+
+			<div class="flex gap-3">
+				<div class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-10">
+					<el-checkbox v-model="keepName" label="保留原名" size="large" class="!mr-0" />
+				</div>
+
+				<div class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-10">
+					<el-checkbox v-model="enableExpiry" label="过期销毁" size="large" class="!mr-0" />
+				</div>
 			</div>
+		</div>
+
+		<!-- Expiration Date Picker -->
+		<div v-if="enableExpiry" class="mt-3">
+			<el-date-picker v-model="expireTime" type="datetime" placeholder="选择过期时间" format="YYYY-MM-DD HH:mm:ss"
+				:disabled-date="disabledDate" class="!w-full sm:!w-[300px]" size="large" />
+			<p class="mt-1 text-xs text-amber-500">
+				* 过期后图片将无法访问并会被自动删除
+			</p>
 		</div>
 
 		<!-- Action Bar -->
@@ -116,7 +131,7 @@ import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
-import { ElAutocomplete, ElCheckbox } from 'element-plus'
+import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
@@ -130,7 +145,13 @@ const loading = ref(false)
 const router = useRouter()
 const customPath = ref('')
 const keepName = ref(false)
+const enableExpiry = ref(false)
+const expireTime = ref<Date>()
 const directorySuggestions = ref<{ value: string }[]>([])
+
+const disabledDate = (time: Date) => {
+	return time.getTime() < Date.now()
+}
 
 const querySearch = (queryString: string, cb: any) => {
 	const results = queryString
@@ -233,6 +254,9 @@ const uploadImages = () => {
 	}
 	if (keepName.value) {
 		formData.append('keepName', 'true')
+	}
+	if (enableExpiry.value && expireTime.value) {
+		formData.append('expireAt', expireTime.value.getTime().toString())
 	}
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)

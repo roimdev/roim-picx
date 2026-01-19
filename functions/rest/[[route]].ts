@@ -134,8 +134,19 @@ app.post('/list', auth, async (c) => {
     const list = await c.env.PICX.list(options)
     const truncated = list.truncated ? list.truncated : false
     const cursor = list.cursor
-    // 按上传时间倒序排列
-    const objs = [...list.objects].sort((a: any, b: any) => {
+    // 按上传时间倒序排列, 并过滤过期图片
+    const now = Date.now()
+    const objs = [...list.objects].filter((obj: any) => {
+        if (obj.customMetadata && obj.customMetadata.expires) {
+            const expiresAt = parseInt(obj.customMetadata.expires)
+            if (!isNaN(expiresAt) && now > expiresAt) {
+                // Optionally verify deletion or just filter from view
+                c.executionCtx.waitUntil(c.env.PICX.delete(obj.key))
+                return false
+            }
+        }
+        return true
+    }).sort((a: any, b: any) => {
         const timeA = a.uploaded ? new Date(a.uploaded).getTime() : 0
         const timeB = b.uploaded ? new Date(b.uploaded).getTime() : 0
         return timeB - timeA
@@ -161,6 +172,7 @@ app.post('/upload', auth, async (c) => {
     const images = files.getAll("files")
     let customPath = files.get("path")
     const keepName = files.get("keepName") === 'true'
+    const expireAt = files.get("expireAt")
 
     if (customPath) {
         customPath = customPath.toString()
@@ -218,8 +230,16 @@ app.post('/upload', auth, async (c) => {
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${file.size}`)
+
+        const metadata: Record<string, string> = {}
+        metadata['delToken'] = delToken
+        if (expireAt) {
+            metadata['expires'] = expireAt.toString()
+        }
+
         const object = await c.env.PICX.put(fullPath, file.stream(), {
             httpMetadata: header,
+            customMetadata: metadata
         }) as R2Object
         if (object || object.key) {
             // 存储删除token
@@ -368,6 +388,17 @@ app.get("/:id{.+}", async (c) => {
     if (object == null) {
         return c.json(Fail("object not found"))
     }
+
+    // Check for expiration
+    if (object.customMetadata && object.customMetadata.expires) {
+        const expiresAt = parseInt(object.customMetadata.expires)
+        if (!isNaN(expiresAt) && Date.now() > expiresAt) {
+            // Expired: Delete asynchronously and return 404
+            c.executionCtx.waitUntil(c.env.PICX.delete(id))
+            return c.json(Fail("Image expired"), 404)
+        }
+    }
+
     const headers = new Headers()
     object.writeHttpMetadata(headers)
     headers.set('etag', object.httpEtag)
