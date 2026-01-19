@@ -203,6 +203,16 @@ app.post('/upload', auth, async (c) => {
         }
 
         const fullPath = customPath + filename
+
+        // If keeping original name, check if file already exists to prevent overwrite
+        if (keepName) {
+            const existing = await c.env.PICX.head(fullPath)
+            if (existing) {
+                errs.push(`${file.name}: File already exists`)
+                continue
+            }
+        }
+
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${file.size}`)
