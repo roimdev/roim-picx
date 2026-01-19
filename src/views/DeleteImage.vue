@@ -66,7 +66,7 @@
 
           <div class="relative group rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm">
             <div class="aspect-w-16 aspect-h-9 w-full h-56 bg-white flex items-center justify-center overflow-hidden">
-              <el-image :src="imageInfo.url" fit="contain"
+              <el-image :src="imageInfo.url" fit="contain" fit="cover"
                 class="w-full h-full transition-transform duration-500 group-hover:scale-105"
                 referrer-policy="no-referrer" :preview-src-list="[imageInfo.url]">
                 <template #placeholder>
@@ -126,7 +126,7 @@ import formatBytes from '../utils/format-bytes'
 import { faExclamationTriangle, faCheckCircle, faTrashAlt, faImage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import type { ImgItem } from '../utils/types'
-
+import { ElImage } from 'element-plus'
 const route = useRoute()
 const router = useRouter()
 const token = route.params.token as string

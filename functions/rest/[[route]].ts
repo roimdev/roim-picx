@@ -125,44 +125,70 @@ app.post('/list', auth, async (c) => {
     if (data.delimiter !== "/") {
         include = data.delimiter
     }
+
+    const keyword = data.keyword?.trim().toLowerCase()
+
+    // If keyword search is enabled, we need to fetch more items to filter
+    // Since R2 doesn't support keyword search natively, we filter on backend
+    // const fetchLimit = keyword ? Math.min(data.limit * 5, 500) : data.limit
+    const fetchLimit = data.limit
     const options: R2ListOptions = {
-        limit: data.limit,
+        limit: fetchLimit,
         cursor: data.cursor,
-        delimiter: data.delimiter,
-        prefix: include
+        delimiter: keyword ? undefined : data.delimiter, // Disable delimiter for keyword search to search all files
+        prefix: keyword ? include : include
     }
     const list = await c.env.PICX.list(options)
-    const truncated = list.truncated ? list.truncated : false
-    const cursor = list.cursor
-    // 按上传时间倒序排列, 并过滤过期图片
+
+    // Filter and process objects
     const now = Date.now()
-    const objs = [...list.objects].filter((obj: any) => {
+    let objs = [...list.objects].filter((obj: any) => {
+        // Filter expired images
         if (obj.customMetadata && obj.customMetadata.expires) {
             const expiresAt = parseInt(obj.customMetadata.expires)
             if (!isNaN(expiresAt) && now > expiresAt) {
-                // Optionally verify deletion or just filter from view
                 c.executionCtx.waitUntil(c.env.PICX.delete(obj.key))
                 return false
             }
         }
         return true
-    }).sort((a: any, b: any) => {
+    })
+
+    // Apply keyword filter if provided
+    if (keyword) {
+        objs = objs.filter((obj: any) => {
+            const filename = obj.key.toLowerCase()
+            return filename.includes(keyword)
+        })
+    }
+
+    // Sort by upload time descending
+    objs.sort((a: any, b: any) => {
         const timeA = a.uploaded ? new Date(a.uploaded).getTime() : 0
         const timeB = b.uploaded ? new Date(b.uploaded).getTime() : 0
         return timeB - timeA
     })
-    const urls = objs.map((it: any) => {
+
+    // Limit results to requested limit
+    const hasMoreResults = objs.length > data.limit
+    const limitedObjs = objs.slice(0, data.limit)
+
+    // Determine if there's more to load
+    const truncated = list.truncated || hasMoreResults
+
+    const urls = limitedObjs.map((it: any) => {
         return <ImgItem>{
             url: `${c.env.BASE_URL}/rest/${it.key}`,
             key: it.key,
             size: it.size
         }
     })
+
     return c.json(Ok(<ImgList>{
         list: urls,
         next: truncated,
-        cursor: cursor,
-        prefixes: list.delimitedPrefixes
+        cursor: list.cursor,
+        prefixes: keyword ? [] : list.delimitedPrefixes // Hide prefixes during search
     }))
 })
 

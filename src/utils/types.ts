@@ -40,6 +40,7 @@ export interface ImgReq {
 	cursor?: string
 	delimiter?: string
 	limit: Number
+	keyword?: string
 }
 export interface Folder {
 	name: string

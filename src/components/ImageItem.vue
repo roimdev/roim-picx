@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
-    <div 
-      v-for="it in imageList" 
-      :key="it.key" 
+    <div
+      v-for="it in imageList"
+      :key="it.key"
       class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <div class="flex flex-col lg:flex-row gap-6">
@@ -12,7 +12,7 @@
             <el-image
                 class="w-full h-full"
                 :src="it.url"
-                fit="contain"
+                fit="cover"
                 hide-on-click-modal
                 lazy
                 @error="imageError = true"
@@ -32,12 +32,12 @@
               {{ label }}
             </label>
             <div class="relative group">
-              <input 
+              <input
                 type="text"
-                :value="fn(it.url, it.filename || '')" 
-                readonly 
+                :value="fn(it.url, it.filename || '')"
+                readonly
                 class="block w-full rounded-md border-gray-200 bg-gray-50 text-sm text-gray-600 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer pr-10"
-                @click="copyLink" 
+                @click="copyLink"
               />
               <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 group-hover:text-indigo-500">
                 <font-awesome-icon :icon="faCopy" />

@@ -11,6 +11,24 @@
                 </p>
             </div>
             <div class="flex items-center gap-3">
+                <!-- Search Input -->
+                <div class="relative">
+                    <font-awesome-icon :icon="faSearch" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input
+                        v-model="searchKeyword"
+                        type="text"
+                        placeholder="搜索图片..."
+                        class="pl-9 pr-8 py-2 w-40 sm:w-56 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all"
+                    />
+                    <button
+                        v-if="searchKeyword"
+                        @click="searchKeyword = ''"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="清除搜索">
+                        <font-awesome-icon :icon="faTimes" class="text-sm" />
+                    </button>
+                </div>
+
                 <!-- View Toggle -->
                 <div class="hidden sm:flex bg-gray-100 p-1 rounded-lg mr-2">
                     <button
@@ -87,8 +105,9 @@
             <h3
                 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between">
                 <span>图片列表</span>
-                <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-500">{{ uploadedImages.length }}
-                    items</span>
+                <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-500">
+                    {{ uploadedImages.length }} items
+                </span>
             </h3>
 
             <!-- Grid View -->
@@ -134,10 +153,13 @@
         <!-- Empty State -->
         <div v-else-if="!loading" class="py-20 text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <font-awesome-icon :icon="faFolderOpen" class="text-2xl text-gray-400" />
+                <font-awesome-icon :icon="searchKeyword ? faSearch : faFolderOpen" class="text-2xl text-gray-400" />
             </div>
-            <h3 class="text-lg font-medium text-gray-900">暂无图片</h3>
-            <p class="mt-1 text-gray-500">该目录下没有图片文件</p>
+            <h3 class="text-lg font-medium text-gray-900">{{ searchKeyword ? '未找到匹配图片' : '暂无图片' }}</h3>
+            <p class="mt-1 text-gray-500">{{ searchKeyword ? '尝试使用其他关键词搜索' : '该目录下没有图片文件' }}</p>
+            <button v-if="searchKeyword" @click="searchKeyword = ''" class="mt-4 text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                清除搜索
+            </button>
         </div>
 
         <link-format-dialog v-model="linkDialogVisible" :url="currentLinkImage.url" :name="currentLinkImage.name" />
@@ -157,13 +179,14 @@ import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import { ElMessageBox, ElMessage, ElImageViewer } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const loading = ref(false)
 const loadingMore = ref(false)
 const delimiter = ref('/')
 const viewMode = ref<'grid' | 'list'>('grid')
+const searchKeyword = ref('')
 const uploadedImages = ref<ImgItem[]>([])
 const prefixes = ref<String[]>([])
 const cursor = ref<string | undefined>(undefined)
@@ -199,6 +222,22 @@ const closePreview = () => {
 const imagesTotalSize = computed(() =>
     uploadedImages.value.reduce((total, item) => total + item.size, 0)
 )
+
+// Debounced search handler
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const handleSearch = () => {
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer)
+    }
+    searchDebounceTimer = setTimeout(() => {
+        listImages()
+    }, 300)
+}
+
+// Watch search keyword changes
+watch(searchKeyword, () => {
+    handleSearch()
+})
 
 // Breadcrumb navigation
 const breadcrumbSegments = computed(() => {
@@ -247,9 +286,11 @@ const listImages = () => {
     cursor.value = undefined
     hasMore.value = true
 
+    const keyword = searchKeyword.value.trim()
     requestListImages(<ImgReq>{
         limit: PAGE_SIZE,
-        delimiter: delimiter.value
+        delimiter: delimiter.value,
+        keyword: keyword || undefined
     }).then((data) => {
         uploadedImages.value = data.list
         cursor.value = data.cursor
@@ -273,10 +314,12 @@ const loadMore = () => {
     if (loadingMore.value || !hasMore.value || !cursor.value) return
 
     loadingMore.value = true
+    const keyword = searchKeyword.value.trim()
     requestListImages(<ImgReq>{
         limit: PAGE_SIZE,
         delimiter: delimiter.value,
-        cursor: cursor.value
+        cursor: cursor.value,
+        keyword: keyword || undefined
     }).then((data) => {
         uploadedImages.value = [...uploadedImages.value, ...data.list]
         cursor.value = data.cursor

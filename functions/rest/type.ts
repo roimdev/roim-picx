@@ -23,6 +23,7 @@ export interface ImgReq {
     limit: number,
     cursor?: string
     delimiter?: string
+    keyword?: string
 }
 
 // 文件夹名称
