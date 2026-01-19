@@ -8,9 +8,9 @@ export interface Env {
 }
 
 export const onRequest: PagesFunction<Env> = async (context : EventContext) => {
-  const { router } = await import('./router').then(
-    async (module) => (await import('./routes'), module)
-  );
+  const { router } = await import('./router')
+  // Ensure routes are registered
+  await import('./routes')
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
