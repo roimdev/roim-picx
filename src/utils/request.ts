@@ -3,7 +3,7 @@ import { ElNotification as elNotify } from 'element-plus'
 import { ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken } from "./types"
 import storage from "./storage"
 const request = axios.create({
-	baseURL: import.meta.env.VITE_APP_API_URL,
+	baseURL: import.meta.env.VITE_APP_API_URL || '',
 	timeout: 200000
 })
 
