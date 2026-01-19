@@ -1,11 +1,11 @@
 import { router } from '../router';
 import { Env } from '../[[path]]'
-import { json } from 'itty-router-extras';
+import { json } from 'itty-router';
 import StatusCode, { Ok, Fail, Build, ImgItem, ImgList, ImgReq, Folder, AuthToken, FailCode, NotAuth } from "../type";
 import { checkFileType, getFileName, parseRange } from '../utils'
 import { R2ListOptions } from "@cloudflare/workers-types";
 
-const auth = async (request : Request, env : Env) => {
+const auth = async (request: Request, env: Env) => {
     const method = request.method;
     // console.log(method)
     if (method == "GET" || method == "OPTIONS") {
@@ -28,7 +28,7 @@ const auth = async (request : Request, env : Env) => {
 }
 
 // 检测token是否有效
-router.post('/checkToken', async (req : Request, env : Env) => {
+router.post('/checkToken', async (req: Request, env: Env) => {
     const data = await req.json() as AuthToken
     const token = data.token
     if (!token) {
@@ -45,7 +45,7 @@ router.post('/checkToken', async (req : Request, env : Env) => {
 })
 
 // list image
-router.post('/list', auth, async (req : Request, env : Env) => {
+router.post('/list', auth, async (req: Request, env: Env) => {
     const data = await req.json() as ImgReq
     if (!data.limit) {
         data.limit = 10
@@ -73,7 +73,7 @@ router.post('/list', auth, async (req : Request, env : Env) => {
     const cursor = list.cursor
     const objs = list.objects
     const urls = objs.map(it => {
-        return <ImgItem> {
+        return <ImgItem>{
             url: `${env.BASE_URL}/rest/${it.key}`,
             key: it.key,
             size: it.size
@@ -88,7 +88,7 @@ router.post('/list', auth, async (req : Request, env : Env) => {
 })
 
 // batch upload file
-router.post('/upload',  auth, async (req: Request, env : Env) => {
+router.post('/upload', auth, async (req: Request, env: Env) => {
     const files = await req.formData()
     const images = files.getAll("files")
     let customPath = files.get("path")
@@ -135,7 +135,7 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
 })
 
 // 创建目录
-router.post("/folder",  auth, async (req: Request, env: Env) => {
+router.post("/folder", auth, async (req: Request, env: Env) => {
     try {
         const data = await req.json() as Folder
         const regx = /^[A-Za-z_]+$/
@@ -178,7 +178,7 @@ router.post('/rename', auth, async (req: Request, env: Env) => {
 })
 
 // 删除key
-router.get('/del/:id+', async (req : Request, env: Env) => {
+router.get('/del/:id+', async (req: Request, env: Env) => {
     const key = req.params.id
     if (!key) {
         return json(Fail("not delete key"))
@@ -192,7 +192,7 @@ router.get('/del/:id+', async (req : Request, env: Env) => {
 })
 
 // delete image
-router.delete("/",  auth, async (req : Request, env: Env) => {
+router.delete("/", auth, async (req: Request, env: Env) => {
     const params = await req.json()
     // console.log(params)
     const keys = params.keys;
@@ -202,7 +202,7 @@ router.delete("/",  auth, async (req : Request, env: Env) => {
     const arr = keys.split(',')
     try {
         for (let it of arr) {
-            if(it && it.length) {
+            if (it && it.length) {
                 await env.PICX.delete(it)
             }
         }
@@ -213,7 +213,7 @@ router.delete("/",  auth, async (req : Request, env: Env) => {
 })
 
 // image detail
-router.get("/:id+", async (req : Request, env : Env) => {
+router.get("/:id+", async (req: Request, env: Env) => {
     let id = req.params.id
     const range = parseRange(req.headers.get('range'))
     const object = await env.PICX.get(id, {

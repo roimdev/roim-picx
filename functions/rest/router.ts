@@ -1,3 +1,3 @@
-import { ThrowableRouter } from 'itty-router-extras';
+import { Router } from 'itty-router';
 
-export const router = ThrowableRouter<Request>({ base: '/rest' });
+export const router = Router({ base: '/rest' });
