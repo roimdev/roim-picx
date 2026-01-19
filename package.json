@@ -4,7 +4,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"dev:worker": "wrangler pages dev ./public --kv=XK --r2=PICX",
+		"dev:worker": "wrangler pages dev ./public --kv=XK --r2=imgs",
 		"preview": "vite preview"
 	},
 	"dependencies": {

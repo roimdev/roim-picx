@@ -116,6 +116,22 @@
                     />
                 </transition-group>
             </div>
+            
+            <!-- Load More Sentinel & Indicator -->
+            <div ref="loadMoreSentinel" class="py-8 flex flex-col items-center justify-center">
+                <template v-if="loadingMore">
+                    <div class="flex items-center gap-2 text-gray-500">
+                        <font-awesome-icon :icon="faSpinner" spin class="text-indigo-500" />
+                        <span>加载更多图片...</span>
+                    </div>
+                </template>
+                <template v-else-if="hasMore">
+                    <div class="text-gray-400 text-sm">下拉加载更多</div>
+                </template>
+                <template v-else>
+                    <div class="text-gray-400 text-sm">已加载全部图片</div>
+                </template>
+            </div>
         </div>
         
         <!-- Empty State -->
@@ -139,20 +155,26 @@
 import { requestListImages, requestDeleteImage, createFolder, requestRenameImage } from '../utils/request'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import type { ImgItem, ImgReq, Folder } from '../utils/types'
 import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList } from '@fortawesome/free-solid-svg-icons'
+import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 
 const loading = ref(false)
+const loadingMore = ref(false)
 const delimiter = ref('/')
 const viewMode = ref<'grid' | 'list'>('grid')
 const uploadedImages = ref<ImgItem[]>([])
 const prefixes = ref<String[]>([])
+const cursor = ref<string | undefined>(undefined)
+const hasMore = ref(true)
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+const PAGE_SIZE = 20
 
 const linkDialogVisible = ref(false)
 const currentLinkImage = ref<{url: string, name: string}>({ url: '', name: '' })
@@ -190,13 +212,20 @@ const addFolder = () => {
     })
   }).catch(() => {})
 }
+// Initial load - reset state and load first page
 const listImages = () => {
 	loading.value = true
+	uploadedImages.value = []
+	cursor.value = undefined
+	hasMore.value = true
+	
 	requestListImages(<ImgReq> {
-    limit: 100,
+    limit: PAGE_SIZE,
     delimiter: delimiter.value
   }).then((data) => {
     uploadedImages.value = data.list
+    cursor.value = data.cursor
+    hasMore.value = data.next
     if (data.prefixes && data.prefixes.length) {
       prefixes.value = data.prefixes
       if (delimiter.value !== '/') {
@@ -211,8 +240,65 @@ const listImages = () => {
 		})
 }
 
+// Load more - append to existing list
+const loadMore = () => {
+	if (loadingMore.value || !hasMore.value || !cursor.value) return
+	
+	loadingMore.value = true
+	requestListImages(<ImgReq> {
+    limit: PAGE_SIZE,
+    delimiter: delimiter.value,
+    cursor: cursor.value
+  }).then((data) => {
+    uploadedImages.value = [...uploadedImages.value, ...data.list]
+    cursor.value = data.cursor
+    hasMore.value = data.next
+  }).catch(() => {})
+		.finally(() => {
+			loadingMore.value = false
+		})
+}
+
+// Setup IntersectionObserver for infinite scroll
+const setupObserver = () => {
+	if (observer) {
+		observer.disconnect()
+	}
+	if (!loadMoreSentinel.value) return
+	
+	observer = new IntersectionObserver(
+		(entries) => {
+			const entry = entries[0]
+			if (entry.isIntersecting && hasMore.value && !loadingMore.value && !loading.value) {
+				loadMore()
+			}
+		},
+		{
+			rootMargin: '100px',
+			threshold: 0.1
+		}
+	)
+	observer.observe(loadMoreSentinel.value)
+}
+
+// Watch for sentinel element to setup observer
+watch(loadMoreSentinel, (newVal) => {
+	if (newVal) {
+		setupObserver()
+	}
+})
+
 onMounted(() => {
 	listImages()
+	nextTick(() => {
+		setupObserver()
+	})
+})
+
+onUnmounted(() => {
+	if (observer) {
+		observer.disconnect()
+	}
 })
 
 const deleteImage = (src: string) => {
