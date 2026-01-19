@@ -11,19 +11,40 @@
 				</p>
 			</div>
             <div class="flex items-center gap-3">
+                <!-- View Toggle -->
+                <div class="hidden sm:flex bg-gray-100 p-1 rounded-lg mr-2">
+                    <button 
+                        class="p-1.5 rounded-md transition-all duration-200 flex items-center justify-center w-8 h-8"
+                        :class="viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'"
+                        @click="viewMode = 'grid'"
+                        title="网格视图"
+                    >
+                        <font-awesome-icon :icon="faThLarge" />
+                    </button>
+                    <button 
+                        class="p-1.5 rounded-md transition-all duration-200 flex items-center justify-center w-8 h-8"
+                        :class="viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'"
+                        @click="viewMode = 'list'"
+                        title="列表视图"
+                    >
+                        <font-awesome-icon :icon="faList" />
+                    </button>
+                </div>
+
                 <button 
                     class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 font-medium transition-colors shadow-sm flex items-center gap-2"
                     @click="addFolder"
                 >
                     <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
-                    <span>新建目录</span>
+                    <span class="hidden sm:inline">新建目录</span>
+                    <span class="sm:hidden">新建</span>
                 </button>
                 <button 
                     class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm flex items-center gap-2"
                     @click="listImages"
                 >
                     <font-awesome-icon :icon="faRedoAlt" :spin="loading" />
-                    <span>刷新</span>
+                    <span class="hidden sm:inline">刷新</span>
                 </button>
             </div>
 		</div>
@@ -49,13 +70,15 @@
             </div>
         </div>
 
-        <!-- Image Grid -->
+        <!-- Image List -->
         <div v-if="uploadedImages.length > 0">
             <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between">
                 <span>图片列表</span>
                 <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-500">{{ uploadedImages.length }} items</span>
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            
+            <!-- Grid View -->
+            <div v-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                 <transition-group name="el-fade-in-linear">
                     <div
                         class="relative"
@@ -67,11 +90,30 @@
                             :name="item.key"
                             :size="item.size"
                             @delete="deleteImage(item.key)"
+                            @rename="renameImage(item)"
+                            @copy="showLinkDialog({ url: item.url, name: item.key })"
                             mode="uploaded"
                             :uploaded-at="item.uploadedAt"
                             class="w-full h-full"
                         />
                     </div>
+                </transition-group>
+            </div>
+
+            <!-- List View -->
+            <div v-else class="flex flex-col gap-2">
+                <transition-group name="el-fade-in-linear">
+                    <image-list-row
+                        v-for="item in uploadedImages"
+                        :key="item.url"
+                        :src="item.url"
+                        :name="item.key"
+                        :size="item.size"
+                        :uploaded-at="item.uploadedAt"
+                        @delete="deleteImage(item.key)"
+                        @rename="renameImage(item)"
+                        @copy="showLinkDialog({ url: item.url, name: item.key })"
+                    />
                 </transition-group>
             </div>
         </div>
@@ -84,24 +126,41 @@
             <h3 class="text-lg font-medium text-gray-900">暂无图片</h3>
             <p class="mt-1 text-gray-500">该目录下没有图片文件</p>
         </div>
+
+        <link-format-dialog
+            v-model="linkDialogVisible"
+            :url="currentLinkImage.url"
+            :name="currentLinkImage.name"
+        />
 	</div>
 </template>
 
 <script setup lang="ts">
-import { requestListImages, requestDeleteImage, createFolder } from '../utils/request'
+import { requestListImages, requestDeleteImage, createFolder, requestRenameImage } from '../utils/request'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import { computed, onMounted, ref } from 'vue'
 import type { ImgItem, ImgReq, Folder } from '../utils/types'
 import ImageBox from '../components/ImageBox.vue'
+import ImageListRow from '../components/ImageListRow.vue'
+import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen } from '@fortawesome/free-solid-svg-icons'
+import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList } from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 
 const loading = ref(false)
 const delimiter = ref('/')
+const viewMode = ref<'grid' | 'list'>('grid')
 const uploadedImages = ref<ImgItem[]>([])
 const prefixes = ref<String[]>([])
+
+const linkDialogVisible = ref(false)
+const currentLinkImage = ref<{url: string, name: string}>({ url: '', name: '' })
+
+const showLinkDialog = (image: {url: string, name: string}) => {
+  currentLinkImage.value = image
+  linkDialogVisible.value = true
+}
 const imagesTotalSize = computed(() =>
     uploadedImages.value.reduce((total, item) => total + item.size, 0)
 )
@@ -162,5 +221,53 @@ const deleteImage = (src: string) => {
   }).then((res) => {
 		uploadedImages.value = uploadedImages.value.filter((item) => item.key !== res)
 	})
+}
+
+const renameImage = (item: ImgItem) => {
+    // Extract filename from key
+    const oldKey = item.key
+    const pathParts = oldKey.split('/')
+    const fileName = pathParts.pop() || ''
+    const path = pathParts.join('/')
+    const pathPrefix = path ? path + '/' : ''
+
+    ElMessageBox.prompt('请输入新的文件名', '重命名图片', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputValue: fileName,
+        inputPattern: /^[^/\\:*?"<>|]+$/,
+        inputErrorMessage: '文件名包含非法字符'
+    }).then(({ value }) => {
+        if (value === fileName) return
+
+        loading.value = true
+        const newKey = pathPrefix + value
+        
+        requestRenameImage({
+            oldKey: oldKey,
+            newKey: newKey
+        }).then((res: any) => {
+            if (res.code === 200 || res.newKey) {
+                ElMessage.success('重命名成功')
+                // Update local list
+                const index = uploadedImages.value.findIndex(img => img.key === oldKey)
+                if (index !== -1) {
+                    const updatedItem = { ...uploadedImages.value[index] }
+                    updatedItem.key = res.data?.newKey || newKey
+                    updatedItem.url = updatedItem.url.replace(encodeURIComponent(oldKey), encodeURIComponent(updatedItem.key))
+                        .replace(oldKey, updatedItem.key) // Fallback for simple replace
+                    uploadedImages.value[index] = updatedItem
+                }
+                listImages() // Refresh list to be sure
+            } else {
+                 ElMessage.error(res.msg || '重命名失败')
+            }
+        }).catch((err) => {
+            console.error(err)
+            // ElMessage.error('重命名失败')
+        }).finally(() => {
+            loading.value = false
+        })
+    }).catch(() => {})
 }
 </script>

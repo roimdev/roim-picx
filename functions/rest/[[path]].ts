@@ -4,6 +4,7 @@ export interface Env {
   BASE_URL: string
   XK: KVNamespace
   PICX: R2Bucket
+  PICX_AUTH_TOKEN: string
 }
 
 export const onRequest: PagesFunction<Env> = async (context : EventContext) => {

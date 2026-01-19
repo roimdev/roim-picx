@@ -58,11 +58,30 @@
 			</div>
 		</div>
 
+        <!-- Custom Path Input -->
+        <div class="mt-4">
+            <el-autocomplete
+                v-model="customPath"
+                :fetch-suggestions="querySearch"
+                placeholder="自定义路径 (可选，例如: 2023/travel)"
+                class="w-full"
+                :trigger-on-focus="true"
+                clearable
+            >
+                <template #default="{ item }">
+                    <div class="flex items-center gap-2">
+                        <font-awesome-icon :icon="faFolder" class="text-amber-500" />
+                        <span>{{ item.value }}</span>
+                    </div>
+                </template>
+            </el-autocomplete>
+        </div>
+
 		<!-- Action Bar -->
-		<div class="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 backdrop-blur-xl bg-white/90">
+		<div class="mt-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 backdrop-blur-xl bg-white/90">
 			<div class="flex items-center gap-4 w-full md:w-auto">
 				<button 
-					class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="w-full md:w-auto px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					:disabled="loading"
 					@click="input?.click()"
 				>
@@ -76,19 +95,25 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-3 w-full md:w-auto justify-end">
+            <!-- Mobile Stats -->
+            <div class="text-sm text-gray-600 md:hidden w-full text-center" v-if="convertedImages.length > 0">
+                已选 <span class="font-bold text-indigo-600">{{ convertedImages.length }}</span> 张，
+                共 <span class="font-bold text-gray-800">{{ formatBytes(imagesTotalSize) }}</span>
+            </div>
+
+			<div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto justify-end">
 				<button 
 					v-if="convertedImages.length > 0"
-					class="px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center gap-2"
+					class="w-full md:w-auto px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center justify-center gap-2 order-2 md:order-1"
 					:disabled="loading"
 					@click="clearInput"
 				>
 					<font-awesome-icon :icon="faTrashAlt" />
-					<span class="hidden sm:inline">清除全部</span>
+					<span>清除全部</span>
 				</button>
 
 				<button
-					class="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+					class="w-full md:w-auto px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed order-1 md:order-2"
 					:disabled="convertedImages.length === 0 || loading"
 					@click="uploadImages"
 				>
@@ -114,16 +139,17 @@
 
 <script setup lang="ts">
 import { faImages, faTrashAlt, faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faUpload, faCloudUploadAlt } from '@fortawesome/free-solid-svg-icons'
+import { faUpload, faCloudUploadAlt, faFolder } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import {ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages } from '../utils/request'
+import { requestUploadImages, requestListImages } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
-import type { ConvertedImage, ImgItem } from '../utils/types'
+import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
+import { ElAutocomplete } from 'element-plus'
 
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
@@ -135,6 +161,36 @@ const imageSizeLimit = 20 * 1024 * 1024
 const input = ref<HTMLInputElement>()
 const loading = ref(false)
 const router = useRouter()
+const customPath = ref('')
+const directorySuggestions = ref<{value: string}[]>([])
+
+const querySearch = (queryString: string, cb: any) => {
+    const results = queryString
+        ? directorySuggestions.value.filter(createFilter(queryString))
+        : directorySuggestions.value
+    cb(results)
+}
+
+const createFilter = (queryString: string) => {
+    return (restaurant: { value: string }) => {
+        return (restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
+    }
+}
+
+const fetchDirectories = () => {
+    requestListImages(<ImgReq>{
+        limit: 100,
+        delimiter: '/'
+    }).then((data) => {
+        if (data.prefixes && data.prefixes.length) {
+            directorySuggestions.value = data.prefixes.map(prefix => ({
+                value: String(prefix).replace(/\/$/, '') // Remove trailing slash for display
+            }))
+        }
+    }).catch(err => {
+        console.error('Failed to fetch directories:', err)
+    })
+}
 
 const onInputChange = () => {
 	appendConvertedImages(input.value?.files)
@@ -148,6 +204,7 @@ const onPaste = (e: ClipboardEvent) => {
 
 onMounted(() => {
 	document.onpaste = onPaste
+    fetchDirectories()
 })
 
 onUnmounted(() => {
@@ -203,6 +260,9 @@ const uploadImages = () => {
 	loading.value = true
 
 	const formData = new FormData()
+    if (customPath.value) {
+        formData.append('path', customPath.value)
+    }
 	for (let item of convertedImages.value) {
 		formData.append('files', item.file)
 	}

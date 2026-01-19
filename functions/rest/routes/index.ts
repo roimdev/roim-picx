@@ -17,7 +17,7 @@ const auth = async (request : Request, env : Env) => {
         return json(NotAuth())
     }
     // with kv equal
-    const authKey = await env.XK.get('PICX_AUTH_TOKEN')
+    const authKey = env.PICX_AUTH_TOKEN
     if (!authKey) {
         return json(Fail("system not auth setting"))
     }
@@ -34,7 +34,7 @@ router.post('/checkToken', async (req : Request, env : Env) => {
     if (!token) {
         return json(Ok(false))
     }
-    const authKey = await env.XK.get('PICX_AUTH_TOKEN')
+    const authKey = env.PICX_AUTH_TOKEN
     if (!authKey) {
         return json(Ok(false))
     }
@@ -91,6 +91,20 @@ router.post('/list', auth, async (req : Request, env : Env) => {
 router.post('/upload',  auth, async (req: Request, env : Env) => {
     const files = await req.formData()
     const images = files.getAll("files")
+    let customPath = files.get("path")
+    if (customPath) {
+        customPath = customPath.toString()
+        if (!customPath.endsWith('/')) {
+            customPath += '/'
+        }
+        // Remove leading slash if present to avoid double slashes with base URL or empty bucket names
+        if (customPath.startsWith('/')) {
+            customPath = customPath.substring(1)
+        }
+    } else {
+        customPath = ''
+    }
+
     const errs = []
     const urls = Array<ImgItem>()
     for (let item of images) {
@@ -101,10 +115,11 @@ router.post('/upload',  auth, async (req: Request, env : Env) => {
         }
         const time = new Date().getTime()
         const filename = await getFileName(fileType, time)
+        const fullPath = customPath + filename
         const header = new Headers()
         header.set("content-type", fileType)
         header.set("content-length", `${item.size}`)
-        const object = await env.PICX.put(filename, item.stream(), {
+        const object = await env.PICX.put(fullPath, item.stream(), {
             httpMetadata: header,
         }) as R2Object
         if (object || object.key) {
@@ -131,6 +146,34 @@ router.post("/folder",  auth, async (req: Request, env: Env) => {
         return json(Ok("Success"))
     } catch (e) {
         return json(Fail("Create folder fail"))
+    }
+})
+
+// 重命名文件
+router.post('/rename', auth, async (req: Request, env: Env) => {
+    try {
+        const data = await req.json() as { oldKey: string, newKey: string }
+        if (!data.oldKey || !data.newKey) {
+            return json(Fail("Missing oldKey or newKey"))
+        }
+
+        const oldObject = await env.PICX.get(data.oldKey)
+        if (!oldObject) {
+            return json(Fail("File not found"))
+        }
+
+        // Copy file to new key
+        await env.PICX.put(data.newKey, oldObject.body, {
+            httpMetadata: oldObject.httpMetadata,
+            customMetadata: oldObject.customMetadata,
+        })
+
+        // Delete old file
+        await env.PICX.delete(data.oldKey)
+
+        return json(Ok({ oldKey: data.oldKey, newKey: data.newKey }))
+    } catch (e) {
+        return json(Fail(`Rename failed: ${e.message}`))
     }
 })
 

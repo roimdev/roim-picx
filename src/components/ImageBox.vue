@@ -27,10 +27,19 @@
 			<!-- Desktop Hover Overlay for Actions -->
 			<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex items-center justify-center gap-3 backdrop-blur-[2px]">
                 <template v-if="mode === 'uploaded'">
+                    <el-tooltip content="重命名" placement="top" :show-after="500">
+                        <button 
+                            class="w-10 h-10 rounded-full bg-white text-gray-700 hover:text-blue-600 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
+                            @click.stop="emit('rename')"
+                        >
+                            <font-awesome-icon :icon="faEdit" />
+                        </button>
+                    </el-tooltip>
+
                     <el-tooltip content="复制链接" placement="top" :show-after="500">
                         <button 
                             class="w-10 h-10 rounded-full bg-white text-gray-700 hover:text-indigo-600 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
-                            @click.stop="copyLink(src)"
+                            @click.stop="emit('copy')"
                         >
                             <font-awesome-icon :icon="faLink" />
                         </button>
@@ -67,8 +76,15 @@
             <!-- Mobile Actions (Always Visible) -->
             <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent flex sm:hidden items-center justify-end gap-3 z-10" v-if="mode === 'uploaded'">
                 <button 
+                    class="w-8 h-8 rounded-full bg-white/90 text-gray-700 active:bg-blue-50 active:text-blue-600 transition-all flex items-center justify-center shadow-lg backdrop-blur-sm"
+                    @click.stop="emit('rename')"
+                >
+                    <font-awesome-icon :icon="faEdit" class="text-xs" />
+                </button>
+
+                <button 
                     class="w-8 h-8 rounded-full bg-white/90 text-gray-700 active:bg-indigo-50 active:text-indigo-600 transition-all flex items-center justify-center shadow-lg backdrop-blur-sm"
-                    @click.stop="copyLink(src)"
+                    @click.stop="emit('copy')"
                 >
                     <font-awesome-icon :icon="faLink" class="text-xs" />
                 </button>
@@ -119,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faTimes, faImage } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faTimes, faImage, faEdit } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import {ElTooltip, ElPopconfirm, ElImage, ElMessage} from 'element-plus'
@@ -135,19 +151,10 @@ const props = defineProps<{
 	uploadedAt?: number
 	expiresAt?: number
 }>()
-const emit = defineEmits(['delete'])
+const emit = defineEmits(['delete', 'copy', 'rename'])
 
 const imageError = ref(false)
 const loading = ref(true)
-
-const copyLink = (link : string) => {
-  const res = copy(link)
-  if (res) {
-    ElMessage.success('链接已复制')
-  } else {
-    ElMessage.error('复制失败')
-  }
-}
 
 const handleDelete = () => {
     loading.value = true
