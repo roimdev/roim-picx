@@ -98,7 +98,8 @@
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
                         <image-box :src="item.url" :name="item.key" :size="item.size" @delete="deleteImage(item.key)"
                             @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
-                            mode="uploaded" :uploaded-at="item.uploadedAt" class="w-full h-full" />
+                            @preview="showPreview(item.url)" mode="uploaded" :uploaded-at="item.uploadedAt"
+                            class="w-full h-full" />
                     </div>
                 </transition-group>
             </div>
@@ -108,7 +109,8 @@
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" @delete="deleteImage(item.key)"
-                        @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })" />
+                        @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
+                        @preview="showPreview(item.url)" />
                 </transition-group>
             </div>
 
@@ -139,6 +141,9 @@
         </div>
 
         <link-format-dialog v-model="linkDialogVisible" :url="currentLinkImage.url" :name="currentLinkImage.name" />
+
+        <!-- Image Preview -->
+        <el-image-viewer v-if="previewVisible" :url-list="[previewUrl]" @close="closePreview" hide-on-click-modal />
     </div>
 </template>
 
@@ -151,7 +156,7 @@ import type { ImgItem, ImgReq, Folder } from '../utils/types'
 import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox, ElMessage, ElImageViewer } from 'element-plus'
 import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -173,7 +178,24 @@ const currentLinkImage = ref<{ url: string, name: string }>({ url: '', name: '' 
 const showLinkDialog = (image: { url: string, name: string }) => {
     currentLinkImage.value = image
     linkDialogVisible.value = true
+    currentLinkImage.value = image
+    linkDialogVisible.value = true
 }
+
+// Preview state
+const previewVisible = ref(false)
+const previewUrl = ref('')
+
+const showPreview = (url: string) => {
+    previewUrl.value = url
+    previewVisible.value = true
+}
+
+const closePreview = () => {
+    previewVisible.value = false
+    previewUrl.value = ''
+}
+
 const imagesTotalSize = computed(() =>
     uploadedImages.value.reduce((total, item) => total + item.size, 0)
 )

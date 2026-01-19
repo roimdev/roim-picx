@@ -20,7 +20,7 @@
 									$route.path === item.path
 										? 'bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-200'
 										: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-								]" @click="router.push(item.path)">
+								]" @click="handleNavClick(item)">
 								<font-awesome-icon :icon="item.icon" />
 								<span class="hidden sm:inline-block">{{ item.label }}</span>
 							</div>
@@ -48,11 +48,12 @@
 </template>
 
 <script setup lang="ts">
-import { faCog, faUpload } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faUpload, faSignOutAlt } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useRoute } from 'vue-router'
-import { ElScrollbar, ElConfigProvider } from 'element-plus'
+import { ElScrollbar, ElConfigProvider, ElMessage } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { computed } from 'vue'
+import storage from './utils/storage'
 
 const repoLink = 'https://roim.app'
 const repoName = 'roim-picx'
@@ -66,7 +67,18 @@ const route = useRoute()
 const isDeletePage = computed(() => route.path.startsWith('/delete/'))
 
 const navItems = [
-	{ path: '/up', label: '上传', icon: faUpload },
-	{ path: '/', label: '管理', icon: faCog }
+	{ path: '/up', label: '上传', icon: faUpload, action: null },
+	{ path: '/', label: '管理', icon: faCog, action: null },
+	{ path: '', label: '退出', icon: faSignOutAlt, action: 'logout' }
 ]
+
+const handleNavClick = (item: any) => {
+	if (item.action === 'logout') {
+		storage.local.remove('auth-token')
+		ElMessage.success('已退出登录')
+		router.push('/auth')
+	} else {
+		router.push(item.path)
+	}
+}
 </script>

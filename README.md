@@ -31,32 +31,36 @@
 ### 使用教程
 * 1.fork项目到自己的github
 * 2.注册CloudFlare并开通R2服务
-![Upload](https://oss.tuqu.me/roim/blog/cf/r2.png)
+  ![r2.png](https://roim.page/rest/sASpr2k.png)
 * 3.找到Pages选项并且创建项目
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages1.png)
-* 4.选择项目创建方式
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages2.png)
+  ![docs/3WlPr2k.png](https://roim.page/rest/docs/3WlPr2k.png)
 * 4.链接Github或GitLab并选需要构建的项目
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages3.png)
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages4.png)
+  ![docs/Nj8Pr2k.png](https://roim.page/rest/docs/Nj8Pr2k.png)
 * 5.设置环境变量
-> 因为cloudflare默认的node版本较低需要手动指定版本，否在会导致构建失败.
-    ![Upload](https://oss.tuqu.me/roim/blog/cf/pages5.png)
-* 6.设置项目的函数信息绑定R2和KV服务
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages6.png)
-![Upload](https://oss.tuqu.me/roim/blog/cf/pages7.png)
+![docs/yupPr2k.png](https://roim.page/rest/docs/yupPr2k.png)
+* 6.设置项目的函数信息绑定R2和KV服务（在项目创建后才能设置）
+  ![docs/q3pPr2k.png](https://roim.page/rest/docs/q3pPr2k.png)
 * 7.构建项目，提示成功即可访问
-  ![Upload](https://oss.tuqu.me/roim/blog/cf/pages8.png)
+  ![docs/w3JPr2k.png](https://roim.page/rest/docs/w3JPr2k.png)
 
-> 注意：Pages的函数变量名称需要于项目的变量名称一致，如果需要修改functions里面的Env名空间，对应的文件是`[[path]].ts`
+> 注意：Pages的函数变量名称需要于项目的变量名称一致，如果需要修改functions里面的Env名空间，对应的文件是`[[route]].ts`
 
 ### 图床截图
-![Upload](https://oss.tuqu.me/roim/blog/5.png)
-![Preview](https://oss.tuqu.me/roim/blog/1.png)
-![HTML](https://oss.tuqu.me/roim/blog/2.png)
-![Markdown](https://oss.tuqu.me/roim/blog/3.png)
-![Link](https://oss.tuqu.me/roim/blog/4.png)
-![Manage](https://oss.tuqu.me/roim/blog/6.png)
+![docs/VdjPr2k.png](https://roim.page/rest/docs/VdjPr2k.png)
+![docs/ohQPr2k.png](https://roim.page/rest/docs/ohQPr2k.png)
+![docs/mTNPr2k.png](https://roim.page/rest/docs/mTNPr2k.png)
+![docs/20HPr2k.png](https://roim.page/rest/docs/20HPr2k.png)
+![docs/nKmPr2k.png](https://roim.page/rest/docs/nKmPr2k.png)
+
+### GITHub登录配置
+1.需要注册一个GitHub应用，注册地址：[GitHub Developer Settings](https://github.com/settings/apps)
+2.在应用中设置回调地址为：`https://your-domain.com/auth/github/callback`
+3.在应用中设置客户端ID和客户端密钥
+4.在项目中设置环境变量`GITHUB_CLIENT_ID`和`GITHUB_CLIENT_SECRET`，值为应用中的客户端ID和客户端密钥
+5.在项目中设置环境变量`GITHUB_REDIRECT_URI`，值为应用中的回调地址。
+![docs/HjJPr2k.png](https://roim.page/rest/docs/HjJPr2k.png)
+![docs/oCJPr2k.png](https://roim.page/rest/docs/oCJPr2k.png)
+![docs/gHqPr2k.png](https://roim.page/rest/docs/gHqPr2k.png)
 
 ### 项目参考来源
 [1. cfworker-kv-image-hosting](https://github.com/realByg/cfworker-kv-image-hosting)

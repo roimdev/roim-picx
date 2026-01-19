@@ -148,4 +148,14 @@ function handleClick(tab: TabsPaneContext, event: Event) {
 :deep(.el-tabs--border-card > .el-tabs__content) {
   padding: 24px;
 }
+
+@media (max-width: 768px) {
+  :deep(.el-tabs--border-card > .el-tabs__content) {
+    padding: 10px;
+  }
+
+  .p-4 {
+    padding: 10px !important;
+  }
+}
 </style>
