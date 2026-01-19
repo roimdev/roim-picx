@@ -191,7 +191,9 @@ app.post('/upload', auth, async (c) => {
         if (keepName && file.name) {
             // Sanitize filename: replace non-alphanumeric chars (except ._- and Chinese) with _
             // This ensures compatibility with R2 keys and URLs
-            const safeName = file.name.replace(/[^a-zA-Z0-9._-\u4e00-\u9fa5]/g, '_')
+            // Note: Hyphen must be at the end of character class to avoid creating unintended ranges
+            const safeName = file.name.replace(/[^a-zA-Z0-9._\u4e00-\u9fa5-]/g, '_')
+            console.log(`KeepName: ${keepName}, Original: ${file.name}, SafeData: ${safeName}`)
             if (safeName) {
                 filename = safeName
             }
