@@ -57,3 +57,4 @@ export const requestDeleteImage = (data: ImgDel) => request.delete('/rest', { da
 export const requestRenameImage = (data: { oldKey: string, newKey: string }) => request.post('/rest/rename', data)
 export const requestDelInfo = (token: string): Promise<ImgItem> => request.get(`/rest/delInfo/${token}`)
 export const requestPublicDeleteImage = (token: string) => request.post(`/rest/delImage/${token}`)
+export const requestGithubLogin = (code: string) => request.post('/rest/github/login', { code })

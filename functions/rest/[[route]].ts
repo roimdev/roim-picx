@@ -10,6 +10,9 @@ type Bindings = {
     XK: KVNamespace
     PICX: R2Bucket
     PICX_AUTH_TOKEN: string
+    GITHUB_CLIENT_ID: string
+    GITHUB_CLIENT_SECRET: string
+    GITHUB_OWNER: string
 }
 
 type Variables = {}
@@ -19,7 +22,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/
 // Auth middleware for non-GET/OPTIONS requests
 const auth = async (c: any, next: () => Promise<void>) => {
     const method = c.req.method
-    if (method === "GET" || method === "OPTIONS") {
+    if (method === "GET" || method === "OPTIONS" || c.req.path.startsWith('/rest/github/login')) {
         await next()
         return
     }
@@ -38,6 +41,56 @@ const auth = async (c: any, next: () => Promise<void>) => {
     }
     await next()
 }
+
+// GitHub Login
+app.post('/github/login', async (c) => {
+    const { code } = await c.req.json<{ code: string }>()
+    if (!code) return c.json(Fail("Missing code"))
+
+    const clientId = c.env.GITHUB_CLIENT_ID
+    const clientSecret = c.env.GITHUB_CLIENT_SECRET
+    const owner = c.env.GITHUB_OWNER
+
+    if (!clientId || !clientSecret) {
+        return c.json(Fail("GitHub auth not configured"))
+    }
+
+    try {
+        // Exchange code for token
+        const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code
+            })
+        })
+        const tokenData = await tokenRes.json<any>()
+        if (tokenData.error) return c.json(Fail(tokenData.error_description))
+
+        // Get User Info
+        const userRes = await fetch('https://api.github.com/user', {
+            headers: {
+                'Authorization': `token ${tokenData.access_token}`,
+                'User-Agent': 'ROIM-PICX'
+            }
+        })
+        const userData = await userRes.json<any>()
+
+        // If owner is configured and not wildcard, verify user
+        if (owner && owner !== '*' && userData.login !== owner) {
+            return c.json(FailCode("Unauthorized GitHub User", StatusCode.NotAuth))
+        }
+
+        return c.json(Ok(c.env.PICX_AUTH_TOKEN))
+    } catch (e: any) {
+        return c.json(Fail(e.message))
+    }
+})
 
 // 检测token是否有效
 app.post('/checkToken', async (c) => {
