@@ -81,7 +81,12 @@ app.post('/list', auth, async (c) => {
     const list = await c.env.PICX.list(options)
     const truncated = list.truncated ? list.truncated : false
     const cursor = list.cursor
-    const objs = list.objects
+    // 按上传时间倒序排列
+    const objs = [...list.objects].sort((a: any, b: any) => {
+        const timeA = a.uploaded ? new Date(a.uploaded).getTime() : 0
+        const timeB = b.uploaded ? new Date(b.uploaded).getTime() : 0
+        return timeB - timeA
+    })
     const urls = objs.map((it: any) => {
         return <ImgItem>{
             url: `${c.env.BASE_URL}/rest/${it.key}`,
@@ -124,6 +129,7 @@ app.post('/upload', auth, async (c) => {
             errs.push(`${fileType} not support.`)
             continue
         }
+        const delToken = crypto.randomUUID()
         const time = new Date().getTime()
         const filename = await getFileName(fileType, time)
         const fullPath = customPath + filename
@@ -134,11 +140,14 @@ app.post('/upload', auth, async (c) => {
             httpMetadata: header,
         }) as R2Object
         if (object || object.key) {
+            // 存储删除token
+            await c.env.XK.put(`del:${delToken}`, object.key)
             urls.push({
                 key: object.key,
                 size: object.size,
                 url: `${c.env.BASE_URL}/rest/${object.key}`,
-                filename: file.name
+                filename: file.name,
+                delToken: delToken
             })
         }
     }
@@ -222,6 +231,48 @@ app.delete("/", auth, async (c) => {
         console.log(`img delete error:${(e as Error).message}`,)
     }
     return c.json(Ok(keys))
+})
+
+// 获取删除链接信息 (公开)
+app.get('/delInfo/:token', async (c) => {
+    const token = c.req.param('token')
+    if (!token) {
+        return c.json(Fail("token is required"))
+    }
+    const key = await c.env.XK.get(`del:${token}`)
+    if (!key) {
+        return c.json(Fail("Invalid or expired deletion link"))
+    }
+    const object = await c.env.PICX.head(key)
+    if (!object) {
+        return c.json(Fail("Image not found"))
+    }
+
+    return c.json(Ok({
+        key: key,
+        url: `${c.env.BASE_URL}/rest/${key}`,
+        size: object.size
+    }))
+})
+
+// 确认删除图片 (公开)
+app.post('/delImage/:token', async (c) => {
+    const token = c.req.param('token')
+    if (!token) {
+        return c.json(Fail("token is required"))
+    }
+    const key = await c.env.XK.get(`del:${token}`)
+    if (!key) {
+        return c.json(Fail("Invalid or expired deletion link"))
+    }
+
+    try {
+        await c.env.PICX.delete(key)
+        await c.env.XK.delete(`del:${token}`)
+        return c.json(Ok("Delete success"))
+    } catch (e) {
+        return c.json(Fail(`Delete failed: ${(e as Error).message}`))
+    }
 })
 
 // image detail - catch-all for image keys

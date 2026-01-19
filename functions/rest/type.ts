@@ -5,23 +5,24 @@ export interface Result {
 }
 
 export interface ImgItem {
-    key : string
-    url : string
+    key: string
+    url: string
     size: number
-    filename ?: string
+    filename?: string
+    delToken?: string
 }
 
 export interface ImgList {
     next: boolean
-    cursor ?: string
-    list : Array<ImgItem>
-    prefixes ?: Array<String>
+    cursor?: string
+    list: Array<ImgItem>
+    prefixes?: Array<String>
 }
 
 export interface ImgReq {
     limit: number,
-    cursor ?: string
-    delimiter ?: string
+    cursor?: string
+    delimiter?: string
 }
 
 // 文件夹名称
@@ -29,38 +30,38 @@ export interface Folder {
     name: string
 }
 
-export function NotAuth() : Result {
-    return <Result> {
+export function NotAuth(): Result {
+    return <Result>{
         code: StatusCode.NotAuth,
         msg: "Not Authorization",
         data: null
     }
 }
 
-export function FailCode(msg : string, code: number) : Result {
-    return <Result> {
+export function FailCode(msg: string, code: number): Result {
+    return <Result>{
         code: code,
         msg: msg,
         data: null
     }
 }
 
-export function Fail(msg : string) : Result {
-    return <Result> {
+export function Fail(msg: string): Result {
+    return <Result>{
         code: StatusCode.ERROR,
         msg: msg,
         data: null
     }
 }
-export function Ok(data : any) : Result {
-    return <Result> {
+export function Ok(data: any): Result {
+    return <Result>{
         code: StatusCode.OK,
         msg: "ok",
         data: data
     }
 }
-export function Build(data : any, msg: string) : Result {
-    return <Result> {
+export function Build(data: any, msg: string): Result {
+    return <Result>{
         code: StatusCode.OK,
         msg: msg,
         data: data

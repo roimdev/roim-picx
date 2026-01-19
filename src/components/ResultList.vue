@@ -6,23 +6,17 @@
           <image-item :image-list="imageList" ref="imageItem" />
         </div>
       </el-tab-pane>
-      
-      <el-tab-pane v-for="(fn, name) in { HTML: htmlLinks, Markdown: markdownLinks, BBCode: bbcodeLinks, Link: viewLinks }" 
-        :key="name" 
-        :label="name" 
-        :name="name"
-      >
+
+      <el-tab-pane v-for="tab in availableTabs" :key="tab.name" :label="tab.label" :name="tab.name">
         <div class="relative group">
-          <div 
-            class="text-sm font-mono text-gray-700 p-4 bg-gray-50 border border-gray-100 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]"
-          >
-            {{ fn() }}
+          <div
+            class="text-sm font-mono text-gray-700 p-4 bg-gray-50 border border-gray-100 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]">
+            {{ getTabContent(tab.name) }}
           </div>
           <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
+            <button
               class="bg-white hover:bg-indigo-50 text-gray-600 hover:text-indigo-600 border border-gray-200 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
-              @click="copyText(fn())"
-            >
+              @click="copyText(getTabContent(tab.name))">
               <font-awesome-icon :icon="faCopy" />
               <span>复制</span>
             </button>
@@ -35,7 +29,7 @@
 
 <script setup lang="ts">
 import { ElCard, ElImage, ElMessage, ElTabs, ElTabPane } from 'element-plus'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { TabsPaneContext } from 'element-plus'
 import ImageItem from '../components/ImageItem.vue'
 import type { ImgItem } from '../utils/types'
@@ -48,44 +42,77 @@ const props = defineProps<{
 }>()
 
 const activeName = ref('first')
-const htmlLinks = () => {
+
+const availableTabs = computed(() => {
+  const tabs = [
+    { name: 'html', label: 'HTML' },
+    { name: 'markdown', label: 'Markdown' },
+    { name: 'bbcode', label: 'BBCode' },
+    { name: 'link', label: 'Link' },
+  ]
+
+  if (props.imageList.some(it => it.delToken)) {
+    tabs.push({ name: 'delete', label: '删除链接' })
+  }
+
+  return tabs
+})
+
+function getTabContent(name: string) {
+  switch (name) {
+    case 'html': return htmlLinks()
+    case 'markdown': return markdownLinks()
+    case 'bbcode': return bbcodeLinks()
+    case 'link': return viewLinks()
+    case 'delete': return deleteLinks()
+    default: return ''
+  }
+}
+
+function htmlLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
+  for (const it of props.imageList) {
     text += `<a href="${it.url}" target="_blank"><img src="${it.url}"></a>\n`
   }
   return text
 }
-const viewLinks = () => {
+
+function viewLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
+  for (const it of props.imageList) {
     text += `${it.url}\n`
   }
   return text
 }
-const markdownLinks = () => {
+
+function markdownLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
-    text += `![${it.filename}](${it.url})\n`
+  for (const it of props.imageList) {
+    text += `![${it.filename || it.key}](${it.url})\n`
   }
   return text
 }
-const bbcodeLinks = () => {
+
+function bbcodeLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
+  for (const it of props.imageList) {
     text += `[img]${it.url}[/img]\n`
   }
   return text
 }
 
-const copyText = (text: string) => {
+function deleteLinks() {
+  let text = ''
+  const origin = window.location.origin
+  for (const it of props.imageList) {
+    if (it.delToken) {
+      text += `${origin}/delete/${it.delToken}\n`
+    }
+  }
+  return text
+}
+
+function copyText(text: string) {
   const res = copy(text)
   if (res) {
     ElMessage.success('链接已复制到剪贴板')
@@ -94,7 +121,7 @@ const copyText = (text: string) => {
   }
 }
 
-const handleClick = (tab: TabsPaneContext, event: Event) => {
+function handleClick(tab: TabsPaneContext, event: Event) {
   // console.log(tab, event)
 }
 </script>
@@ -104,10 +131,12 @@ const handleClick = (tab: TabsPaneContext, event: Event) => {
   border: none;
   box-shadow: none;
 }
+
 :deep(.el-tabs--border-card > .el-tabs__header) {
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
 }
+
 :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
   background-color: #ffffff;
   border-right-color: #e5e7eb;
@@ -115,6 +144,7 @@ const handleClick = (tab: TabsPaneContext, event: Event) => {
   color: #4f46e5;
   font-weight: 600;
 }
+
 :deep(.el-tabs--border-card > .el-tabs__content) {
   padding: 24px;
 }

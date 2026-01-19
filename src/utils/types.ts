@@ -15,24 +15,25 @@ export interface AuthToken {
 	token: string
 }
 export interface ImgItem {
-	key : string
-	url : string
+	key: string
+	url: string
 	size: number
 
-	filename ?: string
-    uploadedAt ?: number
+	filename?: string
+	uploadedAt?: number
+	delToken?: string
 }
 
 export interface ImgList {
 	next: boolean
-	cursor ?: string
-	list : Array<ImgItem>
+	cursor?: string
+	list: Array<ImgItem>
 
-	prefixes ?: Array<String>
+	prefixes?: Array<String>
 }
 
 export interface ImgDel {
-	keys : string
+	keys: string
 }
 
 export interface ImgReq {

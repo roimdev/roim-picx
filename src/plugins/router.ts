@@ -16,6 +16,10 @@ const router = createRouter({
 			component: () => import('../views/auth.vue')
 		},
 		{
+			path: '/delete/:token',
+			component: () => import('../views/DeleteImage.vue')
+		},
+		{
 			path: '/:path(.*)',
 			redirect: '/'
 		}
