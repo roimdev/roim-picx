@@ -17,7 +17,7 @@
 		"axios": "^1.13.2",
 		"copy-to-clipboard": "^3.3.3",
 		"element-plus": "^2.13.1",
-		"itty-router": "^5.0.22",
+		"hono": "^4.7.0",
 		"vue": "^3.5.26",
 		"vue-router": "^4.6.4"
 	},
