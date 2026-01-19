@@ -1,5 +1,5 @@
 <template>
-    <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative">
+    <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
         <loading-overlay :loading="loading" />
 
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
