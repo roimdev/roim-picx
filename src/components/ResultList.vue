@@ -1,29 +1,36 @@
 <template>
-  <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick" type="border-card">
-    <el-tab-pane label="Preview" name="first">
-      <image-item :image-list="imageList" ref="imageItem" />
-    </el-tab-pane>
-    <el-tab-pane label="HTML" name="second">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ htmlLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="Markdown" name="third">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ markdownLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="BBCode" name="fourth">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ bbcodeLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="Link" name="fifth">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ viewLinks() }}
-      </div>
-    </el-tab-pane>
-  </el-tabs>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <el-tabs v-model="activeName" class="custom-tabs" @tab-click="handleClick" type="border-card">
+      <el-tab-pane label="预览" name="first">
+        <div class="p-4">
+          <image-item :image-list="imageList" ref="imageItem" />
+        </div>
+      </el-tab-pane>
+      
+      <el-tab-pane v-for="(fn, name) in { HTML: htmlLinks, Markdown: markdownLinks, BBCode: bbcodeLinks, Link: viewLinks }" 
+        :key="name" 
+        :label="name" 
+        :name="name"
+      >
+        <div class="relative group">
+          <div 
+            class="text-sm font-mono text-gray-700 p-4 bg-gray-50 border border-gray-100 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]"
+          >
+            {{ fn() }}
+          </div>
+          <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              class="bg-white hover:bg-indigo-50 text-gray-600 hover:text-indigo-600 border border-gray-200 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
+              @click="copyText(fn())"
+            >
+              <font-awesome-icon :icon="faCopy" />
+              <span>复制</span>
+            </button>
+          </div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -33,6 +40,9 @@ import type { TabsPaneContext } from 'element-plus'
 import ImageItem from '../components/ImageItem.vue'
 import type { ImgItem } from '../utils/types'
 import copy from 'copy-to-clipboard'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const props = defineProps<{
   imageList: ImgItem[]
 }>()
@@ -70,29 +80,42 @@ const bbcodeLinks = () => {
   const length = props.imageList.length
   for(let i = 0; i < length; i++) {
     const it = props.imageList[i]
-    text += `![${it.filename}](${it.url})\n`
+    text += `[img]${it.url}[/img]\n`
   }
   return text
 }
-const copyLink = (event: any) => {
-  // console.log(event.target.innerText)
-  const res = copy(event.target.innerText)
+
+const copyText = (text: string) => {
+  const res = copy(text)
   if (res) {
-    ElMessage.success('链接复制成功')
+    ElMessage.success('链接已复制到剪贴板')
   } else {
-    ElMessage.success('链接复制失败')
+    ElMessage.error('复制失败，请手动复制')
   }
 }
+
 const handleClick = (tab: TabsPaneContext, event: Event) => {
   // console.log(tab, event)
 }
 </script>
 
 <style scoped>
-.demo-tabs > .el-tabs__content {
-  padding: 32px;
-  color: #6b778c;
-  font-size: 32px;
+:deep(.el-tabs--border-card) {
+  border: none;
+  box-shadow: none;
+}
+:deep(.el-tabs--border-card > .el-tabs__header) {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
+  background-color: #ffffff;
+  border-right-color: #e5e7eb;
+  border-left-color: #e5e7eb;
+  color: #4f46e5;
   font-weight: 600;
+}
+:deep(.el-tabs--border-card > .el-tabs__content) {
+  padding: 24px;
 }
 </style>

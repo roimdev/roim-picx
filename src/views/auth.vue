@@ -1,18 +1,61 @@
 <template>
-  <div class="mx-auto max-w-6xl my-4 px-4 relative">
-    <div class="mx-auto max-w-2xl mt-10">
-      <el-input v-model="token" size="large" class="h-12" placeholder="请输入认证Token" />
-      <el-button :loading="loading" class="mt-4 w-full lg:w-6xl" size="large" type="primary" @click="saveToken">保存</el-button>
+  <div class="min-h-[80vh] flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 w-full max-w-lg transition-all duration-300 hover:shadow-2xl">
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-50 mb-6 shadow-sm">
+          <img src="../assets/picx-logo.png" class="w-12 h-12 object-contain" />
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">身份验证</h1>
+        <p class="mt-2 text-gray-500">请输入您的访问 Token 以继续使用</p>
+      </div>
+
+      <div class="space-y-6">
+        <div>
+          <label for="token" class="block text-sm font-medium text-gray-700 mb-2">Access Token</label>
+          <el-input 
+            v-model="token" 
+            size="large" 
+            id="token"
+            placeholder="请输入认证 Token" 
+            class="custom-input"
+            :prefix-icon="faKey"
+            @keyup.enter="saveToken"
+          />
+        </div>
+
+        <button 
+          class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+          :class="{'opacity-70 cursor-not-allowed': loading}"
+          :disabled="loading"
+          @click="saveToken"
+        >
+          <font-awesome-icon v-if="!loading" :icon="faUnlockAlt" />
+          <svg v-else class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ loading ? '验证中...' : '确认登录' }}</span>
+        </button>
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+        <a href="https://roim.app" target="_blank" class="text-sm text-gray-400 hover:text-indigo-500 transition-colors">
+          Need help? Contact Support
+        </a>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ElInput, ElButton, ElMessage } from 'element-plus'
+import { ElInput, ElMessage } from 'element-plus'
 import storage from '../utils/storage'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { checkToken } from '../utils/request'
+import { faKey, faUnlockAlt } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const token = ref('')
 const loading = ref(false)
 const router = useRouter()
@@ -29,6 +72,7 @@ const saveToken = () => {
     if (res) {
       // 检测token是否有效
       storage.local.set('auth-token', token.value)
+      ElMessage.success('验证成功')
       router.push('/')
     } else {
       ElMessage.error('Token无效')
@@ -41,5 +85,12 @@ const saveToken = () => {
 </script>
 
 <style scoped>
-
+:deep(.el-input__wrapper) {
+  padding: 12px 16px;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
+}
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #4f46e5 inset !important;
+}
 </style>

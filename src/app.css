@@ -1,9 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 body {
-	@apply scroll-smooth text-base bg-gray-100 select-none overflow-x-hidden;
+	@apply scroll-smooth text-base bg-slate-50 select-none overflow-x-hidden text-slate-800;
 }
 
 .area-disabled {

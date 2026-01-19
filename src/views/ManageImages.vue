@@ -1,47 +1,89 @@
 <template>
-	<div class="mx-auto max-w-6xl my-4 px-4 relative">
+	<div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative">
 		<loading-overlay :loading="loading" />
 
-		<div class="flex items-center justify-between mb-4">
+		<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
 			<div>
-				<div class="text-gray-800 text-lg">管理图片</div>
-				<div class="text-sm text-gray-500">
-					已上传 {{ uploadedImages.length }} 张图片，共 {{ formatBytes(imagesTotalSize) }}
-				</div>
+				<h1 class="text-2xl font-bold text-gray-900">管理图片</h1>
+				<p class="mt-1 text-sm text-gray-500">
+					已上传 <span class="font-medium text-gray-900">{{ uploadedImages.length }}</span> 张图片，
+                    共占用 <span class="font-medium text-gray-900">{{ formatBytes(imagesTotalSize) }}</span>
+				</p>
 			</div>
-      <div class="flex items-center justify-start">
-        <font-awesome-icon :icon="faFolderPlus" class="text-xl cursor-pointer text-3xl text-amber-300 mr-2" @click="addFolder" />
-        <font-awesome-icon
-            :icon="faRedoAlt"
-            class="text-xl cursor-pointer text-indigo-400"
-            @click="listImages"
-        />
-      </div>
+            <div class="flex items-center gap-3">
+                <button 
+                    class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 font-medium transition-colors shadow-sm flex items-center gap-2"
+                    @click="addFolder"
+                >
+                    <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
+                    <span>新建目录</span>
+                </button>
+                <button 
+                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm flex items-center gap-2"
+                    @click="listImages"
+                >
+                    <font-awesome-icon :icon="faRedoAlt" :spin="loading" />
+                    <span>刷新</span>
+                </button>
+            </div>
 		</div>
-    <div class="my-2 flex items-center justify-start flex-wrap">
-      <div v-for="it in prefixes" class="px-4 py-2 items-center flex rounded-lg bg-white shadow-md cursor-pointer mx-1" @click="changeFolder(it)">
-        <font-awesome-icon :icon="faFolder" class="text-3xl text-amber-500" />
-        <span v-if="it !== '/'" class="pl-2 text-gray-600"> {{ it.replace("/", "") }}</span>
-        <span v-else class="pl-2 text-gray-600"> {{ it }}</span>
-      </div>
-    </div>
-		<div class="grid gap-2 lg:gap-4 lg:grid-cols-4 grid-cols-2">
-			<transition-group name="el-fade-in-linear">
-				<div
-					class="col-span-1 md:col-span-1"
-					v-for="item in uploadedImages"
-					:key="item.url"
-				>
-					<image-box
-						:src="item.url"
-						:name="item.key"
-            :size="item.size"
-						@delete="deleteImage(item.key)"
-						mode="uploaded"
-					/>
-				</div>
-			</transition-group>
-		</div>
+
+        <!-- Folder Navigation -->
+        <div class="mb-8" v-if="prefixes.length > 0">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">目录导航</h3>
+            <div class="flex items-center gap-3 flex-wrap">
+                <div 
+                    v-for="it in prefixes" 
+                    :key="String(it)"
+                    class="group px-4 py-2.5 rounded-xl bg-white border border-gray-200 hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all duration-200 flex items-center gap-3 min-w-[120px]"
+                    :class="{'ring-2 ring-indigo-500 ring-offset-2 border-transparent': delimiter === it}"
+                    @click="changeFolder(String(it))"
+                >
+                    <div class="p-2 rounded-lg bg-amber-50 group-hover:bg-amber-100 text-amber-500 transition-colors">
+                        <font-awesome-icon :icon="faFolder" class="text-lg" />
+                    </div>
+                    <span class="font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">
+                        {{ it === '/' ? '根目录' : String(it).replace("/", "") }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Grid -->
+        <div v-if="uploadedImages.length > 0">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                <span>图片列表</span>
+                <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-500">{{ uploadedImages.length }} items</span>
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                <transition-group name="el-fade-in-linear">
+                    <div
+                        class="relative"
+                        v-for="item in uploadedImages"
+                        :key="item.url"
+                    >
+                        <image-box
+                            :src="item.url"
+                            :name="item.key"
+                            :size="item.size"
+                            @delete="deleteImage(item.key)"
+                            mode="uploaded"
+                            :uploaded-at="item.uploadedAt"
+                            class="w-full h-full"
+                        />
+                    </div>
+                </transition-group>
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div v-else-if="!loading" class="py-20 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <font-awesome-icon :icon="faFolderOpen" class="text-2xl text-gray-400" />
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">暂无图片</h3>
+            <p class="mt-1 text-gray-500">该目录下没有图片文件</p>
+        </div>
 	</div>
 </template>
 
@@ -53,7 +95,7 @@ import { computed, onMounted, ref } from 'vue'
 import type { ImgItem, ImgReq, Folder } from '../utils/types'
 import ImageBox from '../components/ImageBox.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus } from '@fortawesome/free-solid-svg-icons'
+import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen } from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 
 const loading = ref(false)
@@ -80,10 +122,10 @@ const addFolder = () => {
       name: value
     }).then((res) => {
       console.log(res)
-      ElMessage.success('文件见创建成功')
+      ElMessage.success('文件夹创建成功')
       listImages()
     }).catch(() => {
-      ElMessage.error('文件见创建失败')
+      ElMessage.error('文件夹创建失败')
     }).finally(() => {
       loading.value = false
     })

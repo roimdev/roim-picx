@@ -1,33 +1,49 @@
 <template>
-	<div class="mx-auto max-w-6xl my-4 px-4">
-		<div class="text-gray-800 text-lg">上传图片</div>
-		<div class="mb-4 text-sm text-gray-500">
-			每张图片大小不超过 {{ formatBytes(imageSizeLimit) }}
+	<div class="mx-auto max-w-5xl my-8 px-4 sm:px-6">
+		<div class="flex items-center justify-between mb-6">
+			<div>
+				<h1 class="text-2xl font-bold text-gray-900">上传图片</h1>
+				<p class="mt-1 text-sm text-gray-500">
+					支持拖拽、粘贴或点击上传，单张限制 {{ formatBytes(imageSizeLimit) }}
+				</p>
+			</div>
 		</div>
 
-		<div class="border-2 border-dashed border-slate-400 rounded-md relative">
+		<div 
+			class="border-2 border-dashed rounded-2xl relative transition-all duration-300 min-h-[300px] flex flex-col"
+			:class="[
+				convertedImages.length > 0 ? 'border-indigo-200 bg-white' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/30 bg-gray-50'
+			]"
+		>
 			<loading-overlay :loading="loading" />
 
 			<div
-				class="grid p-4 gap-4 grid-cols-4 min-h-[240px]"
+				class="flex-1 p-6"
 				@drop.prevent="onFileDrop"
 				@dragover.prevent
+				@click="convertedImages.length === 0 ? input?.click() : null"
 			>
 				<div
 					v-if="convertedImages.length === 0"
-					class="absolute -z-10 left-0 top-0 w-full h-full flex items-center justify-center"
+					class="w-full h-full min-h-[250px] flex flex-col items-center justify-center text-gray-400 cursor-pointer"
 				>
-					<div class="text-gray-500">
-						<font-awesome-icon :icon="faCopy" />
-						粘贴或拖动图片至此处
+					<div class="p-4 rounded-full bg-white shadow-sm mb-4">
+						<font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl text-indigo-500" />
 					</div>
+					<p class="text-lg font-medium text-gray-700">点击或拖动图片至此处</p>
+					<p class="text-sm text-gray-400 mt-2">支持 Ctrl + V 粘贴</p>
 				</div>
 
-				<transition-group name="el-fade-in-linear">
+				<transition-group 
+					name="el-fade-in-linear" 
+					tag="div" 
+					class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+					v-else
+				>
 					<div
-						class="col-span-3 md:col-span-1"
 						v-for="item in convertedImages"
 						:key="item.tmpSrc"
+						class="relative group"
 					>
 						<image-box
 							:src="item.tmpSrc"
@@ -35,58 +51,55 @@
 							:name="item.file.name"
 							@delete="removeImage(item.tmpSrc)"
 							mode="converted"
+							class="w-full h-full shadow-sm rounded-xl overflow-hidden group-hover:shadow-md transition-shadow"
 						/>
 					</div>
 				</transition-group>
 			</div>
 		</div>
-		<div class="w-full rounded-md shadow-sm overflow-hidden mt-4 grid grid-cols-8">
-			<div class="md:col-span-1 col-span-8">
-				<div
-					class="w-full h-10 bg-blue-500 cursor-pointer flex items-center justify-center text-white"
-					:class="{
-						'area-disabled': loading
-					}"
+
+		<!-- Action Bar -->
+		<div class="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 backdrop-blur-xl bg-white/90">
+			<div class="flex items-center gap-4 w-full md:w-auto">
+				<button 
+					class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					:disabled="loading"
 					@click="input?.click()"
 				>
-					<font-awesome-icon :icon="faImages" class="mr-2" />
-					选择图片
+					<font-awesome-icon :icon="faImages" />
+					<span>选择图片</span>
+				</button>
+				
+				<div class="text-sm text-gray-600 hidden md:block" v-if="convertedImages.length > 0">
+					已选 <span class="font-bold text-indigo-600">{{ convertedImages.length }}</span> 张，
+					共 <span class="font-bold text-gray-800">{{ formatBytes(imagesTotalSize) }}</span>
 				</div>
 			</div>
 
-			<div class="md:col-span-5 col-span-8">
-				<div class="w-full h-10 bg-slate-200 leading-10 px-4 text-center md:text-left">
-					已选择 {{ convertedImages.length }} 张，共 {{ formatBytes(imagesTotalSize) }}
-				</div>
-			</div>
-
-			<div class="md:col-span-1 col-span-3">
-				<div
-					class="w-full bg-red-500 cursor-pointer h-10 flex items-center justify-center text-white"
-					:class="{
-						'area-disabled': loading
-					}"
+			<div class="flex items-center gap-3 w-full md:w-auto justify-end">
+				<button 
+					v-if="convertedImages.length > 0"
+					class="px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center gap-2"
+					:disabled="loading"
 					@click="clearInput"
 				>
-					<font-awesome-icon :icon="faTrashAlt" class="mr-2" />
-					清除
-				</div>
-			</div>
+					<font-awesome-icon :icon="faTrashAlt" />
+					<span class="hidden sm:inline">清除全部</span>
+				</button>
 
-			<div class="md:col-span-1 col-span-5">
-				<div
-					class="w-full h-10 flex items-center justify-center text-white bg-green-500 cursor-pointer"
-					:class="{
-						'area-disabled': convertedImages.length === 0 || loading
-					}"
+				<button
+					class="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+					:disabled="convertedImages.length === 0 || loading"
 					@click="uploadImages"
 				>
-					<font-awesome-icon :icon="faUpload" class="mr-2" />
-					上传
-				</div>
+					<loading-overlay v-if="loading" :loading="true" class="!static !bg-transparent w-4 h-4 mr-2" />
+					<font-awesome-icon v-else :icon="faUpload" />
+					<span>开始上传</span>
+				</button>
 			</div>
 		</div>
-    <result-list v-show="imgResultList && imgResultList.length" :image-list="imgResultList" ref="resultList" class="mt-4" />
+
+    	<result-list v-show="imgResultList && imgResultList.length" :image-list="imgResultList" ref="resultList" class="mt-8" />
 	</div>
 
 	<input
@@ -101,7 +114,7 @@
 
 <script setup lang="ts">
 import { faImages, faTrashAlt, faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faUpload } from '@fortawesome/free-solid-svg-icons'
+import { faUpload, faCloudUploadAlt } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
@@ -111,6 +124,7 @@ import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem } from '../utils/types'
+
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
 const imagesTotalSize = computed(() =>
@@ -215,7 +229,5 @@ const uploadImages = () => {
 </script>
 
 <style>
-.remove-now-btn .el-picker-panel__footer button:first-child {
-	display: none;
-}
+/* No custom style needed, Tailwind handles it */
 </style>

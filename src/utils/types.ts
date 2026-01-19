@@ -20,6 +20,7 @@ export interface ImgItem {
 	size: number
 
 	filename ?: string
+    uploadedAt ?: number
 }
 
 export interface ImgList {

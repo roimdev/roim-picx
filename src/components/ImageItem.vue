@@ -1,91 +1,86 @@
 <template>
-  <el-card class="box-card mt-4" v-for="it in imageList" :key="it.key">
-    <template #header>
-      <div class="card-header">
-        <span>{{ it.filename }}</span>
-      </div>
-    </template>
-    <div class="text item">
-      <div class="lg:flex items-center justify-start">
-        <el-image
-            class="block w-48 h-48 lg:mr-6 mb-2 lg:mb-0 mx-auto"
-            :src="it.url"
-            fit="cover"
-            hide-on-click-modal
-            lazy
-            @error="imageError = true"
-            @load="loading = false"
-            :preview-src-list="[it.url]"
-        />
-        <div class="link-list">
-          <div class="w-full mb-2">
-            <label for="htmlLink" class="block text-sm font-medium text-gray-700"> HTML </label>
-            <div class="mt-1">
-              <input id="htmlLink" :value="htmlLink(it.url, it.filename)" name="htmlLink" class="cursor-pointer focus:node border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" readonly placeholder="html link" @click="copyLink" />
-            </div>
+  <div class="space-y-6">
+    <div 
+      v-for="it in imageList" 
+      :key="it.key" 
+      class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Image Preview -->
+        <div class="w-full lg:w-48 flex-shrink-0 flex flex-col items-center">
+          <div class="w-48 h-48 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
+            <el-image
+                class="w-full h-full"
+                :src="it.url"
+                fit="contain"
+                hide-on-click-modal
+                lazy
+                @error="imageError = true"
+                @load="loading = false"
+                :preview-src-list="[it.url]"
+            />
           </div>
-          <div class="w-full mb-2">
-            <label for="Markdown" class="block text-sm font-medium text-gray-700"> Markdown </label>
-            <div class="mt-1">
-              <input id="Markdown" :value="markdownLink(it.url, it.filename)" name="Markdown" class="cursor-pointer focus:none border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" readonly placeholder="markdown link" @click="copyLink" />
-            </div>
-          </div>
-          <div class="w-full mb-2">
-            <label for="BBCode" class="block text-sm font-medium text-gray-700"> BBCode </label>
-            <div class="mt-1">
-              <input id="BBCode" :value="bbcodeLink(it.url, it.filename)" name="BBCode" class="cursor-pointer focus:none border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" readonly placeholder="bbcode link" @click="copyLink" />
-            </div>
-          </div>
-          <div class="w-full mb-2">
-            <label for="LINK" class="block text-sm font-medium text-gray-700"> LINK </label>
-            <div class="mt-1">
-              <input id="LINK" :value="it.url" name="LINK" class="cursor-pointer focus:none border border-gray-300 flex-1 block w-full rounded-md px-2 py-1" placeholder="link" @click="copyLink" readonly />
+          <span class="mt-2 text-sm text-gray-500 font-medium truncate w-full text-center" :title="it.filename">
+            {{ it.filename }}
+          </span>
+        </div>
+
+        <!-- Links -->
+        <div class="flex-1 min-w-0 space-y-3">
+          <div v-for="(fn, label) in { 'HTML': htmlLink, 'Markdown': markdownLink, 'BBCode': bbcodeLink, 'Link': (url: string) => url }" :key="label">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              {{ label }}
+            </label>
+            <div class="relative group">
+              <input 
+                type="text"
+                :value="fn(it.url, it.filename || '')" 
+                readonly 
+                class="block w-full rounded-md border-gray-200 bg-gray-50 text-sm text-gray-600 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer pr-10"
+                @click="copyLink" 
+              />
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 group-hover:text-indigo-500">
+                <font-awesome-icon :icon="faCopy" />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import type { ImgItem } from '../utils/types'
 import copy from 'copy-to-clipboard'
-import { ElCard, ElImage, ElMessage } from 'element-plus'
+import { ElImage, ElMessage } from 'element-plus'
 import { ref } from 'vue'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const props = defineProps<{
   imageList: ImgItem[]
 }>()
 const imageError = ref(false)
 const loading = ref(false)
-const markdownLink = (link: String, filename: String) => {
+
+const markdownLink = (link: string, filename: string) => {
   return `![${filename}](${link})`
 }
-const bbcodeLink = (link: String, filename: String) => {
+const bbcodeLink = (link: string, filename: string) => {
   return `[img]${link}[/img]`
 }
-const htmlLink = (link: String, filename: String) => {
+const htmlLink = (link: string, filename: string) => {
   return `<a href="${link}" target="_blank" title="${filename}"><img src="${link}"></a>`
 }
 
 const copyLink = (event: any) => {
-  // console.log(event.target.value)
   const res = copy(event.target.value)
   if (res) {
-    ElMessage.success('链接复制成功')
+    ElMessage.success('链接已复制')
+    event.target.select()
   } else {
-    ElMessage.success('链接复制失败')
+    ElMessage.error('复制失败')
   }
 }
 </script>
-
-<style scoped>
-.link-list {
-  width: calc(100% - 13.5rem);
-}
-@media screen and (max-width: 1024px){
-  .link-list {
-    width: 100%;
-  }
-}
-</style>
