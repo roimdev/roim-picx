@@ -41,7 +41,7 @@ export async function loadUserPermissions(db: D1Database, login: string, adminUs
         const result = await db.prepare(
             'SELECT role, can_view_all, storage_quota, storage_used, upload_count FROM users WHERE login = ?'
         ).bind(login).first() as DbUser | null
-        
+
         if (result) {
             return {
                 role: result.role,
@@ -54,22 +54,31 @@ export async function loadUserPermissions(db: D1Database, login: string, adminUs
     } catch (e) {
         console.error('Failed to load user permissions:', e)
     }
-    
+
     // 如果用户在 ADMIN_USERS 列表中，设置为管理员
     if (isAdminUser(login, adminUsers)) {
         return { role: 'admin', canViewAll: true }
     }
-    
+
     return { role: 'user', canViewAll: false }
 }
 
 /**
- * Auth middleware for non-GET/OPTIONS requests
+ * Auth middleware for all requests
  * Validates Admin Token or JWT Token
+ * Only OPTIONS requests (CORS preflight) and login routes are excluded
  */
 export const auth = async (c: Context<AppEnv>, next: Next) => {
     const method = c.req.method
-    if (method === "GET" || method === "OPTIONS" || c.req.path.startsWith('/rest/github/login')) {
+
+    // OPTIONS 请求直接放行（CORS 预检）
+    if (method === "OPTIONS") {
+        await next()
+        return
+    }
+
+    // 跳过登录相关路由
+    if (c.req.path.startsWith('/rest/github/login')) {
         await next()
         return
     }
@@ -102,21 +111,21 @@ export const auth = async (c: Context<AppEnv>, next: Next) => {
     try {
         const payload = await verify(token, authKey, 'HS256')
         const jwtUser = payload as unknown as User
-        
+
         // 从 D1 加载用户权限
         const permissions = await loadUserPermissions(c.env.DB, jwtUser.login, c.env.ADMIN_USERS)
-        
+
         // 合并用户信息和权限
         const user: User = {
             ...jwtUser,
             ...permissions
         }
-        
+
         c.set('user', user)
         c.set('isAdminToken', false)
         await next()
     } catch (e) {
-        // Both checks failed
+        // JWT 验证失败
         console.error(`Auth failed: ${(e as Error).message}`)
         return c.json(FailCode(`auth fail: ${(e as Error).message}`, StatusCode.NotAuth))
     }

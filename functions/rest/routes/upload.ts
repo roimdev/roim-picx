@@ -100,26 +100,28 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
             httpMetadata: header,
             customMetadata: metadata
         })
-        if (object || object.key) {
+        if (object && object.key) {
             // 存储删除token
             await c.env.XK.put(`del:${delToken}`, object.key)
-            
+
             // 同步图片信息到 D1 数据库
             if (user) {
+                console.log(`[Upload] Syncing to DB - key: ${object.key}, user_login: ${user.login}`)
                 c.executionCtx.waitUntil(
                     c.env.DB.prepare(
                         `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at) 
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
                     ).bind(
                         object.key,
-                        user.id,
+                        null,  // user_id 设为 null，避免外键约束失败（JWT 中的 id 是 GitHub ID）
                         user.login,
                         originalName || null,
                         object.size,
                         fileType,
                         customPath || '',
                         expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null
-                    ).run().then(() => {
+                    ).run().then((result) => {
+                        console.log(`[Upload] Image inserted to DB successfully - key: ${object.key}, meta: ${JSON.stringify(result.meta)}`)
                         // 更新用户统计
                         return c.env.DB.prepare(
                             `UPDATE users SET 
@@ -127,12 +129,16 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                                 upload_count = upload_count + 1 
                              WHERE login = ?`
                         ).bind(object.size, user.login).run()
+                    }).then((result) => {
+                        console.log(`[Upload] User stats updated - login: ${user.login}, meta: ${JSON.stringify(result.meta)}`)
                     }).catch(e => {
-                        console.error('Failed to sync image to DB:', e)
+                        console.error(`[Upload] Failed to sync image to DB - key: ${object.key}, error:`, e)
                     })
                 )
+            } else {
+                console.log(`[Upload] No user context, skipping DB sync - key: ${object.key}`)
             }
-            
+
             urls.push({
                 key: object.key,
                 size: object.size,

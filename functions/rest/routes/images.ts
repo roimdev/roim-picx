@@ -27,7 +27,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
     const user = c.get('user') as User | undefined
     const isAdminToken = c.get('isAdminToken') || false
     const viewAll = canViewAllImages(user, isAdminToken)
-    
+
     const data = await c.req.json<ImgReq>()
     if (!data.limit) {
         data.limit = 10
@@ -35,7 +35,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
     if (data.limit > 100) {
         data.limit = 100
     }
-    
+
     // 处理文件夹路径
     let folder = ''
     if (data.delimiter && data.delimiter !== '/') {
@@ -45,7 +45,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             folder += '/'
         }
     }
-    
+
     const keyword = data.keyword?.trim().toLowerCase()
     const offset = data.cursor ? parseInt(data.cursor) : 0
 
@@ -55,7 +55,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
         let countQuery = 'SELECT COUNT(*) as total FROM images WHERE 1=1'
         const params: any[] = []
         const countParams: any[] = []
-        
+
         // 权限过滤：非管理员只能看自己的图片
         if (!viewAll) {
             if (!user) {
@@ -72,7 +72,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             params.push(user.login)
             countParams.push(user.login)
         }
-        
+
         // 文件夹过滤
         if (folder) {
             query += ' AND folder = ?'
@@ -84,7 +84,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             query += " AND (folder = '' OR folder IS NULL)"
             countQuery += " AND (folder = '' OR folder IS NULL)"
         }
-        
+
         // 关键词搜索
         if (keyword) {
             query += ' AND (LOWER(key) LIKE ? OR LOWER(original_name) LIKE ?)'
@@ -93,25 +93,25 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             params.push(likePattern, likePattern)
             countParams.push(likePattern, likePattern)
         }
-        
+
         // 过滤已过期的图片
         query += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
         countQuery += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
-        
+
         // 排序和分页
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
         params.push(data.limit + 1, offset)  // 多查一条用于判断是否还有更多
-        
+
         // 执行查询
         const [result, countResult] = await Promise.all([
             c.env.DB.prepare(query).bind(...params).all(),
             c.env.DB.prepare(countQuery).bind(...countParams).first<{ total: number }>()
         ])
-        
+
         const images = (result.results || []) as unknown as DbImage[]
         const hasMore = images.length > data.limit
         const limitedImages = images.slice(0, data.limit)
-        
+
         // 转换为 ImgItem 格式
         const urls: ImgItem[] = limitedImages.map((img: DbImage) => ({
             url: `${c.env.BASE_URL}/rest/${img.key}`,
@@ -121,7 +121,7 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             uploadedBy: img.user_login,
             uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined
         }))
-        
+
         // 获取子文件夹列表（如果不是搜索模式）
         let prefixes: string[] = []
         if (!keyword) {
@@ -132,17 +132,17 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
                 : `SELECT DISTINCT folder FROM images 
                    WHERE user_login = ? AND folder LIKE ? AND folder != ? AND folder IS NOT NULL
                    AND (expires_at IS NULL OR expires_at > datetime('now'))`
-            
+
             const folderParams = viewAll
                 ? [`${folder}%`, folder]
                 : [user!.login, `${folder}%`, folder]
-            
+
             const folderResult = await c.env.DB.prepare(folderQuery).bind(...folderParams).all()
-            
+
             // 提取直接子文件夹
             const subFolders = new Set<string>()
             const currentDepth = folder ? folder.split('/').filter(Boolean).length : 0
-            
+
             for (const row of (folderResult.results || []) as { folder: string }[]) {
                 const parts = row.folder.split('/').filter(Boolean)
                 if (parts.length > currentDepth) {
@@ -153,10 +153,10 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             }
             prefixes = Array.from(subFolders).sort()
         }
-        
+
         // 计算下一页的 cursor
         const nextCursor = hasMore ? String(offset + data.limit) : undefined
-        
+
         return c.json(Ok(<ImgList>{
             list: urls,
             next: hasMore,
@@ -231,11 +231,11 @@ async function deleteImageFromDb(db: D1Database, key: string): Promise<void> {
         // 获取图片信息用于更新用户统计
         const image = await db.prepare('SELECT user_login, size FROM images WHERE key = ?')
             .bind(key).first<{ user_login: string, size: number }>()
-        
+
         if (image) {
             // 删除图片记录
             await db.prepare('DELETE FROM images WHERE key = ?').bind(key).run()
-            
+
             // 更新用户存储统计
             await db.prepare(
                 'UPDATE users SET storage_used = MAX(0, storage_used - ?) WHERE login = ?'
@@ -271,14 +271,14 @@ imageRoutes.delete("/", auth, async (c) => {
     }
     const arr = keys.split(',')
     const user = c.get('user') as User | undefined
-    
+
     try {
         for (let it of arr) {
             if (it && it.length) {
                 await c.env.PICX.delete(it)
                 // 同步删除 D1 记录
                 c.executionCtx.waitUntil(deleteImageFromDb(c.env.DB, it))
-                
+
                 // 记录审计日志
                 if (user) {
                     c.executionCtx.waitUntil(
@@ -286,7 +286,7 @@ imageRoutes.delete("/", auth, async (c) => {
                             `INSERT INTO audit_logs (user_id, user_login, action, target_key) 
                              VALUES (?, ?, 'delete', ?)`
                         ).bind(user.id, user.login, it).run()
-                        .catch(e => console.error('Failed to log delete:', e))
+                            .catch(e => console.error('Failed to log delete:', e))
                     )
                 }
             }
@@ -341,8 +341,25 @@ imageRoutes.post('/delImage/:token', async (c) => {
 })
 
 // image detail - catch-all for image keys
+// 注意：这是一个通配符路由，会匹配所有 GET 请求
+// 需要排除被其他路由模块处理的路径
+
+// 系统保留的路径前缀，这些路径不应该被当作图片处理
+const RESERVED_PREFIXES = ['user', 'admin', 'github', 'share', 'folder', 'list', 'upload', 'rename', 'del', 'delInfo', 'delImage', 'checkToken']
+
+function isReservedPath(id: string): boolean {
+    const firstSegment = id.split('/')[0]
+    return RESERVED_PREFIXES.includes(firstSegment)
+}
+
 imageRoutes.get("/:id{.+}", async (c) => {
     let id = c.req.param('id')
+
+    // 跳过系统保留路径，让其他路由处理
+    if (isReservedPath(id)) {
+        // 使用 Hono 的方式跳过这个路由
+        return c.text('Not Found', 404)
+    }
     const range = parseRange(c.req.header('range') || null)
     const object = await c.env.PICX.get(id, {
         range,
@@ -371,13 +388,13 @@ imageRoutes.get("/:id{.+}", async (c) => {
             const cf = (c.req.raw as any).cf
             const country = cf?.country || null
             const city = cf?.city || null
-            
+
             // 插入访问记录
             await c.env.DB.prepare(
                 `INSERT INTO image_stats (image_key, referer, user_agent, country, city) 
                  VALUES (?, ?, ?, ?, ?)`
             ).bind(id, referer, userAgent, country, city).run()
-            
+
             // 更新图片访问计数
             await c.env.DB.prepare(
                 'UPDATE images SET view_count = view_count + 1 WHERE key = ?'

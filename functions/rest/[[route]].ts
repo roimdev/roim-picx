@@ -10,15 +10,21 @@ import imageRoutes from './routes/images'
 import folderRoutes from './routes/folders'
 import shareRoutes from './routes/share'
 import adminRoutes from './routes/admin'
+// 导入 user 路由的处理函数
+import { userMeHandler, userMeStatsHandler } from './routes/user'
 
 const app = new Hono<AppEnv>().basePath('/rest')
+
+// 注册明确的 user 路由（必须在 imageRoutes 的通配符路由之前）
+app.get('/user/me', userMeHandler)
+app.get('/user/me/stats', userMeStatsHandler)
 
 // Register route modules
 app.route('/', authRoutes)
 app.route('/', uploadRoutes)
 app.route('/', folderRoutes)
 app.route('/', shareRoutes)
-app.route('/', adminRoutes)  // 管理员和用户接口
+app.route('/admin', adminRoutes)  // 管理员和用户接口
 app.route('/', imageRoutes) // Must be last due to catch-all route
 
 // Error handling
