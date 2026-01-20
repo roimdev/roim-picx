@@ -66,3 +66,42 @@ export const requestRenameImage = (data: { oldKey: string, newKey: string }): Pr
 export const requestDelInfo = (token: string): Promise<ImgItem> => request.get(`/rest/delInfo/${token}`)
 export const requestPublicDeleteImage = (token: string): Promise<any> => request.post(`/rest/delImage/${token}`)
 export const requestGithubLogin = (code: string): Promise<string> => request.post('/rest/github/login', { code })
+
+// Share API
+export interface CreateShareRequest {
+	imageKey: string
+	imageUrl: string
+	password?: string
+	expireAt?: number
+	maxViews?: number
+}
+
+export interface ShareInfo {
+	id: string
+	url: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+}
+
+export interface ShareDetail {
+	id: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	views: number
+	createdAt: number
+}
+
+export interface ShareImageResult {
+	imageUrl: string
+	imageKey: string
+	views: number
+	maxViews?: number
+}
+
+export const requestCreateShare = (data: CreateShareRequest): Promise<ShareInfo> => request.post('/rest/share', data)
+export const requestGetShareInfo = (id: string): Promise<ShareDetail> => request.get(`/rest/share/${id}`)
+export const requestVerifyShare = (id: string, password?: string): Promise<ShareImageResult> => request.post(`/rest/share/${id}/verify`, { password })
+export const requestDeleteShare = (id: string): Promise<any> => request.delete(`/rest/share/${id}`)
+

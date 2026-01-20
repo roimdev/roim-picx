@@ -20,6 +20,11 @@ const router = createRouter({
 			component: () => import('../views/DeleteImage.vue')
 		},
 		{
+			path: '/s/:id',
+			component: () => import('../views/ShareView.vue'),
+			meta: { public: true }
+		},
+		{
 			path: '/:path(.*)',
 			redirect: '/'
 		}
