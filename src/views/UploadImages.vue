@@ -1,127 +1,176 @@
 <template>
-	<div class="mx-auto max-w-5xl my-8 px-2 sm:px-6">
-		<div class="flex items-center justify-between mb-6">
-			<div>
-				<h1 class="text-2xl font-bold text-gray-900">上传图片</h1>
-				<p class="mt-1 text-sm text-gray-500">
-					支持拖拽、粘贴或点击上传，单张限制 {{ formatBytes(imageSizeLimit) }}
-				</p>
-			</div>
-		</div>
+    <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
+        <loading-overlay :loading="loading" />
 
-		<div class="border-2 border-dashed rounded-2xl relative transition-all duration-300 min-h-[300px] flex flex-col"
-			:class="[
-				convertedImages.length > 0 ? 'border-indigo-200 bg-white' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/30 bg-gray-50'
-			]">
-			<loading-overlay :loading="loading" />
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">上传图片</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    支持拖拽、粘贴或点击上传，单张限制 {{ formatBytes(imageSizeLimit) }}
+                </p>
+            </div>
+        </div>
 
-			<div class="flex-1 p-6" @drop.prevent="onFileDrop" @dragover.prevent
-				@click="convertedImages.length === 0 ? input?.click() : null">
-				<div v-if="convertedImages.length === 0"
-					class="w-full h-full min-h-[250px] flex flex-col items-center justify-center text-gray-400 cursor-pointer">
-					<div class="p-4 rounded-full bg-white shadow-sm mb-4">
-						<font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl text-indigo-500" />
-					</div>
-					<p class="text-lg font-medium text-gray-700">点击或拖动图片至此处</p>
-					<p class="text-sm text-gray-400 mt-2">支持 Ctrl + V 粘贴</p>
-				</div>
+        <!-- Path and Options -->
+        <div class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">储存目录</label>
+                    <div class="relative group">
+                        <font-awesome-icon :icon="faFolder" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
+                        <el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
+                            placeholder="默认根目录 (例如: wallpaper/)" class="!w-full custom-autocomplete" :trigger-on-focus="true" clearable>
+                            <template #default="{ item }">
+                                <div class="flex items-center gap-2">
+                                    <font-awesome-icon :icon="faFolder" class="text-amber-500" />
+                                    <span>{{ item.value }}</span>
+                                </div>
+                            </template>
+                        </el-autocomplete>
+                    </div>
+                    <p class="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
+                        可以使用 "/" 分隔多级目录，例如: <code class="text-indigo-600 dark:text-indigo-400">2024/travel/</code>
+                    </p>
+                </div>
 
-				<transition-group name="el-fade-in-linear" tag="div"
-					class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" v-else>
-					<div v-for="item in convertedImages" :key="item.tmpSrc" class="relative group">
-						<image-box :src="item.tmpSrc" :size="item.file.size" :name="item.file.name"
-							@delete="removeImage(item.tmpSrc)" mode="converted"
-							class="w-full h-full shadow-sm rounded-xl overflow-hidden group-hover:shadow-md transition-shadow" />
-					</div>
-				</transition-group>
-			</div>
-		</div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">文件命名</label>
+                    <div class="flex items-center h-[46px]">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" v-model="keepName" class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">使用原文件名</span>
+                        </label>
+                    </div>
+                </div>
 
-		<!-- Custom Path Input -->
-		<div class="mt-4 flex flex-col sm:flex-row gap-3">
-			<el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
-				placeholder="自定义路径 (可选，例如: 2023/travel)" class="flex-1" :trigger-on-focus="true" clearable>
-				<template #default="{ item }">
-					<div class="flex items-center gap-2">
-						<font-awesome-icon :icon="faFolder" class="text-amber-500" />
-						<span>{{ item.value }}</span>
-					</div>
-				</template>
-			</el-autocomplete>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">过期销毁</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" v-model="enableExpiry" class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">开启过期自动删除</span>
+                        </label>
+                        <transition name="el-fade-in">
+                            <div v-if="enableExpiry" class="relative group">
+                                <font-awesome-icon :icon="faClock" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
+                                <el-date-picker 
+                                    v-model="expireTime" 
+                                    type="datetime" 
+                                    placeholder="选择过期时间"
+                                    format="YYYY-MM-DD HH:mm:ss" 
+                                    :disabled-date="disabledDate" 
+                                    class="!w-full custom-date-picker"
+                                />
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Dropzone Area -->
+                <div class="relative group">
+                    <div
+                        class="border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 cursor-pointer min-h-[340px] flex flex-col items-center justify-center bg-white dark:bg-gray-800"
+                        :class="isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                        @drop.prevent="onFileDrop"
+                        @dragover.prevent="isDragging = true"
+                        @dragleave.prevent="isDragging = false"
+                        @click="convertedImages.length === 0 ? input?.click() : null">
+                        <input type="file" ref="input" multiple accept="image/*" class="hidden" @change="onInputChange" />
 
-			<div class="flex gap-3">
-				<div class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-10">
-					<el-checkbox v-model="keepName" label="保留原名" size="large" class="!mr-0" />
-				</div>
+                        <template v-if="convertedImages.length === 0">
+                            <div class="w-20 h-20 mb-6 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl" />
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">点击或拖拽图片到这里</h2>
+                            <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
+                                支持单张或多张图片上传，最大支持 20MB，支持 JPG, PNG, GIF, WEBP, SVG 等格式
+                            </p>
+                        </template>
+                        <template v-else>
+                            <transition-group name="el-fade-in-linear" tag="div"
+                                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
+                                <div v-for="item in convertedImages" :key="item.tmpSrc" class="relative group/item">
+                                    <image-box :src="item.tmpSrc" :size="item.file.size" :name="item.file.name"
+                                        @delete="removeImage(item.tmpSrc)" mode="converted"
+                                        class="w-full h-full shadow-sm rounded-xl overflow-hidden group-hover/item:shadow-md transition-shadow" />
+                                </div>
+                            </transition-group>
+                        </template>
+                    </div>
+                </div>
 
-				<div class="bg-white px-4 rounded-lg border border-gray-200 flex items-center shrink-0 h-10">
-					<el-checkbox v-model="enableExpiry" label="过期销毁" size="large" class="!mr-0" />
-				</div>
-			</div>
-		</div>
+                <!-- Result Area -->
+                <div v-if="imgResultList.length > 0" class="mt-12 space-y-4">
+                    <div class="flex items-center justify-between px-2">
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            <font-awesome-icon :icon="faCheckSquare" class="text-green-500" />
+                            上传结果
+                        </h3>
+                        <button
+                            @click="imgResultList = []"
+                            class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                            清除全部
+                        </button>
+                    </div>
+                    <result-list :image-list="imgResultList" />
+                </div>
+            </div>
 
-		<!-- Expiration Date Picker -->
-		<div v-if="enableExpiry" class="mt-3">
-			<el-date-picker v-model="expireTime" type="datetime" placeholder="选择过期时间" format="YYYY-MM-DD HH:mm:ss"
-				:disabled-date="disabledDate" class="!w-full sm:!w-[300px]" size="large" />
-			<p class="mt-1 text-xs text-amber-500">
-				* 过期后图片将无法访问并会被自动删除
-			</p>
-		</div>
+            <!-- Side Actions -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-24 space-y-6">
+                    <div v-if="convertedImages.length > 0" class="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl p-5 border border-indigo-100 dark:border-indigo-900/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">待上传信息</h3>
+                            <span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
+                                {{ convertedImages.length }} 张
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 space-y-2 mb-6">
+                            <div class="flex justify-between">
+                                <span>总大小</span>
+                                <span class="font-bold text-gray-900 dark:text-gray-100">{{ formatBytes(imagesTotalSize) }}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <button
+                                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50"
+                                :disabled="loading" @click="uploadImages">
+                                <font-awesome-icon :icon="faUpload" v-if="!loading" />
+                                <font-awesome-icon :icon="faSpinner" spin v-else />
+                                立即上传
+                            </button>
+                            <button
+                                class="w-full py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl font-medium transition-all"
+                                @click="clearInput">
+                                清空选择
+                            </button>
+                        </div>
+                    </div>
 
-		<!-- Action Bar -->
-		<div
-			class="mt-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 sticky bottom-4 z-40 backdrop-blur-xl bg-white/90">
-			<div class="flex items-center gap-4 w-full md:w-auto">
-				<button
-					class="w-full md:w-auto px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-					:disabled="loading" @click="input?.click()">
-					<font-awesome-icon :icon="faImages" />
-					<span>选择图片</span>
-				</button>
-
-				<div class="text-sm text-gray-600 hidden md:block" v-if="convertedImages.length > 0">
-					已选 <span class="font-bold text-indigo-600">{{ convertedImages.length }}</span> 张，
-					共 <span class="font-bold text-gray-800">{{ formatBytes(imagesTotalSize) }}</span>
-				</div>
-			</div>
-
-			<!-- Mobile Stats -->
-			<div class="text-sm text-gray-600 md:hidden w-full text-center" v-if="convertedImages.length > 0">
-				已选 <span class="font-bold text-indigo-600">{{ convertedImages.length }}</span> 张，
-				共 <span class="font-bold text-gray-800">{{ formatBytes(imagesTotalSize) }}</span>
-			</div>
-
-			<div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto justify-end">
-				<button v-if="convertedImages.length > 0"
-					class="w-full md:w-auto px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center justify-center gap-2 order-2 md:order-1"
-					:disabled="loading" @click="clearInput">
-					<font-awesome-icon :icon="faTrashAlt" />
-					<span>清除全部</span>
-				</button>
-
-				<button
-					class="w-full md:w-auto min-w-[120px] px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed order-1 md:order-2"
-					:disabled="convertedImages.length === 0 || loading" @click="uploadImages">
-					<span v-if="loading"
-						class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-					<font-awesome-icon v-else :icon="faUpload" />
-					<span>开始上传</span>
-				</button>
-			</div>
-		</div>
-
-		<result-list v-show="imgResultList && imgResultList.length" :image-list="imgResultList" ref="resultList"
-			class="mt-8" />
-	</div>
-
-	<input ref="input" type="file" accept="image/*" class="hidden" multiple @change="onInputChange" />
+                    <div v-else class="bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center text-gray-400">
+                        <font-awesome-icon :icon="faImages" class="text-3xl mb-3 opacity-20" />
+                        <p class="text-xs">暂无待上传图片</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { faImages, faTrashAlt, faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faUpload, faCloudUploadAlt, faFolder } from '@fortawesome/free-solid-svg-icons'
+import { faImages, faTrashAlt, faCopy, faCheckSquare } from '@fortawesome/free-regular-svg-icons'
+import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
@@ -133,6 +182,7 @@ import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 
+const isDragging = ref(false)
 const convertedImages = ref<ConvertedImage[]>([])
 const imgResultList = ref<ImgItem[]>([])
 const imagesTotalSize = computed(() =>
@@ -283,6 +333,54 @@ const uploadImages = () => {
 }
 </script>
 
-<style>
-/* No custom style needed, Tailwind handles it */
+<style scoped>
+.custom-date-picker :deep(.el-input__wrapper) {
+  padding-left: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  transition: all 0.2s;
+}
+
+.dark .custom-date-picker :deep(.el-input__wrapper) {
+  border-color: #374151;
+  background-color: #111827;
+}
+
+.custom-date-picker :deep(.el-input__wrapper:hover) {
+  border-color: #d1d5db;
+}
+
+.dark .custom-date-picker :deep(.el-input__wrapper:hover) {
+  border-color: #4b5563;
+}
+
+.custom-date-picker :deep(.el-input__wrapper.is-focus) {
+  border-color: #6366f1;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.dark .custom-date-picker :deep(.el-input__wrapper.is-focus) {
+  border-color: #818cf8;
+  background-color: #1f2937;
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.1);
+}
+
+.custom-date-picker :deep(.el-input__inner) {
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+.dark .custom-date-picker :deep(.el-input__inner) {
+  color: #f3f4f6;
+}
+
+.custom-date-picker :deep(.el-input__inner::placeholder) {
+  color: #9ca3af;
+}
+
+.dark .custom-date-picker :deep(.el-input__inner::placeholder) {
+  color: #6b7280;
+}
 </style>

@@ -1,9 +1,23 @@
 @import "tailwindcss";
+@import 'element-plus/theme-chalk/dark/css-vars.css';
+@config "../tailwind.config.js";
+
+:root {
+  --el-color-primary: #4f46e5;
+}
+
+.dark {
+  color-scheme: dark;
+}
 
 body {
-	@apply scroll-smooth text-base bg-slate-50 select-none overflow-x-hidden text-slate-800;
+  @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+}
+
+.dark body {
+  @apply bg-gray-950 text-gray-100;
 }
 
 .area-disabled {
-	@apply !opacity-60 active:!pointer-events-none !cursor-not-allowed;
+  @apply opacity-60 pointer-events-none cursor-not-allowed;
 }

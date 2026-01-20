@@ -415,7 +415,7 @@ app.get("/:id{.+}", async (c) => {
     const range = parseRange(c.req.header('range') || null)
     const object = await c.env.PICX.get(id, {
         range,
-        onlyIf: c.req.raw.headers,
+        onlyIf: c.req.raw.headers as any,
     })
     if (object == null) {
         return c.json(Fail("object not found"))
@@ -437,8 +437,8 @@ app.get("/:id{.+}", async (c) => {
     if (range) {
         headers.set("content-range", `bytes ${range.offset}-${range.end}/${object.size}`)
     }
-    const status = object.body ? (range ? 206 : 200) : 304
-    return new Response(object.body, {
+    const status = (object as any).body ? (range ? 206 : 200) : 304
+    return new Response((object as any).body, {
         headers,
         status
     })

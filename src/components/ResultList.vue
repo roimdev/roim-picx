@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
     <el-tabs v-model="activeName" class="custom-tabs" @tab-click="handleClick" type="border-card">
       <el-tab-pane label="预览" name="first">
-        <div class="p-4">
+        <div class="p-4 bg-white dark:bg-gray-800">
           <image-item :image-list="imageList" ref="imageItem" />
         </div>
       </el-tab-pane>
@@ -10,12 +10,12 @@
       <el-tab-pane v-for="tab in availableTabs" :key="tab.name" :label="tab.label" :name="tab.name">
         <div class="relative group">
           <div
-            class="text-sm font-mono text-gray-700 p-4 bg-gray-50 border border-gray-100 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]">
+            class="text-sm font-mono text-gray-700 dark:text-gray-300 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]">
             {{ getTabContent(tab.name) }}
           </div>
           <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              class="bg-white hover:bg-indigo-50 text-gray-600 hover:text-indigo-600 border border-gray-200 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
+              class="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
               @click="copyText(getTabContent(tab.name))">
               <font-awesome-icon :icon="faCopy" />
               <span>复制</span>
@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElCard, ElImage, ElMessage, ElTabs, ElTabPane } from 'element-plus'
+import { ElMessage, ElTabs, ElTabPane } from 'element-plus'
 import { ref, computed } from 'vue'
 import type { TabsPaneContext } from 'element-plus'
 import ImageItem from '../components/ImageItem.vue'
@@ -130,11 +130,25 @@ function handleClick(tab: TabsPaneContext, event: Event) {
 :deep(.el-tabs--border-card) {
   border: none;
   box-shadow: none;
+  background-color: transparent;
 }
 
 :deep(.el-tabs--border-card > .el-tabs__header) {
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.dark :deep(.el-tabs--border-card > .el-tabs__header) {
+  background-color: #111827;
+  border-bottom: 1px solid #374151;
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item) {
+    color: #6b7280;
+}
+
+.dark :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item) {
+    color: #9ca3af;
 }
 
 :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
@@ -145,8 +159,17 @@ function handleClick(tab: TabsPaneContext, event: Event) {
   font-weight: 600;
 }
 
+.dark :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
+  background-color: #1f2937;
+  border-right-color: #374151;
+  border-left-color: #374151;
+  border-bottom-color: #1f2937;
+  color: #818cf8;
+}
+
 :deep(.el-tabs--border-card > .el-tabs__content) {
   padding: 24px;
+  background-color: transparent;
 }
 
 @media (max-width: 768px) {
