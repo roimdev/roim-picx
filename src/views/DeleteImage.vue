@@ -1,121 +1,154 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden transition-colors duration-300">
-    <!-- Background Decor -->
-    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-      <div
-        class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-200/30 dark:bg-indigo-900/10 blur-3xl animate-pulse-slow">
-      </div>
-      <div
-        class="absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full bg-purple-200/30 dark:bg-purple-900/10 blur-3xl animate-pulse-slow delay-1000">
-      </div>
-    </div>
+    <div class="mx-auto max-w-4xl my-8 px-4 sm:px-6 relative min-h-[70vh]">
+        <loading-overlay :loading="loading" />
 
-    <div
-      class="max-w-md w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 dark:border-gray-700 relative z-10 transition-all duration-300 hover:shadow-2xl">
-      <div class="p-8 sm:p-10">
-
-        <!-- Loading State -->
-        <div v-if="loading" class="flex flex-col items-center justify-center py-10 space-y-6">
-          <div class="relative w-16 h-16">
-            <div class="absolute inset-0 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30"></div>
-            <div class="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin">
+        <!-- Header with gradient accent -->
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/30 mb-4">
+                <font-awesome-icon :icon="faTrashAlt" class="text-2xl" />
             </div>
-          </div>
-          <p class="text-gray-500 dark:text-gray-400 font-medium animate-pulse">正在验证图片信息...</p>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-100 dark:via-gray-200 dark:to-gray-100 bg-clip-text text-transparent">
+                删除图片
+            </h1>
+            <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                请确认您要删除的图片信息，此操作不可撤销
+            </p>
         </div>
 
-        <!-- Error State -->
-        <div v-else-if="error" class="text-center space-y-6 py-6">
-          <div class="mx-auto flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 mb-6">
-            <font-awesome-icon :icon="faExclamationTriangle" class="text-3xl" />
-          </div>
-          <div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">链接无效或已过期</h2>
-            <p class="text-gray-500 dark:text-gray-400 leading-relaxed">{{ error }}</p>
-          </div>
-          <button @click="goHome"
-            class="w-full mt-4 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
-            返回首页
-          </button>
-        </div>
+        <!-- Main Card with glassmorphism -->
+        <div class="relative">
+            <!-- Decorative background blobs -->
+            <div class="absolute -top-20 -left-20 w-40 h-40 bg-red-200 dark:bg-red-900/20 rounded-full blur-3xl opacity-50"></div>
+            <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-rose-200 dark:bg-rose-900/20 rounded-full blur-3xl opacity-50"></div>
+            
+            <div class="relative backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-none border border-white/50 dark:border-gray-700/50 overflow-hidden">
+                
+                <!-- Error State -->
+                <div v-if="error" class="text-center py-16 px-8">
+                    <div class="relative inline-block mb-6">
+                        <div class="absolute inset-0 bg-red-500/20 rounded-full blur-xl animate-pulse"></div>
+                        <div class="relative w-24 h-24 rounded-full bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-800/20 flex items-center justify-center">
+                            <font-awesome-icon :icon="faExclamationTriangle" class="text-4xl text-red-500 dark:text-red-400" />
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">链接无效或已过期</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto">{{ error }}</p>
+                    <button @click="goHome"
+                        class="inline-flex items-center gap-2 px-8 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg">
+                        <font-awesome-icon :icon="faHome" />
+                        返回首页
+                    </button>
+                </div>
 
-        <!-- Success State -->
-        <div v-else-if="deleted" class="text-center space-y-6 py-8">
-          <div
-            class="mx-auto flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400 mb-6 animate-bounce-small">
-            <font-awesome-icon :icon="faCheckCircle" class="text-4xl" />
-          </div>
-          <div>
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">删除成功</h2>
-            <p class="text-gray-500 dark:text-gray-400">该图片已被永久移除，链接已失效。</p>
-          </div>
-          <div class="pt-4">
-            <button @click="goHome"
-              class="w-full inline-flex items-center justify-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/20 dark:shadow-none transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
-              返回首页
-            </button>
-          </div>
-        </div>
+                <!-- Success State -->
+                <div v-else-if="deleted" class="text-center py-16 px-8">
+                    <div class="relative inline-block mb-6">
+                        <div class="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse"></div>
+                        <div class="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20 flex items-center justify-center animate-bounce-gentle">
+                            <font-awesome-icon :icon="faCheckCircle" class="text-5xl text-emerald-500 dark:text-emerald-400" />
+                        </div>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">删除成功</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8">该图片已被永久移除，相关链接已失效</p>
+                    <button @click="goHome"
+                        class="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <font-awesome-icon :icon="faHome" />
+                        返回首页
+                    </button>
+                </div>
 
-        <!-- Confirmation State -->
-        <div v-else-if="imageInfo" class="space-y-8">
-          <div class="text-center">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">确认删除此图片？</h2>
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">此操作不可撤销，请仔细核对。</p>
-          </div>
+                <!-- Confirmation State -->
+                <div v-else-if="imageInfo" class="p-8">
+                    <!-- Warning Banner -->
+                    <div class="mb-8 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200/50 dark:border-amber-700/30">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center">
+                                <font-awesome-icon :icon="faExclamationTriangle" class="text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-amber-800 dark:text-amber-300">确认删除此图片？</h3>
+                                <p class="text-sm text-amber-700/80 dark:text-amber-400/80 mt-0.5">删除后将无法恢复，请仔细核对图片信息</p>
+                            </div>
+                        </div>
+                    </div>
 
-          <div class="relative group rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div class="aspect-w-16 aspect-h-9 w-full h-56 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-              <el-image :src="imageInfo.url" fit="cover"
-                class="w-full h-full transition-transform duration-500 group-hover:scale-105"
-                referrer-policy="no-referrer" :preview-src-list="[imageInfo.url]">
-                <template #placeholder>
-                  <div class="flex items-center justify-center h-full text-gray-300 dark:text-gray-600">
-                    <font-awesome-icon :icon="faImage" class="text-3xl animate-pulse" />
-                  </div>
-                </template>
-                <template #error>
-                  <div class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                    <font-awesome-icon :icon="faImage" class="text-3xl mb-2 opacity-50" />
-                    <span class="text-xs">预览加载失败</span>
-                  </div>
-                </template>
-              </el-image>
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <!-- Image Preview -->
+                        <div class="lg:col-span-3">
+                            <div class="relative group rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200/50 dark:border-gray-700/50 shadow-inner">
+                                <div class="aspect-video">
+                                    <el-image :src="imageInfo.url" fit="contain"
+                                        class="w-full h-full transition-transform duration-500 group-hover:scale-[1.02]"
+                                        referrer-policy="no-referrer"
+                                        :preview-src-list="[imageInfo.url]"
+                                        :preview-teleported="true"
+                                        :z-index="9999">
+                                        <template #placeholder>
+                                            <div class="flex items-center justify-center h-full">
+                                                <div class="w-12 h-12 rounded-full border-4 border-gray-200 border-t-indigo-500 animate-spin"></div>
+                                            </div>
+                                        </template>
+                                        <template #error>
+                                            <div class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+                                                <font-awesome-icon :icon="faImage" class="text-4xl mb-2 opacity-30" />
+                                                <span class="text-sm">预览加载失败</span>
+                                            </div>
+                                        </template>
+                                    </el-image>
+                                </div>
+                                <!-- Hover overlay -->
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors pointer-events-none"></div>
+                            </div>
+                        </div>
+
+                        <!-- File Info & Actions -->
+                        <div class="lg:col-span-2 flex flex-col">
+                            <div class="flex-1 space-y-6">
+                                <!-- File Name -->
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                    <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                                        <font-awesome-icon :icon="faFile" />
+                                        文件名
+                                    </div>
+                                    <p class="text-base font-bold text-gray-900 dark:text-gray-100 break-all leading-relaxed">{{ imageInfo.key }}</p>
+                                </div>
+                                
+                                <!-- File Size -->
+                                <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                    <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                                        <font-awesome-icon :icon="faDatabase" />
+                                        文件大小
+                                    </div>
+                                    <span class="inline-flex items-center px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-mono font-bold">
+                                        {{ formatBytes(imageInfo.size) }}
+                                    </span>
+                                </div>
+                            </div>
+                        
+                            <!-- Action Buttons -->
+                            <div class="flex flex-col gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700/50">
+                                <button @click="confirmDelete" :disabled="deleting"
+                                    class="w-full relative overflow-hidden group/btn flex justify-center items-center gap-2 py-4 px-6 rounded-xl text-base font-bold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0">
+                                    <span v-if="deleting" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    <font-awesome-icon v-else :icon="faTrashAlt" />
+                                    <span>{{ deleting ? '正在删除...' : '确认永久删除' }}</span>
+                                </button>
+                                <button @click="goHome" :disabled="deleting"
+                                    class="w-full flex justify-center items-center gap-2 py-3.5 px-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-base font-semibold text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200">
+                                    取消
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="px-5 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-700">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[180px]" :title="imageInfo.key">{{ imageInfo.key
-                }}</span>
-                <span class="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">{{
-                  formatBytes(imageInfo.size)
-                }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-3 pt-2">
-            <button @click="confirmDelete" :disabled="deleting"
-              class="w-full relative overflow-hidden group flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-red-500/20 dark:shadow-none text-base font-bold text-white bg-red-500 hover:bg-red-600 focus:outline-none transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]">
-              <span class="relative z-10 flex items-center justify-center gap-2">
-                <span v-if="deleting"
-                  class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <font-awesome-icon v-else :icon="faTrashAlt" />
-                <span>{{ deleting ? '正在删除...' : '确认永久删除' }}</span>
-              </span>
-            </button>
-            <button @click="goHome" :disabled="deleting"
-              class="w-full flex justify-center py-3.5 px-4 border border-gray-200 dark:border-gray-700 rounded-xl text-base font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200 focus:outline-none transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600">
-              取消
-            </button>
-          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="mt-8 text-center relative z-10">
-      <p class="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide">SECURE DELETE ACTION</p>
+        <!-- Footer hint -->
+        <div class="mt-8 text-center">
+            <p class="text-xs text-gray-400 dark:text-gray-600 font-medium tracking-widest uppercase">Secure Delete Action</p>
+        </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -123,10 +156,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { requestDelInfo, requestPublicDeleteImage } from '../utils/request'
 import formatBytes from '../utils/format-bytes'
-import { faExclamationTriangle, faCheckCircle, faTrashAlt, faImage } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faExclamationTriangle, faCheckCircle, faTrashAlt, faImage, faHome, faFile, faDatabase } from '@fortawesome/free-solid-svg-icons'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 import type { ImgItem } from '../utils/types'
 import { ElImage } from 'element-plus'
+
 const route = useRoute()
 const router = useRouter()
 const token = route.params.token as string
@@ -138,76 +172,55 @@ const error = ref('')
 const imageInfo = ref<ImgItem | null>(null)
 
 const fetchInfo = async () => {
-  try {
-    loading.value = true
-    error.value = ''
-    const data = await requestDelInfo(token)
-    imageInfo.value = data
-  } catch (err: any) {
-    error.value = err.message || '获取图片信息失败'
-  } finally {
-    loading.value = false
-  }
+    try {
+        loading.value = true
+        error.value = ''
+        const data = await requestDelInfo(token)
+        imageInfo.value = data
+    } catch (err: any) {
+        error.value = err.message || '获取图片信息失败'
+    } finally {
+        loading.value = false
+    }
 }
 
 const confirmDelete = async () => {
-  try {
-    deleting.value = true
-    await requestPublicDeleteImage(token)
-    deleted.value = true
-  } catch (err: any) {
-    error.value = err.message || '删除失败'
-  } finally {
-    deleting.value = false
-  }
+    try {
+        deleting.value = true
+        await requestPublicDeleteImage(token)
+        deleted.value = true
+    } catch (err: any) {
+        error.value = err.message || '删除失败'
+    } finally {
+        deleting.value = false
+    }
 }
 
 const goHome = () => {
-  router.push('/')
+    router.push('/')
 }
 
 onMounted(() => {
-  if (!token) {
-    error.value = '无效的删除链接'
-    loading.value = false
-    return
-  }
-  fetchInfo()
+    if (!token) {
+        error.value = '无效的删除链接'
+        loading.value = false
+        return
+    }
+    fetchInfo()
 })
 </script>
 
 <style scoped>
-@keyframes pulse-slow {
-
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.05);
-  }
+@keyframes bounce-gentle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes bounce-small {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animate-bounce-small {
-  animation: bounce-small 2s infinite;
+.animate-bounce-gentle {
+    animation: bounce-gentle 2s ease-in-out infinite;
 }
 </style>
