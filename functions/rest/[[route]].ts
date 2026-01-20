@@ -54,7 +54,7 @@ const auth = async (c: any, next: () => Promise<void>) => {
 
     // 2. Try to verify as JWT
     try {
-        const payload = await verify(token, authKey)
+        const payload = await verify(token, authKey, 'HS256')
         // Store user info in context
         c.set('user', payload as User)
         await next()
@@ -120,7 +120,7 @@ app.post('/github/login', async (c) => {
 
         // Sign Token using System Auth Token as secret
         // We can add exp claim if we want expiration, e.g. exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
-        const token = await sign(userPayload, authKey)
+        const token = await sign(userPayload, authKey, 'HS256')
 
         return c.json(Ok(token))
     } catch (e: any) {
@@ -152,7 +152,7 @@ app.post('/checkToken', async (c) => {
 
     // 2. Check JWT
     try {
-        await verify(token, authKey)
+        await verify(token, authKey, 'HS256')
         return c.json(Ok(true))
     } catch (e) {
         return c.json(Ok(false))
