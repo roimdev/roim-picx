@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { handle } from 'hono/cloudflare-pages'
 import type { R2Bucket, KVNamespace, R2Object, R2ListOptions } from '@cloudflare/workers-types'
-import StatusCode, { Ok, Fail, Build, ImgItem, ImgList, ImgReq, Folder, AuthToken, FailCode, NotAuth } from "./type"
+import StatusCode, { Ok, Fail, Build, ImgItem, ImgList, ImgReq, Folder, AuthToken, FailCode, NotAuth, User } from "./type"
 import { checkFileType, getFileName, parseRange } from './utils'
+import { sign, verify } from 'hono/jwt'
 
 // Bindings types
 type Bindings = {
@@ -15,7 +16,9 @@ type Bindings = {
     GITHUB_OWNER: string
 }
 
-type Variables = {}
+type Variables = {
+    user?: User
+}
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/rest')
 
@@ -27,19 +30,38 @@ const auth = async (c: any, next: () => Promise<void>) => {
         return
     }
     // get user token
-    const token = c.req.header('Authorization')
+    let token = c.req.header('Authorization')
     if (!token) {
         return c.json(NotAuth())
     }
-    // with env equal
+
+    // Fix Bearer prefix if present
+    if (token.startsWith('Bearer ')) {
+        token = token.substring(7)
+    }
+
     const authKey = c.env.PICX_AUTH_TOKEN
     if (!authKey) {
         return c.json(Fail("system not auth setting"))
     }
-    if (authKey !== token) {
+
+    // 1. Check if it's the system Admin Token
+    if (token === authKey) {
+        // Admin access, proceed without specific user info or set as admin
+        await next()
+        return
+    }
+
+    // 2. Try to verify as JWT
+    try {
+        const payload = await verify(token, authKey)
+        // Store user info in context
+        c.set('user', payload as User)
+        await next()
+    } catch (e) {
+        // Both checks failed
         return c.json(FailCode("auth fail", StatusCode.NotAuth))
     }
-    await next()
 }
 
 // GitHub Login
@@ -50,9 +72,10 @@ app.post('/github/login', async (c) => {
     const clientId = c.env.GITHUB_CLIENT_ID
     const clientSecret = c.env.GITHUB_CLIENT_SECRET
     const owner = c.env.GITHUB_OWNER
+    const authKey = c.env.PICX_AUTH_TOKEN
 
-    if (!clientId || !clientSecret) {
-        return c.json(Fail("GitHub auth not configured"))
+    if (!clientId || !clientSecret || !authKey) {
+        return c.json(Fail("GitHub auth or System Token not configured"))
     }
 
     try {
@@ -86,7 +109,19 @@ app.post('/github/login', async (c) => {
             return c.json(FailCode("Unauthorized GitHub User", StatusCode.NotAuth))
         }
 
-        return c.json(Ok(c.env.PICX_AUTH_TOKEN))
+        // Create JWT Payload with User Info
+        const userPayload: User = {
+            id: userData.id,
+            name: userData.name || userData.login,
+            login: userData.login,
+            avatar_url: userData.avatar_url
+        }
+
+        // Sign Token using System Auth Token as secret
+        // We can add exp claim if we want expiration, e.g. exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 // 7 days
+        const token = await sign(userPayload, authKey)
+
+        return c.json(Ok(token))
     } catch (e: any) {
         return c.json(Fail(e.message))
     }
@@ -95,18 +130,32 @@ app.post('/github/login', async (c) => {
 // 检测token是否有效
 app.post('/checkToken', async (c) => {
     const data = await c.req.json<AuthToken>()
-    const token = data.token
+    let token = data.token
     if (!token) {
         return c.json(Ok(false))
     }
+
+    if (token.startsWith('Bearer ')) {
+        token = token.substring(7)
+    }
+
     const authKey = c.env.PICX_AUTH_TOKEN
     if (!authKey) {
         return c.json(Ok(false))
     }
-    if (authKey !== token) {
+
+    // 1. Check Static Token
+    if (authKey === token) {
+        return c.json(Ok(true))
+    }
+
+    // 2. Check JWT
+    try {
+        await verify(token, authKey)
+        return c.json(Ok(true))
+    } catch (e) {
         return c.json(Ok(false))
     }
-    return c.json(Ok(true))
 })
 
 // list image
@@ -178,11 +227,22 @@ app.post('/list', auth, async (c) => {
     const truncated = list.truncated || hasMoreResults
 
     const urls = limitedObjs.map((it: any) => {
+        let uploaderName = it.customMetadata?.uploaderName
+        if (uploaderName) {
+            try {
+                uploaderName = decodeURIComponent(uploaderName)
+            } catch (e) {
+                // ignore error
+            }
+        }
         return <ImgItem>{
             url: `${c.env.BASE_URL}/rest/${it.key}`,
             key: it.key,
             size: it.size,
-            originalName: it.customMetadata?.originalName
+            originalName: it.customMetadata?.originalName,
+            uploaderName: uploaderName,
+            uploadedBy: it.customMetadata?.uploadedBy,
+            uploadedAt: it.uploaded ? new Date(it.uploaded).getTime() : undefined
         }
     })
 
@@ -201,6 +261,9 @@ app.post('/upload', auth, async (c) => {
     let customPath = files.get("path")
     const keepName = files.get("keepName") === 'true'
     const expireAt = files.get("expireAt")
+
+    // Get authenticated user info from context
+    const user = c.get('user') as User | undefined
 
     if (customPath) {
         customPath = customPath.toString()
@@ -268,6 +331,16 @@ app.post('/upload', auth, async (c) => {
         }
         if (expireAt) {
             metadata['expires'] = expireAt.toString()
+        }
+
+        // Securely attach User Info to metadata
+        if (user) {
+            metadata['uploaderId'] = user.id.toString()
+            metadata['uploadedBy'] = user.login
+            // Store full name if available, handle potential unicode
+            if (user.name) {
+                metadata['uploaderName'] = encodeURIComponent(user.name)
+            }
         }
 
         const object = await c.env.PICX.put(fullPath, file.stream(), {

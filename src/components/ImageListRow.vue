@@ -24,6 +24,10 @@
       <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
         <span class="bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-300">{{ formatBytes(size) }}</span>
         <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
+        <span v-if="uploaderName" class="flex items-center gap-1" :title="'上传者: ' + uploaderName">
+            <font-awesome-icon :icon="faUser" class="text-[10px]" />
+            <span class="max-w-[100px] truncate">{{ uploaderName }}</span>
+        </span>
       </div>
     </div>
 
@@ -68,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faImage, faEdit, faEye } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
@@ -81,6 +85,7 @@ const props = defineProps<{
   size: number
   uploadedAt?: number
   originalName?: string
+  uploaderName?: string
 }>()
 
 const emit = defineEmits(['delete', 'copy', 'rename', 'preview'])

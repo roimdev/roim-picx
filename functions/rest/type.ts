@@ -11,6 +11,9 @@ export interface ImgItem {
     filename?: string
     delToken?: string
     originalName?: string
+    uploaderName?: string
+    uploadedBy?: string
+    uploadedAt?: number
 }
 
 export interface ImgList {
@@ -78,4 +81,12 @@ const StatusCode = {
 export interface AuthToken {
     token: string
 }
+
+export interface User {
+    id: number
+    name: string
+    login: string
+    avatar_url: string
+}
+
 export default StatusCode

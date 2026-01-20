@@ -119,6 +119,7 @@
                             @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
                             @preview="showPreview(item.url)" mode="uploaded" :uploaded-at="item.uploadedAt"
                             :original-name="item.originalName"
+                            :uploader-name="item.uploaderName"
                             class="w-full h-full" />
                     </div>
                 </transition-group>
@@ -129,6 +130,7 @@
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
+                        :uploader-name="item.uploaderName"
                         @delete="deleteImage(item.key)"
                         @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
                         @preview="showPreview(item.url)" />

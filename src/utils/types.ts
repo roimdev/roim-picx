@@ -23,6 +23,8 @@ export interface ImgItem {
 	uploadedAt?: number
 	delToken?: string
 	originalName?: string
+	uploaderName?: string
+	uploadedBy?: string
 }
 
 export interface ImgList {
@@ -45,4 +47,11 @@ export interface ImgReq {
 }
 export interface Folder {
 	name: string
+}
+
+export interface User {
+	id: number
+	name: string
+	login: string
+	avatar_url: string
 }

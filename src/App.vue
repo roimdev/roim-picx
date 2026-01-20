@@ -1,3 +1,76 @@
+<script setup lang="ts">
+import { faCog, faUpload, faSignOutAlt, faUserCircle } from '@fortawesome/free-solid-svg-icons'
+import { useRouter, useRoute } from 'vue-router'
+import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import { computed, onMounted, ref, watch } from 'vue'
+import storage from './utils/storage'
+import ThemeToggle from './components/ThemeToggle.vue'
+import { initTheme } from './utils/theme'
+import { parseUserFromToken } from './utils/jwt'
+import type { User } from './utils/types'
+
+const repoLink = 'https://github.com/roimdev'
+const repoName = 'roim-picx'
+const appName = 'PICX'
+
+document.title = appName
+
+const router = useRouter()
+const route = useRoute()
+
+const isDeletePage = computed(() => route.path.startsWith('/delete/'))
+
+const token = ref(storage.local.get('auth-token'))
+const currentUser = ref<User | null>(null)
+
+// Watch token changes (in case of login/logout in other tabs or components updating storage)
+// Note: storage.local.get is not reactive by default, so we might need a custom event or just rely on the fact that App.vue mounts once.
+// But for Login->Home transition, router push happens.
+// Better to check on mount and maybe watch route?
+// Or simply rely on the fact that when we login, we redirect to /, reloading the app state if we force reload or just re-eval computed.
+// Let's make it reactive by checking on route change or using a global state store if we had one.
+// For now, let's update snippet on mount and route change.
+
+const updateUserInfo = () => {
+	const t = storage.local.get('auth-token')
+	token.value = t
+	if (t) {
+		currentUser.value = parseUserFromToken(t)
+	} else {
+		currentUser.value = null
+	}
+}
+
+watch(() => route.path, () => {
+	updateUserInfo()
+})
+
+const navItems = computed(() => {
+	return [
+		{ path: '/up', label: '上传', icon: faUpload },
+		{ path: '/', label: '管理', icon: faCog }
+	]
+})
+
+onMounted(() => {
+	initTheme()
+	updateUserInfo()
+})
+
+const handleNavClick = (item: any) => {
+	router.push(item.path)
+}
+
+const logout = () => {
+	storage.local.remove('auth-token')
+	token.value = ''
+	currentUser.value = null
+	ElMessage.success('已退出登录')
+	router.push('/auth')
+}
+</script>
+
 <template>
 	<el-config-provider :locale="zhCn">
 		<div class="w-full h-screen overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
@@ -14,7 +87,7 @@
 						</div>
 
 						<div class="flex items-center gap-2">
-							<div v-for="item in navItems" :key="item.path || item.label"
+							<div v-for="item in navItems" :key="item.path"
 								class="px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2"
 								:class="[
 									$route.path === item.path
@@ -24,6 +97,26 @@
 								<font-awesome-icon :icon="item.icon" />
 								<span class="hidden sm:inline-block">{{ item.label }}</span>
 							</div>
+
+                            <!-- User Profile / Logout -->
+                            <div v-if="token" class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700 ml-2">
+                                <div class="flex items-center gap-2 group relative cursor-pointer" @click="logout" title="点击退出登录">
+                                    <div class="relative">
+                                        <el-avatar :size="32" :src="currentUser?.avatar_url" class="ring-2 ring-white dark:ring-gray-800 shadow-sm transition-transform group-hover:scale-105">
+                                            <template #default>
+                                                <font-awesome-icon :icon="faUserCircle" class="text-xl text-gray-400" />
+                                            </template>
+                                        </el-avatar>
+                                        <span v-if="!currentUser" class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 rounded-full border-2 border-white dark:border-gray-800" title="Admin Token"></span>
+                                        <span v-else class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" title="GitHub User"></span>
+                                    </div>
+                                    <div class="hidden md:flex flex-col items-start leading-none gap-1">
+                                        <span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{ currentUser?.name || 'Administrator' }}</span>
+                                        <span class="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{{ currentUser ? 'GitHub' : 'System' }}</span>
+                                    </div>
+                                    <div class="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/10 rounded-full md:rounded-lg transition-colors -m-1"></div>
+                                </div>
+                            </div>
 
 							<div class="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
 								<theme-toggle />
@@ -50,54 +143,3 @@
 		</div>
 	</el-config-provider>
 </template>
-
-<script setup lang="ts">
-import { faCog, faUpload, faSignOutAlt } from '@fortawesome/free-solid-svg-icons'
-import { useRouter, useRoute } from 'vue-router'
-import { ElScrollbar, ElConfigProvider, ElMessage } from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { computed, onMounted } from 'vue'
-import storage from './utils/storage'
-import ThemeToggle from './components/ThemeToggle.vue'
-import { initTheme } from './utils/theme'
-
-const repoLink = 'https://github.com/roimdev'
-const repoName = 'roim-picx'
-const appName = 'PICX'
-
-document.title = appName
-
-const router = useRouter()
-const route = useRoute()
-
-const isDeletePage = computed(() => route.path.startsWith('/delete/'))
-
-const hasToken = computed(() => !!storage.local.get('auth-token'))
-
-const navItems = computed(() => {
-	const items = [
-		{ path: '/up', label: '上传', icon: faUpload, action: null },
-		{ path: '/', label: '管理', icon: faCog, action: null }
-	]
-
-	if (hasToken.value) {
-		items.push({ path: '', label: '退出', icon: faSignOutAlt, action: 'logout' })
-	}
-
-	return items
-})
-
-onMounted(() => {
-	initTheme()
-})
-
-const handleNavClick = (item: any) => {
-	if (item.action === 'logout') {
-		storage.local.remove('auth-token')
-		ElMessage.success('已退出登录')
-		router.push('/auth')
-	} else {
-		router.push(item.path)
-	}
-}
-</script>
