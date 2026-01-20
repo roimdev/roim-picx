@@ -22,6 +22,7 @@ export interface ImgList {
     list: Array<ImgItem>
     prefixes?: Array<String>
     canViewAll?: boolean  // 当前用户是否可以查看所有图片
+    total?: number        // 总数量（用于分页显示）
 }
 
 export interface ImgReq {

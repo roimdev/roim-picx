@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { ElNotification as elNotify } from 'element-plus'
-import { ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken } from "./types"
+import { 
+	ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken,
+	AdminUser, UserStats, SystemStats, AuditLog, 
+	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo
+} from "./types"
 import storage from "./storage"
 const request = axios.create({
 	baseURL: import.meta.env.VITE_APP_API_URL || '',
@@ -108,4 +112,62 @@ export const requestCreateShare = (data: CreateShareRequest): Promise<ShareInfo>
 export const requestGetShareInfo = (id: string): Promise<ShareDetail> => request.get(`/rest/share/${id}`)
 export const requestVerifyShare = (id: string, password?: string): Promise<ShareImageResult> => request.post(`/rest/share/${id}/verify`, { password })
 export const requestDeleteShare = (id: string): Promise<any> => request.delete(`/rest/share/${id}`)
+
+// ============================================
+// 当前用户 API
+// ============================================
+export const requestCurrentUser = (): Promise<CurrentUserInfo> => request.get('/rest/user/me')
+export const requestCurrentUserStats = (): Promise<UserStats> => request.get('/rest/user/me/stats')
+
+// ============================================
+// 管理员 API - 用户管理
+// ============================================
+export const requestAdminUsers = (): Promise<AdminUser[]> => request.get('/rest/admin/users')
+export const requestAdminUser = (login: string): Promise<AdminUser> => request.get(`/rest/admin/users/${login}`)
+export const requestAdminUserStats = (login: string): Promise<UserStats> => request.get(`/rest/admin/users/${login}/stats`)
+export const requestSetUserViewAll = (login: string, grant: boolean): Promise<{ login: string; canViewAll: boolean }> => 
+	request.post(`/rest/admin/users/${login}/view-all`, { grant })
+export const requestSetUserRole = (login: string, role: 'admin' | 'user'): Promise<{ login: string; role: string }> => 
+	request.post(`/rest/admin/users/${login}/role`, { role })
+export const requestSetUserQuota = (login: string, quota: number): Promise<{ login: string; storageQuota: number }> => 
+	request.post(`/rest/admin/users/${login}/quota`, { quota })
+
+// ============================================
+// 管理员 API - 系统统计
+// ============================================
+export const requestAdminStats = (): Promise<SystemStats> => request.get('/rest/admin/stats')
+
+// ============================================
+// 管理员 API - 审计日志
+// ============================================
+export interface AuditLogQuery {
+	limit?: number
+	offset?: number
+	action?: string
+	user?: string
+}
+export const requestAuditLogs = (params?: AuditLogQuery): Promise<{ logs: AuditLog[]; hasMore: boolean }> => {
+	const query = new URLSearchParams()
+	if (params?.limit) query.set('limit', String(params.limit))
+	if (params?.offset) query.set('offset', String(params.offset))
+	if (params?.action) query.set('action', params.action)
+	if (params?.user) query.set('user', params.user)
+	return request.get(`/rest/admin/audit-logs?${query.toString()}`)
+}
+
+// ============================================
+// 管理员 API - 访问分析
+// ============================================
+export const requestAnalyticsOverview = (): Promise<AnalyticsOverview> => request.get('/rest/admin/analytics/overview')
+export const requestAnalyticsTrend = (): Promise<DailyTrend[]> => request.get('/rest/admin/analytics/trend')
+export const requestTopImages = (limit?: number, days?: number): Promise<TopImage[]> => {
+	const query = new URLSearchParams()
+	if (limit) query.set('limit', String(limit))
+	if (days) query.set('days', String(days))
+	return request.get(`/rest/admin/analytics/top-images?${query.toString()}`)
+}
+export const requestImageAnalytics = (key: string): Promise<ImageAnalytics> => 
+	request.get(`/rest/admin/analytics/image/${key}`)
+export const requestUserAnalytics = (login: string): Promise<UserAnalytics> => 
+	request.get(`/rest/admin/analytics/user/${login}`)
 

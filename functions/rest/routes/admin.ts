@@ -314,6 +314,181 @@ adminRoutes.get('/admin/audit-logs', auth, adminAuth, async (c) => {
 })
 
 // ============================================
+// 访问分析接口
+// ============================================
+
+/**
+ * 获取访问统计概览
+ */
+adminRoutes.get('/admin/analytics/overview', auth, adminAuth, async (c) => {
+    try {
+        const [todayViews, weekViews, monthViews, topCountries, topReferers] = await Promise.all([
+            // 今日访问
+            c.env.DB.prepare(
+                `SELECT COUNT(*) as count FROM image_stats 
+                 WHERE accessed_at >= datetime('now', '-1 day')`
+            ).first<{ count: number }>(),
+            // 本周访问
+            c.env.DB.prepare(
+                `SELECT COUNT(*) as count FROM image_stats 
+                 WHERE accessed_at >= datetime('now', '-7 days')`
+            ).first<{ count: number }>(),
+            // 本月访问
+            c.env.DB.prepare(
+                `SELECT COUNT(*) as count FROM image_stats 
+                 WHERE accessed_at >= datetime('now', '-30 days')`
+            ).first<{ count: number }>(),
+            // 访问来源国家 Top 10
+            c.env.DB.prepare(
+                `SELECT country, COUNT(*) as count FROM image_stats 
+                 WHERE country IS NOT NULL AND accessed_at >= datetime('now', '-30 days')
+                 GROUP BY country ORDER BY count DESC LIMIT 10`
+            ).all(),
+            // 访问来源网站 Top 10
+            c.env.DB.prepare(
+                `SELECT referer, COUNT(*) as count FROM image_stats 
+                 WHERE referer IS NOT NULL AND accessed_at >= datetime('now', '-30 days')
+                 GROUP BY referer ORDER BY count DESC LIMIT 10`
+            ).all()
+        ])
+        
+        return c.json(Ok({
+            todayViews: todayViews?.count || 0,
+            weekViews: weekViews?.count || 0,
+            monthViews: monthViews?.count || 0,
+            topCountries: topCountries.results || [],
+            topReferers: topReferers.results || []
+        }))
+    } catch (e) {
+        console.error('Failed to get analytics overview:', e)
+        return c.json(Fail(`获取访问统计失败: ${(e as Error).message}`))
+    }
+})
+
+/**
+ * 获取每日访问趋势（最近30天）
+ */
+adminRoutes.get('/admin/analytics/trend', auth, adminAuth, async (c) => {
+    try {
+        const result = await c.env.DB.prepare(
+            `SELECT DATE(accessed_at) as date, COUNT(*) as count 
+             FROM image_stats 
+             WHERE accessed_at >= datetime('now', '-30 days')
+             GROUP BY DATE(accessed_at) 
+             ORDER BY date ASC`
+        ).all()
+        
+        return c.json(Ok(result.results || []))
+    } catch (e) {
+        console.error('Failed to get analytics trend:', e)
+        return c.json(Fail(`获取访问趋势失败: ${(e as Error).message}`))
+    }
+})
+
+/**
+ * 获取热门图片排行
+ */
+adminRoutes.get('/admin/analytics/top-images', auth, adminAuth, async (c) => {
+    const limit = parseInt(c.req.query('limit') || '20')
+    const days = parseInt(c.req.query('days') || '30')
+    
+    try {
+        const result = await c.env.DB.prepare(
+            `SELECT i.key, i.original_name, i.user_login, i.size, i.view_count,
+                    COUNT(s.id) as recent_views
+             FROM images i
+             LEFT JOIN image_stats s ON i.key = s.image_key 
+                AND s.accessed_at >= datetime('now', '-' || ? || ' days')
+             GROUP BY i.key
+             ORDER BY recent_views DESC, i.view_count DESC
+             LIMIT ?`
+        ).bind(days, limit).all()
+        
+        return c.json(Ok(result.results || []))
+    } catch (e) {
+        console.error('Failed to get top images:', e)
+        return c.json(Fail(`获取热门图片失败: ${(e as Error).message}`))
+    }
+})
+
+/**
+ * 获取单张图片的访问详情
+ */
+adminRoutes.get('/admin/analytics/image/:key{.+}', auth, adminAuth, async (c) => {
+    const key = c.req.param('key')
+    const limit = parseInt(c.req.query('limit') || '100')
+    
+    try {
+        const [imageInfo, recentAccess, dailyTrend] = await Promise.all([
+            // 图片基本信息
+            c.env.DB.prepare('SELECT * FROM images WHERE key = ?').bind(key).first(),
+            // 最近访问记录
+            c.env.DB.prepare(
+                `SELECT accessed_at, referer, country, city, user_agent 
+                 FROM image_stats WHERE image_key = ? 
+                 ORDER BY accessed_at DESC LIMIT ?`
+            ).bind(key, limit).all(),
+            // 每日访问趋势
+            c.env.DB.prepare(
+                `SELECT DATE(accessed_at) as date, COUNT(*) as count 
+                 FROM image_stats WHERE image_key = ? AND accessed_at >= datetime('now', '-30 days')
+                 GROUP BY DATE(accessed_at) ORDER BY date ASC`
+            ).bind(key).all()
+        ])
+        
+        return c.json(Ok({
+            image: imageInfo,
+            recentAccess: recentAccess.results || [],
+            dailyTrend: dailyTrend.results || []
+        }))
+    } catch (e) {
+        console.error('Failed to get image analytics:', e)
+        return c.json(Fail(`获取图片访问详情失败: ${(e as Error).message}`))
+    }
+})
+
+/**
+ * 获取用户的访问统计
+ */
+adminRoutes.get('/admin/analytics/user/:login', auth, adminAuth, async (c) => {
+    const login = c.req.param('login')
+    
+    try {
+        const [totalViews, topImages, recentActivity] = await Promise.all([
+            // 总访问量
+            c.env.DB.prepare(
+                `SELECT COUNT(*) as count FROM image_stats s
+                 JOIN images i ON s.image_key = i.key
+                 WHERE i.user_login = ?`
+            ).bind(login).first<{ count: number }>(),
+            // 用户热门图片
+            c.env.DB.prepare(
+                `SELECT i.key, i.original_name, i.view_count
+                 FROM images i WHERE i.user_login = ?
+                 ORDER BY i.view_count DESC LIMIT 10`
+            ).bind(login).all(),
+            // 最近7天每日访问
+            c.env.DB.prepare(
+                `SELECT DATE(s.accessed_at) as date, COUNT(*) as count 
+                 FROM image_stats s
+                 JOIN images i ON s.image_key = i.key
+                 WHERE i.user_login = ? AND s.accessed_at >= datetime('now', '-7 days')
+                 GROUP BY DATE(s.accessed_at) ORDER BY date ASC`
+            ).bind(login).all()
+        ])
+        
+        return c.json(Ok({
+            totalViews: totalViews?.count || 0,
+            topImages: topImages.results || [],
+            recentActivity: recentActivity.results || []
+        }))
+    } catch (e) {
+        console.error('Failed to get user analytics:', e)
+        return c.json(Fail(`获取用户访问统计失败: ${(e as Error).message}`))
+    }
+})
+
+// ============================================
 // 当前用户接口（非管理员也可访问）
 // ============================================
 

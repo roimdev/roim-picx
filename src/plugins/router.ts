@@ -12,6 +12,11 @@ const router = createRouter({
 			component: () => import('../views/UploadImages.vue')
 		},
 		{
+			path: '/admin',
+			component: () => import('../views/AdminView.vue'),
+			meta: { requiresAuth: true }
+		},
+		{
 			path: '/auth',
 			component: () => import('../views/auth.vue')
 		},

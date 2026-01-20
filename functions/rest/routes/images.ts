@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import type { R2ListOptions } from '@cloudflare/workers-types'
+import type { R2ListOptions, D1Database } from '@cloudflare/workers-types'
 import { Ok, Fail, ImgItem, ImgList, ImgReq } from '../type'
-import type { User } from '../type'
+import type { User, DbImage } from '../type'
 import { parseRange } from '../utils'
 import { auth, type AppEnv } from '../middleware/auth'
 import { listRateLimit } from '../middleware/rateLimit'
@@ -22,7 +22,7 @@ function canViewAllImages(user: User | undefined, isAdminToken: boolean): boolea
     return false
 }
 
-// list image (with rate limiting)
+// list image (with rate limiting) - 从 D1 数据库查询
 imageRoutes.post('/list', listRateLimit, auth, async (c) => {
     const user = c.get('user') as User | undefined
     const isAdminToken = c.get('isAdminToken') || false
@@ -35,106 +35,140 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
     if (data.limit > 100) {
         data.limit = 100
     }
-    if (!data.delimiter) {
-        data.delimiter = "/"
+    
+    // 处理文件夹路径
+    let folder = ''
+    if (data.delimiter && data.delimiter !== '/') {
+        folder = data.delimiter
+        // 确保文件夹路径以 / 结尾
+        if (!folder.endsWith('/')) {
+            folder += '/'
+        }
     }
-    let include: string | undefined = undefined
-    if (data.delimiter !== "/") {
-        include = data.delimiter
-    }
-
+    
     const keyword = data.keyword?.trim().toLowerCase()
+    const offset = data.cursor ? parseInt(data.cursor) : 0
 
-    // If keyword search is enabled, we need to fetch more items to filter
-    // Since R2 doesn't support keyword search natively, we filter on backend
-    const fetchLimit = data.limit
-    const options: R2ListOptions = {
-        limit: fetchLimit,
-        cursor: data.cursor,
-        delimiter: keyword ? undefined : data.delimiter, // Disable delimiter for keyword search to search all files
-        prefix: keyword ? include : include,
-        include: ['customMetadata']
-    }
-    const list = await c.env.PICX.list(options)
-
-    // Filter and process objects
-    const now = Date.now()
-    let objs = [...list.objects].filter((obj: any) => {
-        // Filter expired images
-        if (obj.customMetadata && obj.customMetadata.expires) {
-            const expiresAt = parseInt(obj.customMetadata.expires)
-            if (!isNaN(expiresAt) && now > expiresAt) {
-                c.executionCtx.waitUntil(c.env.PICX.delete(obj.key))
-                return false
+    try {
+        // 构建 SQL 查询
+        let query = 'SELECT * FROM images WHERE 1=1'
+        let countQuery = 'SELECT COUNT(*) as total FROM images WHERE 1=1'
+        const params: any[] = []
+        const countParams: any[] = []
+        
+        // 权限过滤：非管理员只能看自己的图片
+        if (!viewAll) {
+            if (!user) {
+                return c.json(Ok(<ImgList>{
+                    list: [],
+                    next: false,
+                    cursor: undefined,
+                    prefixes: [],
+                    canViewAll: false
+                }))
             }
+            query += ' AND user_login = ?'
+            countQuery += ' AND user_login = ?'
+            params.push(user.login)
+            countParams.push(user.login)
         }
-        return true
-    })
-
-    // Apply keyword filter if provided
-    if (keyword) {
-        objs = objs.filter((obj: any) => {
-            const filename = obj.key.toLowerCase()
-            return filename.includes(keyword)
-        })
-    }
-
-    // 权限过滤：如果用户不能查看所有图片，只返回自己上传的
-    if (!viewAll && user) {
-        objs = objs.filter((obj: any) => {
-            return obj.customMetadata?.uploadedBy === user.login
-        })
-    } else if (!viewAll && !user) {
-        // 没有用户信息且不是管理员，返回空列表
-        return c.json(Ok(<ImgList>{
-            list: [],
-            next: false,
-            cursor: undefined,
-            prefixes: []
+        
+        // 文件夹过滤
+        if (folder) {
+            query += ' AND folder = ?'
+            countQuery += ' AND folder = ?'
+            params.push(folder)
+            countParams.push(folder)
+        } else {
+            // 根目录：只显示 folder 为空的图片
+            query += " AND (folder = '' OR folder IS NULL)"
+            countQuery += " AND (folder = '' OR folder IS NULL)"
+        }
+        
+        // 关键词搜索
+        if (keyword) {
+            query += ' AND (LOWER(key) LIKE ? OR LOWER(original_name) LIKE ?)'
+            countQuery += ' AND (LOWER(key) LIKE ? OR LOWER(original_name) LIKE ?)'
+            const likePattern = `%${keyword}%`
+            params.push(likePattern, likePattern)
+            countParams.push(likePattern, likePattern)
+        }
+        
+        // 过滤已过期的图片
+        query += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
+        countQuery += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
+        
+        // 排序和分页
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+        params.push(data.limit + 1, offset)  // 多查一条用于判断是否还有更多
+        
+        // 执行查询
+        const [result, countResult] = await Promise.all([
+            c.env.DB.prepare(query).bind(...params).all(),
+            c.env.DB.prepare(countQuery).bind(...countParams).first<{ total: number }>()
+        ])
+        
+        const images = (result.results || []) as unknown as DbImage[]
+        const hasMore = images.length > data.limit
+        const limitedImages = images.slice(0, data.limit)
+        
+        // 转换为 ImgItem 格式
+        const urls: ImgItem[] = limitedImages.map((img: DbImage) => ({
+            url: `${c.env.BASE_URL}/rest/${img.key}`,
+            key: img.key,
+            size: img.size,
+            originalName: img.original_name || undefined,
+            uploadedBy: img.user_login,
+            uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined
         }))
-    }
-
-    // Sort by upload time descending
-    objs.sort((a: any, b: any) => {
-        const timeA = a.uploaded ? new Date(a.uploaded).getTime() : 0
-        const timeB = b.uploaded ? new Date(b.uploaded).getTime() : 0
-        return timeB - timeA
-    })
-
-    // Limit results to requested limit
-    const hasMoreResults = objs.length > data.limit
-    const limitedObjs = objs.slice(0, data.limit)
-
-    // Determine if there's more to load
-    const truncated = list.truncated || hasMoreResults
-
-    const urls = limitedObjs.map((it: any) => {
-        let uploaderName = it.customMetadata?.uploaderName
-        if (uploaderName) {
-            try {
-                uploaderName = decodeURIComponent(uploaderName)
-            } catch (e) {
-                // ignore error
+        
+        // 获取子文件夹列表（如果不是搜索模式）
+        let prefixes: string[] = []
+        if (!keyword) {
+            const folderQuery = viewAll
+                ? `SELECT DISTINCT folder FROM images 
+                   WHERE folder LIKE ? AND folder != ? AND folder IS NOT NULL
+                   AND (expires_at IS NULL OR expires_at > datetime('now'))`
+                : `SELECT DISTINCT folder FROM images 
+                   WHERE user_login = ? AND folder LIKE ? AND folder != ? AND folder IS NOT NULL
+                   AND (expires_at IS NULL OR expires_at > datetime('now'))`
+            
+            const folderParams = viewAll
+                ? [`${folder}%`, folder]
+                : [user!.login, `${folder}%`, folder]
+            
+            const folderResult = await c.env.DB.prepare(folderQuery).bind(...folderParams).all()
+            
+            // 提取直接子文件夹
+            const subFolders = new Set<string>()
+            const currentDepth = folder ? folder.split('/').filter(Boolean).length : 0
+            
+            for (const row of (folderResult.results || []) as { folder: string }[]) {
+                const parts = row.folder.split('/').filter(Boolean)
+                if (parts.length > currentDepth) {
+                    // 获取下一级文件夹
+                    const nextFolder = parts.slice(0, currentDepth + 1).join('/') + '/'
+                    subFolders.add(nextFolder)
+                }
             }
+            prefixes = Array.from(subFolders).sort()
         }
-        return <ImgItem>{
-            url: `${c.env.BASE_URL}/rest/${it.key}`,
-            key: it.key,
-            size: it.size,
-            originalName: it.customMetadata?.originalName,
-            uploaderName: uploaderName,
-            uploadedBy: it.customMetadata?.uploadedBy,
-            uploadedAt: it.uploaded ? new Date(it.uploaded).getTime() : undefined
-        }
-    })
-
-    return c.json(Ok(<ImgList>{
-        list: urls,
-        next: truncated,
-        cursor: list.cursor,
-        prefixes: keyword ? [] : list.delimitedPrefixes, // Hide prefixes during search
-        canViewAll: viewAll  // 告知前端当前用户是否可以查看所有图片
-    }))
+        
+        // 计算下一页的 cursor
+        const nextCursor = hasMore ? String(offset + data.limit) : undefined
+        
+        return c.json(Ok(<ImgList>{
+            list: urls,
+            next: hasMore,
+            cursor: nextCursor,
+            prefixes: prefixes,
+            canViewAll: viewAll,
+            total: countResult?.total || 0
+        }))
+    } catch (e) {
+        console.error('Failed to list images from DB:', e)
+        return c.json(Fail(`查询失败: ${(e as Error).message}`))
+    }
 })
 
 // 重命名文件
@@ -327,6 +361,31 @@ imageRoutes.get("/:id{.+}", async (c) => {
             return c.json(Fail("Image expired"), 404)
         }
     }
+
+    // 记录访问统计（异步，不阻塞响应）
+    c.executionCtx.waitUntil((async () => {
+        try {
+            const referer = c.req.header('referer') || null
+            const userAgent = c.req.header('user-agent') || null
+            // Cloudflare 提供的地理位置信息
+            const cf = (c.req.raw as any).cf
+            const country = cf?.country || null
+            const city = cf?.city || null
+            
+            // 插入访问记录
+            await c.env.DB.prepare(
+                `INSERT INTO image_stats (image_key, referer, user_agent, country, city) 
+                 VALUES (?, ?, ?, ?, ?)`
+            ).bind(id, referer, userAgent, country, city).run()
+            
+            // 更新图片访问计数
+            await c.env.DB.prepare(
+                'UPDATE images SET view_count = view_count + 1 WHERE key = ?'
+            ).bind(id).run()
+        } catch (e) {
+            console.error('Failed to record image stats:', e)
+        }
+    })())
 
     const headers = new Headers()
     object.writeHttpMetadata(headers)

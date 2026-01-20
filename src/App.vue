@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCog, faUpload, faSignOutAlt, faUserCircle } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useRoute } from 'vue-router'
 import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
@@ -9,6 +9,7 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import { initTheme } from './utils/theme'
 import { parseUserFromToken } from './utils/jwt'
 import type { User } from './utils/types'
+import { requestCurrentUser } from './utils/request'
 
 const repoLink = 'https://github.com/roimdev'
 const repoName = 'roim-picx'
@@ -23,6 +24,7 @@ const isDeletePage = computed(() => route.path.startsWith('/delete/'))
 
 const token = ref(storage.local.get('auth-token'))
 const currentUser = ref<User | null>(null)
+const isAdmin = ref(false)
 
 // Watch token changes (in case of login/logout in other tabs or components updating storage)
 // Note: storage.local.get is not reactive by default, so we might need a custom event or just rely on the fact that App.vue mounts once.
@@ -32,13 +34,21 @@ const currentUser = ref<User | null>(null)
 // Let's make it reactive by checking on route change or using a global state store if we had one.
 // For now, let's update snippet on mount and route change.
 
-const updateUserInfo = () => {
+const updateUserInfo = async () => {
 	const t = storage.local.get('auth-token')
 	token.value = t
 	if (t) {
 		currentUser.value = parseUserFromToken(t.token)
+		// 检查是否是管理员
+		try {
+			const userInfo = await requestCurrentUser()
+			isAdmin.value = userInfo.role === 'admin' || userInfo.isAdmin === true
+		} catch (e) {
+			isAdmin.value = false
+		}
 	} else {
 		currentUser.value = null
+		isAdmin.value = false
 	}
 }
 
@@ -47,10 +57,15 @@ watch(() => route.path, () => {
 })
 
 const navItems = computed(() => {
-	return [
+	const items = [
 		{ path: '/up', label: '上传', icon: faUpload },
 		{ path: '/', label: '管理', icon: faCog }
 	]
+	// 管理员显示管理入口
+	if (isAdmin.value) {
+		items.push({ path: '/admin', label: '后台', icon: faShieldAlt })
+	}
+	return items
 })
 
 onMounted(() => {
