@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { ElNotification as elNotify } from 'element-plus'
-import { 
+import {
 	ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken,
-	AdminUser, UserStats, SystemStats, AuditLog, 
+	AdminUser, UserStats, SystemStats, AuditLog,
 	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo
 } from "./types"
 import storage from "./storage"
@@ -14,7 +14,7 @@ const request = axios.create({
 request.interceptors.request.use(
 	(config) => {
 		const local = storage.local.get('auth-token')
-		let token = ''
+		let token = local
 		if (local && local.token) {
 			token = local.token
 		}
@@ -39,10 +39,10 @@ request.interceptors.response.use(
 				type: 'error'
 			})
 			// Delay redirect to allow user to see message
-			setTimeout(() => {
-				storage.local.remove('auth-token')
-				window.location.href = '/auth'
-			}, 1500)
+			// setTimeout(() => {
+			// 	storage.local.remove('auth-token')
+			// 	window.location.href = '/auth'
+			// }, 1500)
 			return Promise.reject(data.msg)
 		}
 		if (data.code !== 200) {
@@ -68,12 +68,31 @@ request.interceptors.response.use(
 export const requestListImages = (data: ImgReq): Promise<ImgList> => request.post('/rest/list', data)
 export const requestUploadImages = (data: FormData): Promise<ImgItem[]> => request.post('/rest/upload', data)
 export const createFolder = (data: Folder): Promise<any> => request.post('/rest/folder', data)
-export const checkToken = (data: AuthToken): Promise<boolean> => request.post('/rest/checkToken', data)
+// checkToken 返回类型：布尔值（JWT验证）或对象（Token登录成功）
+export interface TokenLoginResult {
+	token: string
+	user: {
+		id: number
+		name: string
+		login: string
+		avatar_url: string
+		role?: string
+		canViewAll?: boolean
+	}
+}
+export const checkToken = (data: AuthToken): Promise<boolean | TokenLoginResult> => request.post('/rest/checkToken', data)
 export const requestDeleteImage = (data: ImgDel): Promise<string> => request.delete('/rest', { data })
 export const requestRenameImage = (data: { oldKey: string, newKey: string }): Promise<string> => request.post('/rest/rename', data)
 export const requestDelInfo = (token: string): Promise<ImgItem> => request.get(`/rest/delInfo/${token}`)
 export const requestPublicDeleteImage = (token: string): Promise<any> => request.post(`/rest/delImage/${token}`)
 export const requestGithubLogin = (code: string): Promise<string> => request.post('/rest/github/login', { code })
+
+// Auth Config
+export interface AuthConfig {
+	allowTokenLogin: boolean
+	githubLoginEnabled: boolean
+}
+export const requestAuthConfig = (): Promise<AuthConfig> => request.get('/rest/auth/config')
 
 // Share API
 export interface CreateShareRequest {
@@ -125,11 +144,11 @@ export const requestCurrentUserStats = (): Promise<UserStats> => request.get('/r
 export const requestAdminUsers = (): Promise<AdminUser[]> => request.get('/rest/admin/users')
 export const requestAdminUser = (login: string): Promise<AdminUser> => request.get(`/rest/admin/users/${login}`)
 export const requestAdminUserStats = (login: string): Promise<UserStats> => request.get(`/rest/admin/users/${login}/stats`)
-export const requestSetUserViewAll = (login: string, grant: boolean): Promise<{ login: string; canViewAll: boolean }> => 
+export const requestSetUserViewAll = (login: string, grant: boolean): Promise<{ login: string; canViewAll: boolean }> =>
 	request.post(`/rest/admin/users/${login}/view-all`, { grant })
-export const requestSetUserRole = (login: string, role: 'admin' | 'user'): Promise<{ login: string; role: string }> => 
+export const requestSetUserRole = (login: string, role: 'admin' | 'user'): Promise<{ login: string; role: string }> =>
 	request.post(`/rest/admin/users/${login}/role`, { role })
-export const requestSetUserQuota = (login: string, quota: number): Promise<{ login: string; storageQuota: number }> => 
+export const requestSetUserQuota = (login: string, quota: number): Promise<{ login: string; storageQuota: number }> =>
 	request.post(`/rest/admin/users/${login}/quota`, { quota })
 
 // ============================================
@@ -166,8 +185,8 @@ export const requestTopImages = (limit?: number, days?: number): Promise<TopImag
 	if (days) query.set('days', String(days))
 	return request.get(`/rest/admin/analytics/top-images?${query.toString()}`)
 }
-export const requestImageAnalytics = (key: string): Promise<ImageAnalytics> => 
+export const requestImageAnalytics = (key: string): Promise<ImageAnalytics> =>
 	request.get(`/rest/admin/analytics/image/${key}`)
-export const requestUserAnalytics = (login: string): Promise<UserAnalytics> => 
+export const requestUserAnalytics = (login: string): Promise<UserAnalytics> =>
 	request.get(`/rest/admin/analytics/user/${login}`)
 
