@@ -36,7 +36,7 @@ const updateUserInfo = () => {
 	const t = storage.local.get('auth-token')
 	token.value = t
 	if (t) {
-		currentUser.value = parseUserFromToken(t)
+		currentUser.value = parseUserFromToken(t.token)
 	} else {
 		currentUser.value = null
 	}

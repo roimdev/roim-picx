@@ -103,6 +103,36 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
         if (object || object.key) {
             // 存储删除token
             await c.env.XK.put(`del:${delToken}`, object.key)
+            
+            // 同步图片信息到 D1 数据库
+            if (user) {
+                c.executionCtx.waitUntil(
+                    c.env.DB.prepare(
+                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                    ).bind(
+                        object.key,
+                        user.id,
+                        user.login,
+                        originalName || null,
+                        object.size,
+                        fileType,
+                        customPath || '',
+                        expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null
+                    ).run().then(() => {
+                        // 更新用户统计
+                        return c.env.DB.prepare(
+                            `UPDATE users SET 
+                                storage_used = storage_used + ?, 
+                                upload_count = upload_count + 1 
+                             WHERE login = ?`
+                        ).bind(object.size, user.login).run()
+                    }).catch(e => {
+                        console.error('Failed to sync image to DB:', e)
+                    })
+                )
+            }
+            
             urls.push({
                 key: object.key,
                 size: object.size,

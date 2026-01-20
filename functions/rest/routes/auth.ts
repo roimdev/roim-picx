@@ -2,10 +2,92 @@ import { Hono } from 'hono'
 import { sign, verify } from 'hono/jwt'
 import { Ok, Fail, FailCode } from '../type'
 import StatusCode from '../type'
-import type { AuthToken, User } from '../type'
+import type { AuthToken, User, DbUser } from '../type'
 import type { AppEnv } from '../middleware/auth'
+import { isAdminUser } from '../middleware/auth'
 
 const authRoutes = new Hono<AppEnv>()
+
+/**
+ * 同步用户到 D1 数据库
+ */
+async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string): Promise<Partial<User>> {
+    const isAdmin = isAdminUser(userData.login, adminUsers)
+    
+    try {
+        // 检查用户是否存在
+        const existing = await db.prepare(
+            'SELECT id, role, can_view_all, storage_quota, storage_used, upload_count FROM users WHERE github_id = ?'
+        ).bind(userData.id).first<DbUser>()
+        
+        if (existing) {
+            // 更新最后登录时间
+            await db.prepare(
+                `UPDATE users SET 
+                    name = ?, 
+                    avatar_url = ?, 
+                    last_login_at = datetime('now')
+                 WHERE github_id = ?`
+            ).bind(
+                userData.name || userData.login,
+                userData.avatar_url,
+                userData.id
+            ).run()
+            
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_id, user_login, action, details) 
+                 VALUES (?, ?, 'login', ?)`
+            ).bind(
+                existing.id,
+                userData.login,
+                JSON.stringify({ type: 'github_oauth' })
+            ).run()
+            
+            return {
+                role: existing.role,
+                canViewAll: existing.can_view_all === 1,
+                storageQuota: existing.storage_quota,
+                storageUsed: existing.storage_used,
+                uploadCount: existing.upload_count
+            }
+        } else {
+            // 创建新用户
+            const result = await db.prepare(
+                `INSERT INTO users (github_id, login, name, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+            ).bind(
+                userData.id,
+                userData.login,
+                userData.name || userData.login,
+                userData.avatar_url,
+                isAdmin ? 'admin' : 'user',
+                isAdmin ? 1 : 0
+            ).run()
+            
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_login, action, details) 
+                 VALUES (?, 'login', ?)`
+            ).bind(
+                userData.login,
+                JSON.stringify({ type: 'github_oauth', first_login: true })
+            ).run()
+            
+            return {
+                role: isAdmin ? 'admin' : 'user',
+                canViewAll: isAdmin
+            }
+        }
+    } catch (e) {
+        console.error('Failed to sync user to DB:', e)
+        // 即使数据库操作失败，也返回基本权限
+        return {
+            role: isAdmin ? 'admin' : 'user',
+            canViewAll: isAdmin
+        }
+    }
+}
 
 // GitHub Login
 authRoutes.post('/github/login', async (c) => {
@@ -52,18 +134,26 @@ authRoutes.post('/github/login', async (c) => {
             return c.json(FailCode("Unauthorized GitHub User", StatusCode.NotAuth))
         }
 
+        // 同步用户到 D1 数据库并获取权限
+        const permissions = await syncUserToDb(c.env.DB, userData, c.env.ADMIN_USERS)
+
         // Create JWT Payload with User Info
         const userPayload: User = {
             id: userData.id,
             name: userData.name || userData.login,
             login: userData.login,
-            avatar_url: userData.avatar_url
+            avatar_url: userData.avatar_url,
+            role: permissions.role,
+            canViewAll: permissions.canViewAll
         }
 
         // Sign Token using System Auth Token as secret
         const token = await sign(userPayload, authKey, 'HS256')
 
-        return c.json(Ok(token))
+        return c.json(Ok({
+            token,
+            user: userPayload
+        }))
     } catch (e: any) {
         return c.json(Fail(e.message))
     }

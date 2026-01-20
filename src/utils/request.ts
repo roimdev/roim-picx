@@ -9,7 +9,11 @@ const request = axios.create({
 
 request.interceptors.request.use(
 	(config) => {
-		const token = storage.local.get('auth-token')
+		const local = storage.local.get('auth-token')
+		let token = ''
+		if (local && local.token) {
+			token = local.token
+		}
 		if (token) {
 			// Add Bearer prefix for JWTs if not already present
 			// @ts-ignore

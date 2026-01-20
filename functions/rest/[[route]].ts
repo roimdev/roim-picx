@@ -9,6 +9,7 @@ import uploadRoutes from './routes/upload'
 import imageRoutes from './routes/images'
 import folderRoutes from './routes/folders'
 import shareRoutes from './routes/share'
+import adminRoutes from './routes/admin'
 
 const app = new Hono<AppEnv>().basePath('/rest')
 
@@ -17,6 +18,7 @@ app.route('/', authRoutes)
 app.route('/', uploadRoutes)
 app.route('/', folderRoutes)
 app.route('/', shareRoutes)
+app.route('/', adminRoutes)  // 管理员和用户接口
 app.route('/', imageRoutes) // Must be last due to catch-all route
 
 // Error handling

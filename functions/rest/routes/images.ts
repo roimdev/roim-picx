@@ -1,14 +1,33 @@
 import { Hono } from 'hono'
 import type { R2ListOptions } from '@cloudflare/workers-types'
 import { Ok, Fail, ImgItem, ImgList, ImgReq } from '../type'
+import type { User } from '../type'
 import { parseRange } from '../utils'
 import { auth, type AppEnv } from '../middleware/auth'
 import { listRateLimit } from '../middleware/rateLimit'
 
 const imageRoutes = new Hono<AppEnv>()
 
+/**
+ * 检查用户是否可以查看所有图片
+ * - 使用管理员 Token 登录
+ * - 用户角色是 admin
+ * - 用户被授权 canViewAll
+ */
+function canViewAllImages(user: User | undefined, isAdminToken: boolean): boolean {
+    if (isAdminToken) return true
+    if (!user) return false
+    if (user.role === 'admin') return true
+    if (user.canViewAll) return true
+    return false
+}
+
 // list image (with rate limiting)
 imageRoutes.post('/list', listRateLimit, auth, async (c) => {
+    const user = c.get('user') as User | undefined
+    const isAdminToken = c.get('isAdminToken') || false
+    const viewAll = canViewAllImages(user, isAdminToken)
+    
     const data = await c.req.json<ImgReq>()
     if (!data.limit) {
         data.limit = 10
@@ -60,6 +79,21 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
         })
     }
 
+    // 权限过滤：如果用户不能查看所有图片，只返回自己上传的
+    if (!viewAll && user) {
+        objs = objs.filter((obj: any) => {
+            return obj.customMetadata?.uploadedBy === user.login
+        })
+    } else if (!viewAll && !user) {
+        // 没有用户信息且不是管理员，返回空列表
+        return c.json(Ok(<ImgList>{
+            list: [],
+            next: false,
+            cursor: undefined,
+            prefixes: []
+        }))
+    }
+
     // Sort by upload time descending
     objs.sort((a: any, b: any) => {
         const timeA = a.uploaded ? new Date(a.uploaded).getTime() : 0
@@ -98,7 +132,8 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
         list: urls,
         next: truncated,
         cursor: list.cursor,
-        prefixes: keyword ? [] : list.delimitedPrefixes // Hide prefixes during search
+        prefixes: keyword ? [] : list.delimitedPrefixes, // Hide prefixes during search
+        canViewAll: viewAll  // 告知前端当前用户是否可以查看所有图片
     }))
 })
 
@@ -124,11 +159,58 @@ imageRoutes.post('/rename', auth, async (c) => {
         // Delete old file
         await c.env.PICX.delete(data.oldKey)
 
+        // 同步更新 D1 数据库
+        c.executionCtx.waitUntil(
+            c.env.DB.prepare('UPDATE images SET key = ? WHERE key = ?')
+                .bind(data.newKey, data.oldKey)
+                .run()
+                .catch(e => console.error('Failed to update image key in DB:', e))
+        )
+
+        // 记录审计日志
+        const user = c.get('user') as User | undefined
+        if (user) {
+            c.executionCtx.waitUntil(
+                c.env.DB.prepare(
+                    `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                     VALUES (?, ?, 'rename', ?, ?)`
+                ).bind(
+                    user.id,
+                    user.login,
+                    data.newKey,
+                    JSON.stringify({ oldKey: data.oldKey, newKey: data.newKey })
+                ).run().catch(e => console.error('Failed to log rename:', e))
+            )
+        }
+
         return c.json(Ok({ oldKey: data.oldKey, newKey: data.newKey }))
     } catch (e) {
         return c.json(Fail(`Rename failed: ${(e as Error).message}`))
     }
 })
+
+/**
+ * 从 D1 删除图片记录并更新用户统计
+ */
+async function deleteImageFromDb(db: D1Database, key: string): Promise<void> {
+    try {
+        // 获取图片信息用于更新用户统计
+        const image = await db.prepare('SELECT user_login, size FROM images WHERE key = ?')
+            .bind(key).first<{ user_login: string, size: number }>()
+        
+        if (image) {
+            // 删除图片记录
+            await db.prepare('DELETE FROM images WHERE key = ?').bind(key).run()
+            
+            // 更新用户存储统计
+            await db.prepare(
+                'UPDATE users SET storage_used = MAX(0, storage_used - ?) WHERE login = ?'
+            ).bind(image.size, image.user_login).run()
+        }
+    } catch (e) {
+        console.error('Failed to delete image from DB:', e)
+    }
+}
 
 // 删除key (GET方式，保持兼容)
 imageRoutes.get('/del/:id{.+}', async (c) => {
@@ -138,6 +220,8 @@ imageRoutes.get('/del/:id{.+}', async (c) => {
     }
     try {
         await c.env.PICX.delete(key)
+        // 同步删除 D1 记录
+        c.executionCtx.waitUntil(deleteImageFromDb(c.env.DB, key))
     } catch (e) {
         console.log(`img delete error:${(e as Error).message}`,)
     }
@@ -152,10 +236,25 @@ imageRoutes.delete("/", auth, async (c) => {
         return c.json(Fail("not delete keys"))
     }
     const arr = keys.split(',')
+    const user = c.get('user') as User | undefined
+    
     try {
         for (let it of arr) {
             if (it && it.length) {
                 await c.env.PICX.delete(it)
+                // 同步删除 D1 记录
+                c.executionCtx.waitUntil(deleteImageFromDb(c.env.DB, it))
+                
+                // 记录审计日志
+                if (user) {
+                    c.executionCtx.waitUntil(
+                        c.env.DB.prepare(
+                            `INSERT INTO audit_logs (user_id, user_login, action, target_key) 
+                             VALUES (?, ?, 'delete', ?)`
+                        ).bind(user.id, user.login, it).run()
+                        .catch(e => console.error('Failed to log delete:', e))
+                    )
+                }
             }
         }
     } catch (e) {
