@@ -108,6 +108,9 @@
                     <p class="text-sm font-medium text-gray-900 truncate" :title="name">
                         {{ name }}
                     </p>
+                    <p v-if="originalName" class="text-xs text-gray-500 truncate mt-0.5" :title="originalName">
+                        原名: {{ originalName }}
+                    </p>
                     <div class="flex items-center gap-2 mt-1 text-xs text-gray-400">
                         <span class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{{ formatBytes(size) }}</span>
                         <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
@@ -134,6 +137,7 @@ const props = defineProps<{
     mode: 'converted' | 'uploaded'
     uploadedAt?: number
     expiresAt?: number
+    originalName?: string
 }>()
 const emit = defineEmits(['delete', 'copy', 'rename', 'preview'])
 

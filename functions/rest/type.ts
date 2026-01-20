@@ -10,6 +10,7 @@ export interface ImgItem {
     size: number
     filename?: string
     delToken?: string
+    originalName?: string
 }
 
 export interface ImgList {

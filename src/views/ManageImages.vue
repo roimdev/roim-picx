@@ -10,15 +10,15 @@
                     共占用 <span class="font-medium text-gray-900">{{ formatBytes(imagesTotalSize) }}</span>
                 </p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <!-- Search Input -->
-                <div class="relative">
+                <div class="relative w-full sm:w-auto">
                     <font-awesome-icon :icon="faSearch" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                     <input
                         v-model="searchKeyword"
                         type="text"
                         placeholder="搜索图片..."
-                        class="pl-9 pr-8 py-2 w-40 sm:w-56 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all"
+                        class="pl-9 pr-8 py-2 w-full sm:w-56 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all"
                     />
                     <button
                         v-if="searchKeyword"
@@ -118,6 +118,7 @@
                         <image-box :src="item.url" :name="item.key" :size="item.size" @delete="deleteImage(item.key)"
                             @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
                             @preview="showPreview(item.url)" mode="uploaded" :uploaded-at="item.uploadedAt"
+                            :original-name="item.originalName"
                             class="w-full h-full" />
                     </div>
                 </transition-group>
@@ -127,7 +128,8 @@
             <div v-else class="flex flex-col gap-2">
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
-                        :size="item.size" :uploaded-at="item.uploadedAt" @delete="deleteImage(item.key)"
+                        :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
+                        @delete="deleteImage(item.key)"
                         @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
                         @preview="showPreview(item.url)" />
                 </transition-group>

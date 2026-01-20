@@ -180,7 +180,8 @@ app.post('/list', auth, async (c) => {
         return <ImgItem>{
             url: `${c.env.BASE_URL}/rest/${it.key}`,
             key: it.key,
-            size: it.size
+            size: it.size,
+            originalName: it.customMetadata?.originalName
         }
     })
 
@@ -226,6 +227,7 @@ app.post('/upload', auth, async (c) => {
         const time = new Date().getTime()
 
         let filename = ''
+        const originalName = file.name
         if (keepName && file.name) {
             // Sanitize filename: replace non-alphanumeric chars (except ._- and Chinese) with _
             // This ensures compatibility with R2 keys and URLs
@@ -259,6 +261,10 @@ app.post('/upload', auth, async (c) => {
 
         const metadata: Record<string, string> = {}
         metadata['delToken'] = delToken
+        // 记录原始文件名称
+        if (!keepName && originalName) {
+            metadata['originalName'] = originalName
+        }
         if (expireAt) {
             metadata['expires'] = expireAt.toString()
         }

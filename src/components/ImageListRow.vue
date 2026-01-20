@@ -18,6 +18,9 @@
       <h4 class="text-sm font-medium text-gray-900 truncate mb-1" :title="name">
         {{ name }}
       </h4>
+      <p v-if="originalName" class="text-xs text-gray-500 truncate mb-1" :title="originalName">
+        原名: {{ originalName }}
+      </p>
       <div class="flex items-center gap-3 text-xs text-gray-400">
         <span class="bg-gray-50 px-1.5 py-0.5 rounded text-gray-500">{{ formatBytes(size) }}</span>
         <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
@@ -77,6 +80,7 @@ const props = defineProps<{
   name: string
   size: number
   uploadedAt?: number
+  originalName?: string
 }>()
 
 const emit = defineEmits(['delete', 'copy', 'rename', 'preview'])

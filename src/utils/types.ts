@@ -22,6 +22,7 @@ export interface ImgItem {
 	filename?: string
 	uploadedAt?: number
 	delToken?: string
+	originalName?: string
 }
 
 export interface ImgList {
