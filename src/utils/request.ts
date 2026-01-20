@@ -11,8 +11,9 @@ request.interceptors.request.use(
 	(config) => {
 		const token = storage.local.get('auth-token')
 		if (token) {
+			// Add Bearer prefix for JWTs if not already present
 			// @ts-ignore
-			config.headers['Authorization'] = token
+			config.headers['Authorization'] = (token.includes('.') && !token.startsWith('Bearer ')) ? `Bearer ${token}` : token
 		}
 		return config
 	}
@@ -23,10 +24,17 @@ request.interceptors.response.use(
 		const data = response.data;
 		// console.log(data)
 		if (data.code === 401) {
-			// 跳转到登陆页面
-			// 移除token
-			storage.local.remove('auth-token')
-			window.location.href = '/auth'
+			// Display error message
+			elNotify({
+				message: data.msg || '登录已过期，请重新登录',
+				duration: 3000,
+				type: 'error'
+			})
+			// Delay redirect to allow user to see message
+			setTimeout(() => {
+				storage.local.remove('auth-token')
+				window.location.href = '/auth'
+			}, 1500)
 			return Promise.reject(data.msg)
 		}
 		if (data.code !== 200) {

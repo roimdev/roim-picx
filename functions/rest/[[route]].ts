@@ -60,7 +60,8 @@ const auth = async (c: any, next: () => Promise<void>) => {
         await next()
     } catch (e) {
         // Both checks failed
-        return c.json(FailCode("auth fail", StatusCode.NotAuth))
+        console.error(`Auth failed: ${(e as Error).message}`)
+        return c.json(FailCode(`auth fail: ${(e as Error).message}`, StatusCode.NotAuth))
     }
 }
 
