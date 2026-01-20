@@ -136,7 +136,8 @@ app.post('/list', auth, async (c) => {
         limit: fetchLimit,
         cursor: data.cursor,
         delimiter: keyword ? undefined : data.delimiter, // Disable delimiter for keyword search to search all files
-        prefix: keyword ? include : include
+        prefix: keyword ? include : include,
+        include: ['customMetadata']
     }
     const list = await c.env.PICX.list(options)
 
@@ -385,7 +386,8 @@ app.get('/delInfo/:token', async (c) => {
     return c.json(Ok({
         key: key,
         url: `${c.env.BASE_URL}/rest/${key}`,
-        size: object.size
+        size: object.size,
+        originalName: object.customMetadata?.originalName
     }))
 })
 
