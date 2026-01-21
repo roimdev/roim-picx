@@ -1,9 +1,5 @@
 <template>
     <div class="min-h-[calc(100vh-64px-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-950 transition-colors duration-300 relative overflow-hidden">
-        <!-- Language Switcher -->
-        <div class="absolute top-4 right-4 z-20">
-            <LanguageSwitcher />
-        </div>
         
         <!-- Decoration bits -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/50 dark:bg-indigo-900/10 rounded-full blur-3xl"></div>

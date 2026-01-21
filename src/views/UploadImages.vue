@@ -125,6 +125,80 @@
                         </transition>
                     </div>
                 </div>
+
+                <!-- 水印设置 -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.watermark') }}</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" v-model="watermarkConfig.enabled" class="sr-only peer" />
+                                <div
+                                    class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                </div>
+                            </div>
+                            <span
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{ $t('upload.enableWatermark') }}</span>
+                        </label>
+                        <transition name="el-fade-in">
+                            <div v-if="watermarkConfig.enabled" class="space-y-3 pl-1">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{ $t('upload.watermarkText') }}</label>
+                                        <input type="text" v-model="watermarkConfig.text" :placeholder="$t('upload.watermarkTextPlaceholder')"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{ $t('upload.watermarkPosition') }}</label>
+                                        <div class="relative" ref="positionDropdownRef">
+                                            <button type="button" @click="positionDropdownOpen = !positionDropdownOpen"
+                                                class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-left flex items-center justify-between">
+                                                <span class="flex items-center gap-2">
+                                                    <span class="w-5 h-5 bg-indigo-100 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px]">
+                                                        {{ getPositionIcon(watermarkConfig.position) }}
+                                                    </span>
+                                                    <span>{{ $t(`upload.position${getPositionKey(watermarkConfig.position)}`) }}</span>
+                                                </span>
+                                                <font-awesome-icon :icon="faChevronDown"
+                                                    class="text-gray-400 text-xs transition-transform duration-200"
+                                                    :class="{ 'rotate-180': positionDropdownOpen }" />
+                                            </button>
+                                            <transition name="el-zoom-in-top">
+                                                <div v-if="positionDropdownOpen"
+                                                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                                                    <div v-for="pos in watermarkPositions" :key="pos.value"
+                                                        @click="selectWatermarkPosition(pos.value)"
+                                                        class="px-3 py-2 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                                        :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': watermarkConfig.position === pos.value }">
+                                                        <span class="w-5 h-5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center justify-center text-[10px]"
+                                                            :class="{ 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400': watermarkConfig.position === pos.value }">
+                                                            {{ pos.icon }}
+                                                        </span>
+                                                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t(`upload.position${pos.label}`) }}</span>
+                                                        <font-awesome-icon v-if="watermarkConfig.position === pos.value" :icon="faCheck"
+                                                            class="ml-auto text-indigo-600 dark:text-indigo-400 text-xs" />
+                                                    </div>
+                                                </div>
+                                            </transition>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{ $t('upload.watermarkOpacity') }} ({{ watermarkConfig.opacity }}%)</label>
+                                        <input type="range" v-model.number="watermarkConfig.opacity" min="10" max="100" step="5"
+                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{ $t('upload.watermarkSize') }} ({{ watermarkConfig.fontSize }}%)</label>
+                                        <input type="range" v-model.number="watermarkConfig.fontSize" min="1" max="10" step="1"
+                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                    </div>
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -253,6 +327,7 @@ import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
+import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
 const { t } = useI18n()
 
 const isDragging = ref(false)
@@ -276,6 +351,34 @@ const compressionLevel = ref('none')
 const originalTotalSize = ref(0)
 const compressionDropdownOpen = ref(false)
 const compressionDropdownRef = ref<HTMLElement | null>(null)
+const watermarkConfig = ref<WatermarkConfig>({ ...defaultWatermarkConfig })
+const positionDropdownOpen = ref(false)
+const positionDropdownRef = ref<HTMLElement | null>(null)
+
+// Watermark position options
+const watermarkPositions = [
+    { value: 'bottom-right', label: 'BottomRight', icon: '↘' },
+    { value: 'bottom-left', label: 'BottomLeft', icon: '↙' },
+    { value: 'bottom-center', label: 'BottomCenter', icon: '↓' },
+    { value: 'top-right', label: 'TopRight', icon: '↗' },
+    { value: 'top-left', label: 'TopLeft', icon: '↖' },
+    { value: 'center', label: 'Center', icon: '◎' }
+]
+
+const getPositionIcon = (position: string) => {
+    const pos = watermarkPositions.find(p => p.value === position)
+    return pos?.icon || '↘'
+}
+
+const getPositionKey = (position: string) => {
+    const pos = watermarkPositions.find(p => p.value === position)
+    return pos?.label || 'BottomRight'
+}
+
+const selectWatermarkPosition = (value: string) => {
+    watermarkConfig.value.position = value as any
+    positionDropdownOpen.value = false
+}
 
 const selectCompressionLevel = async (value: string) => {
     if (value === compressionLevel.value) {
@@ -296,6 +399,9 @@ const handleClickOutside = (event: MouseEvent) => {
     if (compressionDropdownRef.value && !compressionDropdownRef.value.contains(event.target as Node)) {
         compressionDropdownOpen.value = false
     }
+    if (positionDropdownRef.value && !positionDropdownRef.value.contains(event.target as Node)) {
+        positionDropdownOpen.value = false
+    }
 }
 
 const currentCompressionLevel = computed(() =>
@@ -307,7 +413,7 @@ const compressionRatio = computed(() => {
     return imagesTotalSize.value / originalTotalSize.value
 })
 
-// Re-compress all images with new compression level
+// Re-compress all images with new compression level (and re-apply watermark)
 const recompressImages = async () => {
     if (originalFiles.value.length === 0) return
 
@@ -320,12 +426,17 @@ const recompressImages = async () => {
     // Re-compress each original file
     for (const file of originalFiles.value) {
         try {
-            const result = await compressImage(file, currentCompressionLevel.value)
+            // Step 1: Compress
+            const compressResult = await compressImage(file, currentCompressionLevel.value)
+            
+            // Step 2: Apply watermark
+            const watermarkResult = await applyWatermark(compressResult.file, watermarkConfig.value)
+            
             convertedImages.value = [
                 ...convertedImages.value,
                 {
-                    file: result.file,
-                    tmpSrc: URL.createObjectURL(result.file)
+                    file: watermarkResult.file,
+                    tmpSrc: URL.createObjectURL(watermarkResult.file)
                 }
             ]
         } catch (e) {
@@ -436,18 +547,23 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
         originalFiles.value = [...originalFiles.value, file]
         originalTotalSize.value += file.size
 
-        // Compress image if compression is enabled
+        // Compress image if compression is enabled, then apply watermark
         try {
-            const result = await compressImage(file, currentCompressionLevel.value)
+            // Step 1: Compress
+            const compressResult = await compressImage(file, currentCompressionLevel.value)
+            
+            // Step 2: Apply watermark
+            const watermarkResult = await applyWatermark(compressResult.file, watermarkConfig.value)
+            
             convertedImages.value = [
                 ...convertedImages.value,
                 {
-                    file: result.file,
-                    tmpSrc: URL.createObjectURL(result.file)
+                    file: watermarkResult.file,
+                    tmpSrc: URL.createObjectURL(watermarkResult.file)
                 }
             ]
         } catch (e) {
-            console.error('Compression error:', e)
+            console.error('Compression/watermark error:', e)
             convertedImages.value = [
                 ...convertedImages.value,
                 {

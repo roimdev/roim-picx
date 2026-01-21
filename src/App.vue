@@ -195,7 +195,7 @@ const logout = async () => {
 													<font-awesome-icon :icon="faChevronRight" class="text-[10px] opacity-30" />
 												</div>
 											</el-dropdown-item>
-											<el-dropdown-item divided command="logout" class="!text-red-500">
+											<el-dropdown-item v-if="token" divided command="logout" class="!text-red-500">
 												<div class="flex items-center gap-3 py-1">
 													<font-awesome-icon :icon="faSignOutAlt" class="w-4" />
 													<span>{{ $t('nav.logout') }}</span>
