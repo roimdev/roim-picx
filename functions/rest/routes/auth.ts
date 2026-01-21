@@ -97,7 +97,8 @@ authRoutes.get('/auth/config', async (c) => {
     return c.json(Ok({
         allowTokenLogin: c.env.ALLOW_TOKEN_LOGIN === 'true',
         githubLoginEnabled: !!c.env.GITHUB_CLIENT_ID,
-        steamLoginEnabled: c.env.STEAM_LOGIN_ENABLED === 'true' && !!c.env.STEAM_API_KEY
+        steamLoginEnabled: c.env.STEAM_LOGIN_ENABLED === 'true' && !!c.env.STEAM_API_KEY,
+        googleLoginEnabled: c.env.GOOGLE_LOGIN_ENABLED === 'true' && !!c.env.GOOGLE_CLIENT_ID
     }))
 })
 
@@ -414,5 +415,227 @@ async function syncSteamUserToDb(db: D1Database, player: any, adminUsers?: strin
         }
     }
 }
+
+// ============================================
+// Google OAuth 2.0 登录
+// ============================================
+
+/**
+ * 同步 Google 用户到 D1 数据库
+ */
+async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string): Promise<Partial<User>> {
+    const isAdmin = isAdminUser(googleUser.email, adminUsers)
+    const login = googleUser.email.split('@')[0] // Use email prefix as login
+
+    try {
+        // 检查用户是否存在
+        const existing = await db.prepare(
+            'SELECT id, role, can_view_all, storage_quota, storage_used, upload_count FROM users WHERE google_id = ?'
+        ).bind(googleUser.id).first<DbUser>()
+
+        if (existing) {
+            // 更新最后登录时间
+            await db.prepare(
+                `UPDATE users SET 
+                    name = ?, 
+                    avatar_url = ?, 
+                    last_login_at = datetime('now')
+                 WHERE google_id = ?`
+            ).bind(
+                googleUser.name,
+                googleUser.picture,
+                googleUser.id
+            ).run()
+
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_id, user_login, action, details) 
+                 VALUES (?, ?, 'login', ?)`
+            ).bind(
+                existing.id,
+                login,
+                JSON.stringify({ type: 'google_oauth' })
+            ).run()
+
+            return {
+                role: existing.role,
+                canViewAll: existing.can_view_all === 1,
+                storageQuota: existing.storage_quota,
+                storageUsed: existing.storage_used,
+                uploadCount: existing.upload_count
+            }
+        } else {
+            // 创建新用户
+            await db.prepare(
+                `INSERT INTO users (google_id, login, name, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+            ).bind(
+                googleUser.id,
+                login,
+                googleUser.name,
+                googleUser.picture,
+                isAdmin ? 'admin' : 'user',
+                isAdmin ? 1 : 0
+            ).run()
+
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_login, action, details) 
+                 VALUES (?, 'login', ?)`
+            ).bind(
+                login,
+                JSON.stringify({ type: 'google_oauth', first_login: true })
+            ).run()
+
+            return {
+                role: isAdmin ? 'admin' : 'user',
+                canViewAll: isAdmin
+            }
+        }
+    } catch (e) {
+        console.error('Failed to sync Google user to DB:', e)
+        return {
+            role: isAdmin ? 'admin' : 'user',
+            canViewAll: isAdmin
+        }
+    }
+}
+
+/**
+ * Google 登录 - 重定向到 Google OAuth
+ */
+authRoutes.get('/google/login', async (c) => {
+    if (c.env.GOOGLE_LOGIN_ENABLED !== 'true' || !c.env.GOOGLE_CLIENT_ID) {
+        return c.json(Fail('Google login is not enabled'))
+    }
+
+    const redirectUri = `${c.env.BASE_URL}/rest/google/callback`
+    const state = crypto.randomUUID()
+
+    // Store state for CSRF protection
+    await c.env.XK.put(`google_state:${state}`, '1', { expirationTtl: 600 })
+
+    const params = new URLSearchParams({
+        client_id: c.env.GOOGLE_CLIENT_ID,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid email profile',
+        state: state,
+        access_type: 'online',
+        prompt: 'select_account'
+    })
+
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+    return c.redirect(googleAuthUrl)
+})
+
+/**
+ * Google OAuth 回调
+ */
+authRoutes.get('/google/callback', async (c) => {
+    const code = c.req.query('code')
+    const state = c.req.query('state')
+    const error = c.req.query('error')
+
+    const frontendUrl = c.env.BASE_URL
+
+    if (error) {
+        return c.redirect(`${frontendUrl}/auth?error=${encodeURIComponent(error)}`)
+    }
+
+    if (!code || !state) {
+        return c.redirect(`${frontendUrl}/auth?error=missing_params`)
+    }
+
+    // Verify state
+    const storedState = await c.env.XK.get(`google_state:${state}`)
+    if (!storedState) {
+        return c.redirect(`${frontendUrl}/auth?error=invalid_state`)
+    }
+    await c.env.XK.delete(`google_state:${state}`)
+
+    try {
+        // Exchange code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                client_id: c.env.GOOGLE_CLIENT_ID!,
+                client_secret: c.env.GOOGLE_CLIENT_SECRET!,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: `${c.env.BASE_URL}/rest/google/callback`
+            })
+        })
+
+        if (!tokenResponse.ok) {
+            const errorData = await tokenResponse.text()
+            console.error('Google token error:', errorData)
+            return c.redirect(`${frontendUrl}/auth?error=token_exchange_failed`)
+        }
+
+        const tokenData = await tokenResponse.json<{ access_token: string; id_token: string }>()
+
+        // Get user info
+        const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`
+            }
+        })
+
+        if (!userResponse.ok) {
+            return c.redirect(`${frontendUrl}/auth?error=userinfo_failed`)
+        }
+
+        const googleUser = await userResponse.json<{
+            id: string
+            email: string
+            verified_email: boolean
+            name: string
+            given_name: string
+            family_name: string
+            picture: string
+        }>()
+
+        // Sync user to database
+        const dbUserData = await syncGoogleUserToDb(c.env.DB, googleUser, c.env.ADMIN_USERS)
+
+        // Create JWT token
+        const login = googleUser.email.split('@')[0]
+        const user: User = {
+            id: parseInt(googleUser.id.substring(0, 10)) || Date.now(),
+            login: login,
+            name: googleUser.name,
+            avatar_url: googleUser.picture,
+            role: dbUserData.role || 'user',
+            canViewAll: dbUserData.canViewAll || false,
+            storageQuota: dbUserData.storageQuota,
+            storageUsed: dbUserData.storageUsed,
+            uploadCount: dbUserData.uploadCount
+        }
+
+        const jwtPayload = {
+            ...user,
+            exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+        }
+
+        const token = await sign(jwtPayload, c.env.PICX_AUTH_TOKEN)
+
+        // Redirect to frontend with token
+        const authToken = {
+            token,
+            user
+        }
+
+        return c.redirect(
+            `${frontendUrl}/auth?google_token=${encodeURIComponent(token)}&google_user=${encodeURIComponent(JSON.stringify(user))}`
+        )
+    } catch (e) {
+        console.error('Google OAuth error:', e)
+        return c.redirect(`${frontendUrl}/auth?error=${encodeURIComponent((e as Error).message)}`)
+    }
+})
 
 export default authRoutes

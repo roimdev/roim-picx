@@ -101,6 +101,7 @@ export interface DbUser {
     id: number
     github_id: number
     steam_id: string | null  // Steam 用户 ID
+    google_id: string | null  // Google 用户 ID
     login: string
     name: string | null
     avatar_url: string | null

@@ -38,7 +38,9 @@ export default {
     myShares: {
         title: 'My Shares',
         subtitle: 'Manage all your share links',
+        shareList: 'Share List',
         empty: 'No shares yet',
+        emptyHint: 'Shares you create will appear here',
         hasPassword: 'Password Protected',
         expired: 'Expired',
         maxedOut: 'View Limit Reached',
@@ -48,8 +50,9 @@ export default {
         linkCopied: 'Share link copied',
         copyFailed: 'Copy failed',
         copyLink: 'Copy link',
+        openShare: 'Open share',
         deleteConfirmTitle: 'Delete Share',
-        deleteConfirmMsg: 'Are you sure you want to delete this share link? This action cannot be undone.',
+        deleteConfirmMsg: 'Delete this share link?',
         deleted: 'Share deleted',
     },
     auth: {
@@ -74,6 +77,9 @@ export default {
         steamLogin: 'Login with Steam',
         steamLoginSuccess: 'Steam login successful',
         steamLoginFailed: 'Steam login failed',
+        googleLogin: 'Login with Google',
+        googleLoginSuccess: 'Google login successful',
+        googleLoginFailed: 'Google login failed',
     },
     upload: {
         title: 'Upload Images',

@@ -87,8 +87,19 @@
                         </button>
                     </div>
 
+                    <!-- Google 登录 -->
+                    <div v-if="authConfig.googleLoginEnabled">
+                        <button
+                            @click="loginWithGoogle"
+                            :disabled="loading"
+                            class="w-full flex items-center justify-center gap-3 py-3.5 px-4 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <font-awesome-icon :icon="faGoogle" class="text-lg text-red-500" />
+                            {{ $t('auth.googleLogin') }}
+                        </button>
+                    </div>
+
                     <!-- 无可用登录方式提示 -->
-                    <div v-if="!configLoading && !authConfig.allowTokenLogin && !authConfig.githubLoginEnabled && !authConfig.steamLoginEnabled" class="text-center text-sm text-red-500">
+                    <div v-if="!configLoading && !authConfig.allowTokenLogin && !authConfig.githubLoginEnabled && !authConfig.steamLoginEnabled && !authConfig.googleLoginEnabled" class="text-center text-sm text-red-500">
                         {{ $t('auth.noLoginMethod') }}
                     </div>
                 </div>
@@ -109,7 +120,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { checkToken, requestGithubLogin, requestAuthConfig, requestSteamLogin, type AuthConfig } from '../utils/request'
 import { faKey, faUnlockAlt, faLock, faEye, faEyeSlash, faSpinner, faSignInAlt } from '@fortawesome/free-solid-svg-icons'
-import { faGithub, faSteam } from '@fortawesome/free-brands-svg-icons'
+import { faGithub, faSteam, faGoogle } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
@@ -126,7 +137,8 @@ const githubClientIdEnv = import.meta.env.VITE_GITHUB_CLIENT_ID
 const authConfig = ref<AuthConfig>({
   allowTokenLogin: true,  // 默认允许，直到获取到配置
   githubLoginEnabled: !!githubClientIdEnv,
-  steamLoginEnabled: false
+  steamLoginEnabled: false,
+  googleLoginEnabled: false
 })
 const configLoading = ref(true)
 
@@ -185,6 +197,12 @@ const loginWithSteam = async () => {
   }
 }
 
+const loginWithGoogle = () => {
+  loading.value = true
+  // Redirect to Google OAuth endpoint
+  window.location.href = `${window.location.origin}/rest/google/login`
+}
+
 onMounted(async () => {
   // 获取认证配置
   try {
@@ -229,10 +247,24 @@ onMounted(async () => {
     }
   }
 
-  // 处理 Steam 错误
-  const steamError = route.query.error as string
-  if (steamError) {
-    ElMessage.error(`Steam 登录失败: ${steamError}`)
+  // 处理 Google 回调
+  const googleToken = route.query.google_token as string
+  const googleUserStr = route.query.google_user as string
+  if (googleToken && googleUserStr) {
+    try {
+      const googleUser = JSON.parse(googleUserStr)
+      storage.local.set('auth-token', { token: googleToken, user: googleUser })
+      ElMessage.success('Google 登录成功')
+      router.push('/')
+    } catch (e) {
+      ElMessage.error('Google 登录失败')
+    }
+  }
+
+  // 处理错误 (Steam 和 Google 共用)
+  const authError = route.query.error as string
+  if (authError) {
+    ElMessage.error(`登录失败: ${authError}`)
   }
 })
 </script>

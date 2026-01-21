@@ -38,7 +38,9 @@ export default {
     myShares: {
         title: '我的分享',
         subtitle: '管理您创建的所有分享链接',
+        shareList: '分享列表',
         empty: '暂无分享记录',
+        emptyHint: '创建分享后会在这里显示',
         hasPassword: '已加密',
         expired: '已过期',
         maxedOut: '已达上限',
@@ -48,8 +50,9 @@ export default {
         linkCopied: '分享链接已复制',
         copyFailed: '复制失败',
         copyLink: '复制链接',
+        openShare: '打开分享',
         deleteConfirmTitle: '删除分享',
-        deleteConfirmMsg: '确定要删除这个分享链接吗？删除后无法恢复。',
+        deleteConfirmMsg: '确定要删除这个分享链接吗？',
         deleted: '分享已删除',
     },
     auth: {
@@ -74,6 +77,9 @@ export default {
         steamLogin: 'Steam 授权登录',
         steamLoginSuccess: 'Steam 登录成功',
         steamLoginFailed: 'Steam 登录失败',
+        googleLogin: 'Google 授权登录',
+        googleLoginSuccess: 'Google 登录成功',
+        googleLoginFailed: 'Google 登录失败',
     },
     upload: {
         title: '上传图片',

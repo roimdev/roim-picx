@@ -92,6 +92,7 @@ export interface AuthConfig {
 	allowTokenLogin: boolean
 	githubLoginEnabled: boolean
 	steamLoginEnabled: boolean
+	googleLoginEnabled: boolean
 }
 export const requestAuthConfig = (): Promise<AuthConfig> => request.get('/rest/auth/config')
 
