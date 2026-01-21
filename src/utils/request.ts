@@ -91,8 +91,12 @@ export const requestGithubLogin = (code: string): Promise<string> => request.pos
 export interface AuthConfig {
 	allowTokenLogin: boolean
 	githubLoginEnabled: boolean
+	steamLoginEnabled: boolean
 }
 export const requestAuthConfig = (): Promise<AuthConfig> => request.get('/rest/auth/config')
+
+// Steam Login
+export const requestSteamLogin = (): Promise<{ authUrl: string }> => request.get('/rest/steam/login')
 
 // Share API
 export interface CreateShareRequest {

@@ -31,6 +31,8 @@ export default {
         manage: 'Manage',
         admin: 'Admin',
         logout: 'Logout',
+        logoutConfirmTitle: 'Confirm Logout',
+        logoutConfirmMsg: 'Are you sure you want to logout?',
     },
     auth: {
         welcome: 'Welcome Back',
@@ -51,6 +53,9 @@ export default {
         githubLoginSuccess: 'GitHub login successful',
         githubLoginFailed: 'GitHub login failed',
         tokenLoginDisabled: 'Token login is disabled',
+        steamLogin: 'Login with Steam',
+        steamLoginSuccess: 'Steam login successful',
+        steamLoginFailed: 'Steam login failed',
     },
     upload: {
         title: 'Upload Images',

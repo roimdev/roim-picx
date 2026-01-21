@@ -96,7 +96,8 @@ async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string):
 authRoutes.get('/auth/config', async (c) => {
     return c.json(Ok({
         allowTokenLogin: c.env.ALLOW_TOKEN_LOGIN === 'true',
-        githubLoginEnabled: !!c.env.GITHUB_CLIENT_ID
+        githubLoginEnabled: !!c.env.GITHUB_CLIENT_ID,
+        steamLoginEnabled: c.env.STEAM_LOGIN_ENABLED === 'true' && !!c.env.STEAM_API_KEY
     }))
 })
 
@@ -231,5 +232,187 @@ authRoutes.post('/checkToken', async (c) => {
         return c.json(Ok(false))
     }
 })
+
+// ============================================
+// Steam OpenID 登录
+// ============================================
+
+/**
+ * Steam 登录 - 生成 OpenID 认证 URL
+ */
+authRoutes.get('/steam/login', async (c) => {
+    if (c.env.STEAM_LOGIN_ENABLED !== 'true' || !c.env.STEAM_API_KEY) {
+        return c.json(Fail('Steam login is not enabled'))
+    }
+
+    const returnUrl = `${c.env.BASE_URL}/rest/steam/callback`
+
+    const params = new URLSearchParams({
+        'openid.ns': 'http://specs.openid.net/auth/2.0',
+        'openid.mode': 'checkid_setup',
+        'openid.return_to': returnUrl,
+        'openid.realm': c.env.BASE_URL,
+        'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+        'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select'
+    })
+
+    const steamAuthUrl = `https://steamcommunity.com/openid/login?${params.toString()}`
+
+    return c.json(Ok({ authUrl: steamAuthUrl }))
+})
+
+/**
+ * Steam 回调 - 处理 OpenID 认证结果
+ */
+authRoutes.get('/steam/callback', async (c) => {
+    if (c.env.STEAM_LOGIN_ENABLED !== 'true' || !c.env.STEAM_API_KEY) {
+        return c.redirect('/auth?error=steam_disabled')
+    }
+
+    const query = c.req.query()
+
+    // 验证 OpenID 签名
+    const validationParams = new URLSearchParams()
+    for (const [key, value] of Object.entries(query)) {
+        validationParams.append(key, value as string)
+    }
+    validationParams.set('openid.mode', 'check_authentication')
+
+    try {
+        const validationRes = await fetch('https://steamcommunity.com/openid/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: validationParams.toString()
+        })
+        const validationText = await validationRes.text()
+
+        if (!validationText.includes('is_valid:true')) {
+            return c.redirect('/auth?error=steam_invalid')
+        }
+
+        // 从 claimed_id 提取 SteamID
+        const claimedId = query['openid.claimed_id'] as string
+        const steamIdMatch = claimedId?.match(/\/id\/(\d+)$/)
+        if (!steamIdMatch) {
+            return c.redirect('/auth?error=steam_no_id')
+        }
+        const steamId = steamIdMatch[1]
+
+        // 调用 Steam API 获取用户信息
+        const userRes = await fetch(
+            `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${c.env.STEAM_API_KEY}&steamids=${steamId}`
+        )
+        const userData = await userRes.json<any>()
+        const player = userData?.response?.players?.[0]
+
+        if (!player) {
+            return c.redirect('/auth?error=steam_user_not_found')
+        }
+
+        // 同步用户到 D1 数据库
+        const permissions = await syncSteamUserToDb(c.env.DB, player, c.env.ADMIN_USERS)
+
+        // 创建 JWT Payload
+        const userPayload: User = {
+            id: parseInt(steamId.slice(-8), 10), // 取 SteamID 后 8 位作为数字 ID
+            name: player.personaname,
+            login: `steam_${steamId}`,
+            avatar_url: player.avatarfull || player.avatar,
+            role: permissions.role,
+            canViewAll: permissions.canViewAll
+        }
+
+        // 签发 JWT Token
+        const token = await sign(userPayload, c.env.PICX_AUTH_TOKEN, 'HS256')
+
+        // 重定向到前端，带上 token 参数
+        return c.redirect(`/auth?steam_token=${encodeURIComponent(token)}&steam_user=${encodeURIComponent(JSON.stringify(userPayload))}`)
+    } catch (e: any) {
+        console.error('Steam callback error:', e)
+        return c.redirect(`/auth?error=steam_error&msg=${encodeURIComponent(e.message)}`)
+    }
+})
+
+/**
+ * 同步 Steam 用户到 D1 数据库
+ */
+async function syncSteamUserToDb(db: D1Database, player: any, adminUsers?: string): Promise<Partial<User>> {
+    const steamId = player.steamid
+    const login = `steam_${steamId}`
+    const isAdmin = isAdminUser(login, adminUsers)
+
+    try {
+        // 检查用户是否存在
+        const existing = await db.prepare(
+            'SELECT id, role, can_view_all, storage_quota, storage_used, upload_count FROM users WHERE steam_id = ?'
+        ).bind(steamId).first<DbUser>()
+
+        if (existing) {
+            // 更新最后登录时间
+            await db.prepare(
+                `UPDATE users SET 
+                    name = ?, 
+                    avatar_url = ?, 
+                    last_login_at = datetime('now')
+                 WHERE steam_id = ?`
+            ).bind(
+                player.personaname,
+                player.avatarfull || player.avatar,
+                steamId
+            ).run()
+
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_id, user_login, action, details) 
+                 VALUES (?, ?, 'login', ?)`
+            ).bind(
+                existing.id,
+                login,
+                JSON.stringify({ type: 'steam_openid' })
+            ).run()
+
+            return {
+                role: existing.role,
+                canViewAll: existing.can_view_all === 1,
+                storageQuota: existing.storage_quota,
+                storageUsed: existing.storage_used,
+                uploadCount: existing.upload_count
+            }
+        } else {
+            // 创建新用户
+            await db.prepare(
+                `INSERT INTO users (github_id, steam_id, login, name, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (0, ?, ?, ?, ?, ?, ?, datetime('now'))`
+            ).bind(
+                steamId,
+                login,
+                player.personaname,
+                player.avatarfull || player.avatar,
+                isAdmin ? 'admin' : 'user',
+                isAdmin ? 1 : 0
+            ).run()
+
+            // 记录登录日志
+            await db.prepare(
+                `INSERT INTO audit_logs (user_login, action, details) 
+                 VALUES (?, 'login', ?)`
+            ).bind(
+                login,
+                JSON.stringify({ type: 'steam_openid', first_login: true })
+            ).run()
+
+            return {
+                role: isAdmin ? 'admin' : 'user',
+                canViewAll: isAdmin
+            }
+        }
+    } catch (e) {
+        console.error('Failed to sync Steam user to DB:', e)
+        return {
+            role: isAdmin ? 'admin' : 'user',
+            canViewAll: isAdmin
+        }
+    }
+}
 
 export default authRoutes

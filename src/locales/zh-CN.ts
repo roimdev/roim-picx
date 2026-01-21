@@ -31,6 +31,8 @@ export default {
         manage: '图片管理',
         admin: '管理后台',
         logout: '退出登录',
+        logoutConfirmTitle: '确认退出',
+        logoutConfirmMsg: '确定要退出当前账号吗？',
     },
     auth: {
         welcome: '欢迎回来',
@@ -51,6 +53,9 @@ export default {
         githubLoginSuccess: 'GitHub 登录成功',
         githubLoginFailed: 'GitHub 登录失败',
         tokenLoginDisabled: 'Token 登录已禁用',
+        steamLogin: 'Steam 授权登录',
+        steamLoginSuccess: 'Steam 登录成功',
+        steamLoginFailed: 'Steam 登录失败',
     },
     upload: {
         title: '上传图片',

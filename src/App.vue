@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt, faBars, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useRoute } from 'vue-router'
-import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
+import { ElScrollbar, ElConfigProvider, ElMessage, ElMessageBox, ElAvatar, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -85,12 +85,25 @@ const handleNavClick = (item: any) => {
 	router.push(item.path)
 }
 
-const logout = () => {
-	storage.local.remove('auth-token')
-	token.value = ''
-	currentUser.value = null
-	ElMessage.success(t('nav.logout'))
-	router.push('/auth')
+const logout = async () => {
+	try {
+		await ElMessageBox.confirm(
+			t('nav.logoutConfirmMsg'),
+			t('nav.logoutConfirmTitle'),
+			{
+				confirmButtonText: t('common.confirm'),
+				cancelButtonText: t('common.cancel'),
+				type: 'warning',
+			}
+		)
+		storage.local.remove('auth-token')
+		token.value = ''
+		currentUser.value = null
+		ElMessage.success(t('nav.logout'))
+		router.push('/auth')
+	} catch (e) {
+		// User cancelled
+	}
 }
 </script>
 

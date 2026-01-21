@@ -100,6 +100,7 @@ export interface User {
 export interface DbUser {
     id: number
     github_id: number
+    steam_id: string | null  // Steam 用户 ID
     login: string
     name: string | null
     avatar_url: string | null
