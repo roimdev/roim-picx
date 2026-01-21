@@ -563,4 +563,115 @@ adminRoutes.get('/user/me/stats', auth, async (c) => {
     }
 })
 
+/**
+ * 同步历史 R2 文件数据到 D1 数据库
+ */
+adminRoutes.get('/sync-r2-to-d1', auth, adminAuth, async (c) => {
+    const limit = parseInt(c.req.query('limit') || '100')
+    const cursor = c.req.query('cursor')
+    const dryRun = c.req.query('dryRun') === 'true'
+
+    try {
+        // 1. 获取 R2 文件列表 (包含元数据)
+        const list = await c.env.PICX.list({
+            limit,
+            cursor,
+            include: ['customMetadata', 'httpMetadata']
+        })
+
+        const results = {
+            processed: 0,
+            synced: 0,
+            skipped: 0,
+            errors: 0,
+            nextCursor: list.cursor,
+            hasMore: list.truncated,
+            details: [] as any[]
+        }
+
+        // 2. 遍历文件并同步到 D1
+        for (const object of list.objects) {
+            results.processed++
+            const key = object.key
+
+            try {
+                // 检查数据库中是否已存在
+                const existing = await c.env.DB.prepare(
+                    'SELECT 1 FROM images WHERE key = ?'
+                ).bind(key).first()
+
+                if (existing) {
+                    results.skipped++
+                    continue
+                }
+
+                if (dryRun) {
+                    results.synced++
+                    results.details.push({ key, status: 'dry_run' })
+                    continue
+                }
+
+                // 提取元数据
+                const meta = object.customMetadata || {}
+                const userLogin = meta['uploadedBy'] || 'system'
+                const originalName = meta['originalName'] || null
+                const mimeType = object.httpMetadata?.contentType || null
+                const size = object.size
+
+                // 从 key 中提取目录信息
+                let folder = ''
+                if (key.includes('/')) {
+                    folder = key.substring(0, key.lastIndexOf('/') + 1)
+                }
+
+                // 解析过期时间
+                let expiresAt = null
+                if (meta['expires']) {
+                    try {
+                        expiresAt = new Date(parseInt(meta['expires'])).toISOString()
+                    } catch (e) {
+                        console.warn(`Invalid expiry for ${key}:`, meta['expires'])
+                    }
+                }
+
+                // 3. 插入到 D1
+                await c.env.DB.prepare(
+                    `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                ).bind(
+                    key,
+                    null,
+                    userLogin,
+                    originalName,
+                    size,
+                    mimeType,
+                    folder,
+                    expiresAt,
+                    object.uploaded.toISOString()
+                ).run()
+
+                // 4. 更新用户信息 (同步统计信息)
+                await c.env.DB.prepare(
+                    `UPDATE users SET 
+                        storage_used = storage_used + ?, 
+                        upload_count = upload_count + 1 
+                     WHERE login = ?`
+                ).bind(size, userLogin).run()
+
+                results.synced++
+                // results.details.push({ key, status: 'synced' })
+            } catch (e) {
+                console.error(`Failed to sync ${key}:`, e)
+                results.errors++
+                results.details.push({ key, error: (e as Error).message })
+            }
+        }
+
+        return c.json(Ok(results))
+    } catch (e) {
+        console.error('Sync failed:', e)
+        return c.json(Fail(`同步失败: ${(e as Error).message}`))
+    }
+})
+
 export default adminRoutes
