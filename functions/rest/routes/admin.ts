@@ -389,7 +389,7 @@ adminRoutes.get('/analytics/trend', auth, adminAuth, async (c) => {
  * 获取热门图片排行
  */
 adminRoutes.get('/analytics/top-images', auth, adminAuth, async (c) => {
-    const limit = parseInt(c.req.query('limit') || '20')
+    const limit = parseInt(c.req.query('limit') || '10')
     const days = parseInt(c.req.query('days') || '30')
 
     try {
@@ -566,12 +566,17 @@ adminRoutes.get('/user/me/stats', auth, async (c) => {
 /**
  * 同步历史 R2 文件数据到 D1 数据库
  */
-adminRoutes.get('/sync-r2-to-d1', auth, adminAuth, async (c) => {
-    const limit = parseInt(c.req.query('limit') || '100')
-    const cursor = c.req.query('cursor')
-    const dryRun = c.req.query('dryRun') === 'true'
+adminRoutes.post('/sync-r2-to-d1', auth, adminAuth, async (c) => {
+    let limit = 100
+    let cursor: string | undefined = undefined
+    let dryRun = false
 
     try {
+        const body = await c.req.json().catch(() => ({}))
+        limit = parseInt(body.limit || '100')
+        cursor = body.cursor || undefined
+        dryRun = body.dryRun === true
+
         // 1. 获取 R2 文件列表 (包含元数据)
         const list = await c.env.PICX.list({
             limit,

@@ -90,7 +90,7 @@ const loadAnalytics = async () => {
 		const [overview, trend, top] = await Promise.all([
 			requestAnalyticsOverview(),
 			requestAnalyticsTrend(),
-			requestTopImages(20, 30)
+			requestTopImages(10, 30)
 		])
 		analyticsOverview.value = overview
 		analyticsTrend.value = trend
@@ -212,6 +212,7 @@ const formatDate = (dateStr: string) => {
 }
 
 const getStoragePercent = (user: AdminUser) => {
+	if (!user.storageQuota || user.storageQuota === 0) return 0
 	return Math.round((user.storageUsed / user.storageQuota) * 100)
 }
 
@@ -351,12 +352,12 @@ onMounted(async () => {
 								<template #default="{ row }">
 									<div class="space-y-1">
 										<el-progress 
-											:percentage="getStoragePercent(row)" 
+											:percentage="row.storageQuota === 0 ? 0 : getStoragePercent(row)" 
 											:stroke-width="6"
-											:color="getStoragePercent(row) > 90 ? '#f56c6c' : getStoragePercent(row) > 70 ? '#e6a23c' : '#67c23a'"
+											:color="row.storageQuota === 0 ? '#67c23a' : (getStoragePercent(row) > 90 ? '#f56c6c' : getStoragePercent(row) > 70 ? '#e6a23c' : '#67c23a')"
 										/>
 										<div class="text-xs text-gray-400">
-											{{ formatBytes(row.storageUsed) }} / {{ formatBytes(row.storageQuota) }}
+											{{ formatBytes(row.storageUsed) }} / {{ row.storageQuota === 0 ? $t('admin.unlimited') : formatBytes(row.storageQuota) }}
 										</div>
 									</div>
 								</template>
@@ -612,6 +613,9 @@ onMounted(async () => {
 					<el-input v-model.number="quotaValue" type="number" :min="0">
 						<template #append>MB</template>
 					</el-input>
+					<div class="text-xs text-gray-400 mt-1">
+						{{ $t('admin.quotaHint') }}
+					</div>
 					<div class="text-xs text-gray-400 mt-1">
 						{{ $t('admin.currentUsed') }}: {{ formatBytes(quotaEditUser.storageUsed) }}
 					</div>
