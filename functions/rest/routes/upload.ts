@@ -131,6 +131,11 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                         ).bind(object.size, user.login).run()
                     }).then((result) => {
                         console.log(`[Upload] User stats updated - login: ${user.login}, meta: ${JSON.stringify(result.meta)}`)
+                        // 记录上传审计日志
+                        return c.env.DB.prepare(
+                            `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                             VALUES (?, ?, 'upload', ?, ?)`
+                        ).bind(user.id, user.login, object.key, JSON.stringify({ size: object.size, originalName: originalName })).run()
                     }).catch(e => {
                         console.error(`[Upload] Failed to sync image to DB - key: ${object.key}, error:`, e)
                     })

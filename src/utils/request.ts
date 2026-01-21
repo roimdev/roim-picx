@@ -136,6 +136,22 @@ export const requestGetShareInfo = (id: string): Promise<ShareDetail> => request
 export const requestVerifyShare = (id: string, password?: string): Promise<ShareImageResult> => request.post(`/rest/share/${id}/verify`, { password })
 export const requestDeleteShare = (id: string): Promise<any> => request.delete(`/rest/share/${id}`)
 
+// My Shares
+export interface MyShare {
+	id: string
+	imageKey: string
+	imageUrl: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	views: number
+	createdAt: number
+	isExpired: boolean
+	isMaxedOut: boolean
+	url: string
+}
+export const requestMyShares = (): Promise<MyShare[]> => request.get('/rest/share/my')
+
 // ============================================
 // 当前用户 API
 // ============================================

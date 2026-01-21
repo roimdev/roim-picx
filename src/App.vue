@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt, faBars, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt, faBars, faChevronRight, faShareAlt } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useRoute } from 'vue-router'
 import { ElScrollbar, ElConfigProvider, ElMessage, ElMessageBox, ElAvatar, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
@@ -67,7 +67,8 @@ watch(() => route.path, () => {
 const navItems = computed(() => {
 	const items = [
 		{ path: '/up', label: t('nav.upload'), icon: faUpload },
-		{ path: '/', label: t('nav.manage'), icon: faCog }
+		{ path: '/', label: t('nav.manage'), icon: faCog },
+		{ path: '/shares', label: t('nav.myShares'), icon: faShareAlt }
 	]
 	// 管理员显示管理入口
 	if (isAdmin.value) {

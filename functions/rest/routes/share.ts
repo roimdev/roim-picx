@@ -85,6 +85,30 @@ shareRoutes.post('/share', auth, async (c) => {
 
         await c.env.XK.put(`share:${shareId}`, JSON.stringify(record), kvOptions)
 
+        // 同步分享记录到 D1 数据库
+        if (user) {
+            c.executionCtx.waitUntil(
+                c.env.DB.prepare(
+                    `INSERT INTO shares (id, image_key, user_id, user_login, password_hash, max_views, current_views, expires_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, 0, ?)`
+                ).bind(
+                    shareId,
+                    data.imageKey,
+                    user.id,
+                    user.login,
+                    record.password || null,
+                    data.maxViews || null,
+                    data.expireAt ? new Date(data.expireAt).toISOString() : null
+                ).run().then(() => {
+                    // 记录分享审计日志
+                    return c.env.DB.prepare(
+                        `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                         VALUES (?, ?, 'share', ?, ?)`
+                    ).bind(user.id, user.login, data.imageKey, JSON.stringify({ shareId, hasPassword: !!data.password, maxViews: data.maxViews })).run()
+                }).catch(e => console.error('Failed to sync share to DB:', e))
+            )
+        }
+
         const shareUrl = `${c.env.BASE_URL}/s/${shareId}`
 
         return c.json(Ok({
@@ -97,6 +121,56 @@ shareRoutes.post('/share', auth, async (c) => {
     } catch (e) {
         console.error('Create share error:', e)
         return c.json(Fail(`创建分享失败: ${(e as Error).message}`))
+    }
+})
+
+// List my shares
+shareRoutes.get('/share/my', auth, async (c) => {
+    const user = c.get('user')
+    if (!user) {
+        return c.json(Fail('未登录'), 401)
+    }
+
+    try {
+        // List all share keys from KV
+        const shareList = await c.env.XK.list({ prefix: 'share:' })
+
+        const myShares: any[] = []
+
+        // Fetch each share and filter by createdBy
+        for (const key of shareList.keys) {
+            const recordStr = await c.env.XK.get(key.name)
+            if (recordStr) {
+                const record: ShareRecord = JSON.parse(recordStr)
+                if (record.createdBy === user.login) {
+                    // Check if expired
+                    const isExpired = record.expireAt && Date.now() > record.expireAt
+                    const isMaxedOut = record.maxViews && record.views >= record.maxViews
+
+                    myShares.push({
+                        id: record.id,
+                        imageKey: record.imageKey,
+                        imageUrl: record.imageUrl,
+                        hasPassword: !!record.password,
+                        expireAt: record.expireAt,
+                        maxViews: record.maxViews,
+                        views: record.views,
+                        createdAt: record.createdAt,
+                        isExpired,
+                        isMaxedOut,
+                        url: `${c.env.BASE_URL}/s/${record.id}`
+                    })
+                }
+            }
+        }
+
+        // Sort by createdAt desc
+        myShares.sort((a, b) => b.createdAt - a.createdAt)
+
+        return c.json(Ok(myShares))
+    } catch (e) {
+        console.error('List my shares error:', e)
+        return c.json(Fail(`获取分享列表失败: ${(e as Error).message}`))
     }
 })
 
@@ -188,6 +262,19 @@ shareRoutes.delete('/share/:id', auth, async (c) => {
     }
 
     await c.env.XK.delete(`share:${shareId}`)
+
+    // 记录删除分享审计日志
+    const user = c.get('user')
+    if (user) {
+        c.executionCtx.waitUntil(
+            c.env.DB.prepare(
+                `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                 VALUES (?, ?, 'delete_share', ?, ?)`
+            ).bind(user.id, user.login, shareId, JSON.stringify({ shareId })).run()
+                .catch(e => console.error('Failed to log delete_share:', e))
+        )
+    }
+
     return c.json(Ok('分享链接已删除'))
 })
 
