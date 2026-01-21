@@ -55,6 +55,8 @@ import type { ImgItem } from '../utils/types'
 import copy from 'copy-to-clipboard'
 import { ElImage, ElMessage } from 'element-plus'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -77,10 +79,10 @@ const htmlLink = (link: string, filename: string) => {
 const copyLink = (event: any) => {
   const res = copy(event.target.value)
   if (res) {
-    ElMessage.success('链接已复制')
+    ElMessage.success(t('manage.copySuccess'))
     event.target.select()
   } else {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('manage.copyFailed'))
   }
 }
 </script>

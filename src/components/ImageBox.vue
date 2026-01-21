@@ -21,7 +21,7 @@
                 <template v-if="mode === 'uploaded'">
                     <!-- Row 1: Preview, Copy, Share -->
                     <div class="flex items-center gap-2">
-                        <el-tooltip content="预览" placement="top" :show-after="500">
+                        <el-tooltip :content="$t('manage.preview')" placement="top" :show-after="500">
                             <button
                                 class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
                                 @click.stop="emit('preview')">
@@ -29,7 +29,7 @@
                             </button>
                         </el-tooltip>
 
-                        <el-tooltip content="复制链接" placement="top" :show-after="500">
+                        <el-tooltip :content="$t('manage.copyLink')" placement="top" :show-after="500">
                             <button
                                 class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
                                 @click.stop="emit('copy')">
@@ -37,7 +37,7 @@
                             </button>
                         </el-tooltip>
 
-                        <el-tooltip content="分享" placement="top" :show-after="500">
+                        <el-tooltip :content="$t('manage.share')" placement="top" :show-after="500">
                             <button
                                 class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
                                 @click.stop="emit('share')">
@@ -48,7 +48,7 @@
 
                     <!-- Row 2: Rename, Delete -->
                     <div class="flex items-center gap-2">
-                        <el-tooltip content="重命名" placement="bottom" :show-after="500">
+                        <el-tooltip :content="$t('manage.rename')" placement="bottom" :show-after="500">
                             <button
                                 class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
                                 @click.stop="emit('rename')">
@@ -56,8 +56,8 @@
                             </button>
                         </el-tooltip>
 
-                        <el-popconfirm title="确认删除这张图片吗？" confirm-button-type="danger" confirm-button-text="删除"
-                            cancel-button-text="取消" width="200" @confirm="handleDelete">
+                        <el-popconfirm :title="$t('manage.deleteConfirm')" :confirm-button-type="'danger'" :confirm-button-text="$t('common.delete')"
+                            :cancel-button-text="$t('common.cancel')" width="200" @confirm="handleDelete">
                             <template #reference>
                                 <button
                                     class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-red-500 dark:hover:text-red-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
@@ -103,7 +103,7 @@
                     <font-awesome-icon :icon="faEdit" class="text-[10px]" />
                 </button>
 
-                <el-popconfirm title="删除?" confirm-button-type="danger" confirm-button-text="删" cancel-button-text="取"
+                <el-popconfirm :title="$t('manage.confirmDeleteTitle')" :confirm-button-type="'danger'" :confirm-button-text="$t('manage.deleteShort')" :cancel-button-text="$t('manage.cancelShort')"
                     width="140" @confirm="handleDelete">
                     <template #reference>
                         <button
@@ -131,14 +131,14 @@
                     </p>
                     <p v-if="originalName" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"
                         :title="originalName">
-                        原名: {{ originalName }}
+                        {{ $t('manage.originalName') }}: {{ originalName }}
                     </p>
                     <div class="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-gray-500">
                         <span
                             class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-300">{{
                                 formatBytes(size) }}</span>
                         <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
-                        <span v-if="uploaderName" class="flex items-center gap-1" :title="'上传者: ' + uploaderName">
+                        <span v-if="uploaderName" class="flex items-center gap-1" :title="$t('manage.uploaderLabel') + ': ' + uploaderName">
                             <font-awesome-icon :icon="faUser" class="text-[10px]" />
                             <span class="max-w-[80px] truncate">{{ uploaderName }}</span>
                         </span>

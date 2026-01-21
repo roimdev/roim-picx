@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="复制链接"
+    :title="$t('manage.copyLink')"
     width="90%"
     destroy-on-close
     :close-on-click-modal="false"
@@ -32,6 +32,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import copy from 'copy-to-clipboard'
@@ -59,9 +61,9 @@ const formats = computed(() => ({
 
 const copyText = (text: string) => {
   if (copy(text)) {
-    ElMessage.success('复制成功')
+    ElMessage.success(t('manage.copySuccess'))
   } else {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('manage.copyFailed'))
   }
 }
 </script>

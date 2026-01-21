@@ -8,10 +8,10 @@
                 <font-awesome-icon :icon="faTrashAlt" class="text-2xl" />
             </div>
             <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-100 dark:via-gray-200 dark:to-gray-100 bg-clip-text text-transparent">
-                删除图片
+                {{ $t('deleteImage.title') }}
             </h1>
             <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                请确认您要删除的图片信息，此操作不可撤销
+                {{ $t('deleteImage.confirmMessage') }}
             </p>
         </div>
 
@@ -31,12 +31,12 @@
                             <font-awesome-icon :icon="faExclamationTriangle" class="text-4xl text-red-500 dark:text-red-400" />
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">链接无效或已过期</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">{{ $t('deleteImage.invalidLinkTitle') }}</h2>
                     <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto">{{ error }}</p>
                     <button @click="goHome"
                         class="inline-flex items-center gap-2 px-8 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg">
                         <font-awesome-icon :icon="faHome" />
-                        返回首页
+                        {{ $t('deleteImage.goHome') }}
                     </button>
                 </div>
 
@@ -48,12 +48,12 @@
                             <font-awesome-icon :icon="faCheckCircle" class="text-5xl text-emerald-500 dark:text-emerald-400" />
                         </div>
                     </div>
-                    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">删除成功</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mb-8">该图片已被永久移除，相关链接已失效</p>
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">{{ $t('deleteImage.successTitle') }}</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8">{{ $t('deleteImage.successMessage') }}</p>
                     <button @click="goHome"
                         class="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                         <font-awesome-icon :icon="faHome" />
-                        返回首页
+                        {{ $t('deleteImage.goHome') }}
                     </button>
                 </div>
 
@@ -66,8 +66,8 @@
                                 <font-awesome-icon :icon="faExclamationTriangle" class="text-amber-600 dark:text-amber-400" />
                             </div>
                             <div>
-                                <h3 class="font-bold text-amber-800 dark:text-amber-300">确认删除此图片？</h3>
-                                <p class="text-sm text-amber-700/80 dark:text-amber-400/80 mt-0.5">删除后将无法恢复，请仔细核对图片信息</p>
+                                <h3 class="font-bold text-amber-800 dark:text-amber-300">{{ $t('deleteImage.warningTitle') }}</h3>
+                                <p class="text-sm text-amber-700/80 dark:text-amber-400/80 mt-0.5">{{ $t('deleteImage.warningMessage') }}</p>
                             </div>
                         </div>
                     </div>
@@ -91,7 +91,7 @@
                                         <template #error>
                                             <div class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
                                                 <font-awesome-icon :icon="faImage" class="text-4xl mb-2 opacity-30" />
-                                                <span class="text-sm">预览加载失败</span>
+                                                <span class="text-sm">{{ $t('deleteImage.previewFailed') }}</span>
                                             </div>
                                         </template>
                                     </el-image>
@@ -108,7 +108,7 @@
                                 <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
                                     <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         <font-awesome-icon :icon="faFile" />
-                                        文件名
+                                        {{ $t('deleteImage.fileName') }}
                                     </div>
                                     <p class="text-base font-bold text-gray-900 dark:text-gray-100 break-all leading-relaxed">{{ imageInfo.key }}</p>
                                 </div>
@@ -117,7 +117,7 @@
                                 <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
                                     <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         <font-awesome-icon :icon="faDatabase" />
-                                        文件大小
+                                        {{ $t('deleteImage.fileSize') }}
                                     </div>
                                     <span class="inline-flex items-center px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-mono font-bold">
                                         {{ formatBytes(imageInfo.size) }}
@@ -131,11 +131,11 @@
                                     class="w-full relative overflow-hidden group/btn flex justify-center items-center gap-2 py-4 px-6 rounded-xl text-base font-bold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0">
                                     <span v-if="deleting" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                     <font-awesome-icon v-else :icon="faTrashAlt" />
-                                    <span>{{ deleting ? '正在删除...' : '确认永久删除' }}</span>
+                                    <span>{{ deleting ? $t('deleteImage.deleting') : $t('deleteImage.confirmDelete') }}</span>
                                 </button>
                                 <button @click="goHome" :disabled="deleting"
                                     class="w-full flex justify-center items-center gap-2 py-3.5 px-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-base font-semibold text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200">
-                                    取消
+                                    {{ $t('deleteImage.cancel') }}
                                 </button>
                             </div>
                         </div>
@@ -153,6 +153,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { requestDelInfo, requestPublicDeleteImage } from '../utils/request'
 import formatBytes from '../utils/format-bytes'
@@ -163,6 +164,7 @@ import { ElImage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const token = route.params.token as string
 
 const loading = ref(true)
@@ -178,7 +180,7 @@ const fetchInfo = async () => {
         const data = await requestDelInfo(token)
         imageInfo.value = data
     } catch (err: any) {
-        error.value = err.message || '获取图片信息失败'
+        error.value = err.message || t('deleteImage.fetchInfoFailed')
     } finally {
         loading.value = false
     }
@@ -190,7 +192,7 @@ const confirmDelete = async () => {
         await requestPublicDeleteImage(token)
         deleted.value = true
     } catch (err: any) {
-        error.value = err.message || '删除失败'
+        error.value = err.message || t('admin.deleteFailed')
     } finally {
         deleting.value = false
     }
@@ -202,7 +204,7 @@ const goHome = () => {
 
 onMounted(() => {
     if (!token) {
-        error.value = '无效的删除链接'
+        error.value = t('deleteImage.invalidToken')
         loading.value = false
         return
     }

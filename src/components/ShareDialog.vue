@@ -1,5 +1,5 @@
 <template>
-    <el-dialog v-model="visible" title="分享图片" :width="dialogWidth" :fullscreen="isMobile" @close="handleClose">
+    <el-dialog v-model="visible" :title="$t('share.title')" :width="dialogWidth" :fullscreen="isMobile" @close="handleClose">
         <div class="space-y-6">
             <!-- Image Preview -->
             <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
@@ -19,11 +19,11 @@
                             class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
                         </div>
                     </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">设置访问密码</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.setPassword') }}</span>
                 </label>
                 <transition name="el-fade-in">
                     <div v-if="enablePassword" class="relative">
-                        <input v-model="password" type="text" placeholder="输入访问密码"
+                        <input v-model="password" type="text" :placeholder="$t('share.passwordPlaceholder')"
                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
                     </div>
                 </transition>
@@ -38,11 +38,11 @@
                             class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
                         </div>
                     </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">设置过期时间</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.setExpiry') }}</span>
                 </label>
                 <transition name="el-fade-in">
                     <div v-if="enableExpiry">
-                        <el-date-picker v-model="expireTime" type="datetime" placeholder="选择过期时间"
+                        <el-date-picker v-model="expireTime" type="datetime" :placeholder="$t('share.expirePlaceholder')"
                             format="YYYY-MM-DD HH:mm" :disabled-date="disabledDate" class="!w-full" />
                     </div>
                 </transition>
@@ -57,11 +57,11 @@
                             class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
                         </div>
                     </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">限制查看次数</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.limitViews') }}</span>
                 </label>
                 <transition name="el-fade-in">
                     <div v-if="enableMaxViews">
-                        <input v-model.number="maxViews" type="number" min="1" max="1000" placeholder="最大查看次数"
+                        <input v-model.number="maxViews" type="number" min="1" max="1000" :placeholder="$t('share.maxViewsPlaceholder')"
                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
                     </div>
                 </transition>
@@ -70,13 +70,13 @@
             <!-- Result -->
             <div v-if="shareUrl"
                 class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">分享链接已生成</p>
+                <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">{{ $t('share.shareUrlGenerated') }}</p>
                 <div class="flex items-center gap-2">
                     <input :value="shareUrl" readonly
                         class="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-green-300 dark:border-green-700 rounded-lg text-sm text-gray-900 dark:text-gray-100" />
                     <button @click="copyLink"
                         class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                        复制
+                        {{ $t('share.copy') }}
                     </button>
                 </div>
             </div>
@@ -86,12 +86,12 @@
             <div class="flex gap-3">
                 <button @click="handleClose"
                     class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors">
-                    取消
+                    {{ $t('common.cancel') }}
                 </button>
                 <button @click="createShare" :disabled="loading"
                     class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50">
                     <font-awesome-icon :icon="loading ? faSpinner : faShare" :spin="loading" class="mr-2" />
-                    {{ shareUrl ? '重新生成' : '生成链接' }}
+                    {{ shareUrl ? $t('share.regenerate') : $t('share.generate') }}
                 </button>
             </div>
         </template>
@@ -100,11 +100,13 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElDialog, ElDatePicker, ElMessage } from 'element-plus'
 import { faShare, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import formatBytes from '../utils/format-bytes'
 import copy from 'copy-to-clipboard'
 import { requestCreateShare } from '../utils/request'
+const { t } = useI18n()
 
 const props = defineProps<{
     modelValue: boolean
@@ -183,9 +185,9 @@ const createShare = async () => {
             maxViews: enableMaxViews.value ? maxViews.value : undefined
         })
         shareUrl.value = result.url
-        ElMessage.success('分享链接已生成')
+        ElMessage.success(t('share.shareUrlGenerated'))
     } catch (e: any) {
-        ElMessage.error(e.message || '生成分享链接失败')
+        ElMessage.error(e.message || t('share.createShareFailed'))
     } finally {
         loading.value = false
     }
@@ -193,7 +195,7 @@ const createShare = async () => {
 
 const copyLink = () => {
     if (copy(shareUrl.value)) {
-        ElMessage.success('链接已复制')
+        ElMessage.success(t('share.linkCopied'))
     }
 }
 </script>

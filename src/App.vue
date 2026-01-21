@@ -3,13 +3,21 @@ import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt } from '@forta
 import { useRouter, useRoute } from 'vue-router'
 import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import en from 'element-plus/es/locale/lang/en'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import storage from './utils/storage'
 import ThemeToggle from './components/ThemeToggle.vue'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import { initTheme } from './utils/theme'
 import { parseUserFromToken } from './utils/jwt'
 import type { User } from './utils/types'
 import { requestCurrentUser } from './utils/request'
+
+const { t, locale } = useI18n()
+
+// Element Plus locale based on current i18n locale
+const elLocale = computed(() => locale.value.startsWith('zh') ? zhCn : en)
 
 const repoLink = 'https://github.com/roimdev'
 const repoName = 'roim-picx'
@@ -58,12 +66,12 @@ watch(() => route.path, () => {
 
 const navItems = computed(() => {
 	const items = [
-		{ path: '/up', label: '上传', icon: faUpload },
-		{ path: '/', label: '管理', icon: faCog }
+		{ path: '/up', label: t('nav.upload'), icon: faUpload },
+		{ path: '/', label: t('nav.manage'), icon: faCog }
 	]
 	// 管理员显示管理入口
 	if (isAdmin.value) {
-		items.push({ path: '/admin', label: '后台', icon: faShieldAlt })
+		items.push({ path: '/admin', label: t('nav.admin'), icon: faShieldAlt })
 	}
 	return items
 })
@@ -81,13 +89,13 @@ const logout = () => {
 	storage.local.remove('auth-token')
 	token.value = ''
 	currentUser.value = null
-	ElMessage.success('已退出登录')
+	ElMessage.success(t('nav.logout'))
 	router.push('/auth')
 }
 </script>
 
 <template>
-	<el-config-provider :locale="zhCn">
+	<el-config-provider :locale="elLocale">
 		<div class="w-full h-screen overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
 			<el-scrollbar>
 				<div v-if="!isDeletePage"
@@ -133,7 +141,8 @@ const logout = () => {
                                 </div>
                             </div>
 
-							<div class="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+							<div class="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700 flex items-center gap-2">
+								<LanguageSwitcher />
 								<theme-toggle />
 							</div>
 						</div>

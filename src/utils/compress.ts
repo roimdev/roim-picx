@@ -10,32 +10,32 @@ export interface CompressionLevel {
 
 export const compressionLevels: CompressionLevel[] = [
     {
-        label: '不压缩',
+        label: 'upload.compressionNone',
         value: 'none',
         maxSizeMB: 20,
         quality: 1,
-        description: '保持原图质量'
+        description: 'upload.compressionNoneDesc'
     },
     {
-        label: '高质量',
+        label: 'upload.compressionHigh',
         value: 'high',
         maxSizeMB: 4,
         quality: 0.9,
-        description: '适合高清图片'
+        description: 'upload.compressionHighDesc'
     },
     {
-        label: '均衡',
+        label: 'upload.compressionBalanced',
         value: 'balanced',
         maxSizeMB: 2,
         quality: 0.7,
-        description: '平衡质量和体积'
+        description: 'upload.compressionBalancedDesc'
     },
     {
-        label: '小体积',
+        label: 'upload.compressionSmall',
         value: 'small',
         maxSizeMB: 1,
         quality: 0.5,
-        description: '适合快速加载'
+        description: 'upload.compressionSmallDesc'
     }
 ]
 

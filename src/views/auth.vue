@@ -1,5 +1,10 @@
 <template>
     <div class="min-h-[calc(100vh-64px-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-950 transition-colors duration-300 relative overflow-hidden">
+        <!-- Language Switcher -->
+        <div class="absolute top-4 right-4 z-20">
+            <LanguageSwitcher />
+        </div>
+        
         <!-- Decoration bits -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/50 dark:bg-indigo-900/10 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-100/50 dark:bg-purple-900/10 rounded-full blur-3xl"></div>
@@ -9,9 +14,9 @@
                 <div class="mx-auto h-16 w-16 bg-white dark:bg-gray-800 rounded-2xl shadow-xl flex items-center justify-center p-3 mb-6">
                     <img src="../assets/picx-logo.png" class="h-full w-full object-contain" />
                 </div>
-                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100">欢迎回来</h2>
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{{ $t('auth.welcome') }}</h2>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {{ authConfig.allowTokenLogin ? '请输入访问令牌以继续管理您的图床' : '请使用 GitHub 登录以继续管理您的图床' }}
+                    {{ authConfig.allowTokenLogin ? $t('auth.tokenHint') : $t('auth.githubHint') }}
                 </p>
             </div>
 
@@ -29,7 +34,7 @@
                                     :type="showPassword ? 'text' : 'password'"
                                     required
                                     class="appearance-none block w-full pl-11 pr-12 py-3.5 border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-gray-800 transition-all sm:text-sm"
-                                    placeholder="输入您的授权 Token..."
+                                    :placeholder="$t('auth.tokenPlaceholder')"
                                     @keyup.enter="saveToken"
                                 />
                                 <button
@@ -49,7 +54,7 @@
                                 <span class="absolute left-0 inset-y-0 flex items-center pl-4 group-hover:scale-110 transition-transform">
                                     <font-awesome-icon :icon="loading ? faSpinner : faSignInAlt" :spin="loading" />
                                 </span>
-                                {{ loading ? '验证中...' : '立即登录' }}
+                                {{ loading ? $t('auth.verifying') : $t('auth.login') }}
                             </button>
                         </div>
                     </template>
@@ -60,7 +65,7 @@
                             <div class="w-full border-t border-gray-100 dark:border-gray-700"></div>
                         </div>
                         <div class="relative flex justify-center text-xs uppercase">
-                            <span class="px-3 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-medium">或其他方式</span>
+                            <span class="px-3 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-medium">{{ $t('auth.orOther') }}</span>
                         </div>
                     </div>
 
@@ -71,20 +76,20 @@
                             :disabled="loading"
                             class="w-full flex items-center justify-center gap-3 py-3.5 px-4 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                             <font-awesome-icon :icon="faGithub" class="text-lg" />
-                            GitHub 授权登录
+                            {{ $t('auth.githubLogin') }}
                         </button>
                     </div>
 
                     <!-- 无可用登录方式提示 -->
                     <div v-if="!configLoading && !authConfig.allowTokenLogin && !authConfig.githubLoginEnabled" class="text-center text-sm text-red-500">
-                        未配置任何登录方式，请联系管理员
+                        {{ $t('auth.noLoginMethod') }}
                     </div>
                 </div>
             </div>
 
             <p class="text-center text-xs text-gray-400 dark:text-gray-500" v-if="authConfig.allowTokenLogin">
-                还没有 Token？请查阅文档
-                <a href="https://github.com/roimdev/roim-picx" target="_blank" class="font-bold text-indigo-500 hover:text-indigo-600 underline underline-offset-4">部署教程</a>
+                {{ $t('auth.noToken') }}
+                <a href="https://github.com/roimdev/roim-picx" target="_blank" class="font-bold text-indigo-500 hover:text-indigo-600 underline underline-offset-4">{{ $t('auth.deployGuide') }}</a>
             </p>
         </div>
     </div>
@@ -99,6 +104,7 @@ import { checkToken, requestGithubLogin, requestAuthConfig, type AuthConfig } fr
 import { faKey, faUnlockAlt, faLock, faEye, faEyeSlash, faSpinner, faSignInAlt } from '@fortawesome/free-solid-svg-icons'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const token = ref('')
 const loading = ref(false)

@@ -5,7 +5,7 @@
             <!-- Loading State -->
             <div v-if="loading" class="text-center py-20">
                 <font-awesome-icon :icon="faSpinner" spin class="text-4xl text-indigo-500 mb-4" />
-                <p class="text-gray-500 dark:text-gray-400">加载中...</p>
+                <p class="text-gray-500 dark:text-gray-400">{{ $t('share.loading') }}</p>
             </div>
 
             <!-- Error State -->
@@ -25,19 +25,19 @@
                         class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                         <font-awesome-icon :icon="faLock" class="text-2xl text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">需要访问密码</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">请输入密码以查看分享内容</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $t('share.needPassword') }}</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ $t('share.passwordHint') }}</p>
                 </div>
 
                 <form @submit.prevent="verifyPassword" class="space-y-6">
                     <div>
-                        <input v-model="password" type="password" placeholder="输入访问密码" autofocus
+                        <input v-model="password" type="password" :placeholder="$t('share.passwordPlaceholder')" autofocus
                             class="w-full px-4 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-center text-lg tracking-widest focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
                     </div>
                     <button type="submit" :disabled="verifying || !password"
                         class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50">
                         <font-awesome-icon :icon="verifying ? faSpinner : faUnlock" :spin="verifying" class="mr-2" />
-                        验证密码
+                        {{ $t('share.verifyPassword') }}
                     </button>
                 </form>
             </div>
@@ -54,8 +54,8 @@
                     <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span>
                             <font-awesome-icon :icon="faEye" class="mr-2" />
-                            已查看 {{ shareResult?.views || 0 }} 次
-                            <span v-if="shareResult?.maxViews">/ {{ shareResult.maxViews }} 次</span>
+                            {{ $t('share.viewCount', { count: shareResult?.views || 0 }) }}
+                            <span v-if="shareResult?.maxViews">{{ $t('share.viewLimit', { max: shareResult.maxViews }) }}</span>
                         </span>
                     </div>
 
@@ -63,7 +63,7 @@
                     <a :href="imageUrl" :download="imageName" target="_blank"
                         class="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-center rounded-xl font-bold transition-colors">
                         <font-awesome-icon :icon="faDownload" class="mr-2" />
-                        下载图片
+                        {{ $t('share.downloadImage') }}
                     </a>
                 </div>
             </div>
@@ -82,12 +82,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { faSpinner, faLock, faUnlock, faEye, faDownload, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { ElImageViewer, ElMessage } from 'element-plus'
 import { requestGetShareInfo, requestVerifyShare, type ShareDetail, type ShareImageResult } from '../utils/request'
 
 const route = useRoute()
+const { t } = useI18n()
 const shareId = route.params.id as string
 
 const loading = ref(true)
@@ -117,14 +119,14 @@ onMounted(async () => {
     } catch (e: any) {
         error.value = true
         if (e.includes('过期')) {
-            errorTitle.value = '链接已过期'
-            errorMessage.value = '此分享链接已超过有效期'
+            errorTitle.value = t('share.linkExpiredTitle')
+            errorMessage.value = t('share.linkExpiredMessage')
         } else if (e.includes('次数')) {
-            errorTitle.value = '已达到查看上限'
-            errorMessage.value = '此分享链接已达到最大查看次数'
+            errorTitle.value = t('share.maxViewsReachedTitle')
+            errorMessage.value = t('share.maxViewsReachedMessage')
         } else {
-            errorTitle.value = '链接无效'
-            errorMessage.value = '分享链接不存在或已被删除'
+            errorTitle.value = t('share.invalidLinkTitle')
+            errorMessage.value = t('share.invalidLinkMessage')
         }
     } finally {
         loading.value = false
@@ -140,10 +142,10 @@ const verifyPassword = async () => {
         imageName.value = result.imageKey.split('/').pop() || 'image'
     } catch (e: any) {
         if (e.includes('密码')) {
-            ElMessage.error('密码错误')
+            ElMessage.error(t('share.passwordError'))
         } else {
             error.value = true
-            errorTitle.value = '验证失败'
+            errorTitle.value = t('share.verifyFailed')
             errorMessage.value = e
         }
     } finally {

@@ -4,9 +4,9 @@
 
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">上传图片</h1>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('upload.title') }}</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    支持拖拽、粘贴或点击上传，单张限制 {{ formatBytes(imageSizeLimit) }}
+                    {{ $t('upload.subtitle', { limit: formatBytes(imageSizeLimit) }) }}
                 </p>
             </div>
         </div>
@@ -16,12 +16,12 @@
             class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">储存目录</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.storageDir') }}</label>
                     <div class="relative group">
                         <font-awesome-icon :icon="faFolder"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
                         <el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
-                            placeholder="默认根目录 (例如: wallpaper/)" class="!w-full custom-autocomplete"
+                            :placeholder="$t('upload.storageDirPlaceholder')" class="!w-full custom-autocomplete"
                             :trigger-on-focus="true" clearable>
                             <template #default="{ item }">
                                 <div class="flex items-center gap-2">
@@ -32,12 +32,12 @@
                         </el-autocomplete>
                     </div>
                     <p class="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-                        可以使用 "/" 分隔多级目录，例如: <code class="text-indigo-600 dark:text-indigo-400">2024/travel/</code>
+                        {{ $t('upload.storageDirHint') }}<code class="text-indigo-600 dark:text-indigo-400">2024/travel/</code>
                     </p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">文件命名</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.fileName') }}</label>
                     <div class="flex items-center h-[46px]">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative">
@@ -47,13 +47,13 @@
                                 </div>
                             </div>
                             <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">使用原文件名</span>
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{ $t('upload.useOriginalName') }}</span>
                         </label>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">过期销毁</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.expiry') }}</label>
                     <div class="space-y-3">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative">
@@ -63,13 +63,13 @@
                                 </div>
                             </div>
                             <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">开启过期自动删除</span>
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{ $t('upload.enableExpiry') }}</span>
                         </label>
                         <transition name="el-fade-in">
                             <div v-if="enableExpiry" class="relative group">
                                 <font-awesome-icon :icon="faClock"
                                     class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                                <el-date-picker v-model="expireTime" type="datetime" placeholder="选择过期时间"
+                                <el-date-picker v-model="expireTime" type="datetime" :placeholder="$t('upload.selectExpireTime')"
                                     format="YYYY-MM-DD HH:mm:ss" :disabled-date="disabledDate"
                                     class="!w-full custom-date-picker" />
                             </div>
@@ -78,16 +78,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">图片压缩</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.compression') }}</label>
                     <div class="relative" ref="compressionDropdownRef">
                         <button type="button" @click="compressionDropdownOpen = !compressionDropdownOpen"
                             class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
                             <font-awesome-icon :icon="faCompress"
                                 class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
                             <span class="flex-1">
-                                <span class="font-medium">{{ currentCompressionLevel.label }}</span>
+                                <span class="font-medium">{{ $t(currentCompressionLevel.label) }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 ml-2">{{
-                                    currentCompressionLevel.description }}</span>
+                                    $t(currentCompressionLevel.description) }}</span>
                             </span>
                             <font-awesome-icon :icon="faChevronDown"
                                 class="text-gray-400 text-xs transition-transform duration-200"
@@ -112,9 +112,9 @@
                                             'M' : 'S' }}
                                     </div>
                                     <div class="flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ level.label
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $t(level.label)
                                         }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ level.description }} · 最大
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t(level.description) }} · {{ $t('upload.maxSize') }}
                                             {{
                                                 level.maxSizeMB }}MB</p>
                                     </div>
@@ -145,9 +145,9 @@
                                 class="w-20 h-20 mb-6 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                                 <font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl" />
                             </div>
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">点击或拖拽图片到这里</h2>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ $t('upload.dropzone') }}</h2>
                             <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
-                                支持单张或多张图片上传，最大支持 20MB，支持 JPG, PNG, GIF, WEBP, SVG 等格式
+                                {{ $t('upload.dropzoneHint') }}
                             </p>
                         </template>
                         <template v-else>
@@ -168,11 +168,11 @@
                     <div class="flex items-center justify-between px-2">
                         <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <font-awesome-icon :icon="faCheckSquare" class="text-green-500" />
-                            上传结果
+                            {{ $t('upload.result') }}
                         </h3>
                         <button @click="imgResultList = []"
                             class="text-xs text-gray-400 hover:text-red-500 transition-colors">
-                            清除全部
+                            {{ $t('common.clearAll') }}
                         </button>
                     </div>
                     <result-list :image-list="imgResultList" />
@@ -185,28 +185,28 @@
                     <div v-if="convertedImages.length > 0"
                         class="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl p-5 border border-indigo-100 dark:border-indigo-900/30">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">待上传信息</h3>
+                            <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">{{ $t('upload.pendingInfo') }}</h3>
                             <span
                                 class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
-                                {{ convertedImages.length }} 张
+                                {{ $t('upload.count', { count: convertedImages.length }) }}
                             </span>
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 space-y-2 mb-6">
                             <div class="flex justify-between">
-                                <span>原始大小</span>
+                                <span>{{ $t('upload.originalSize') }}</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100">{{
                                     formatBytes(originalTotalSize)
                                     }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none'" class="flex justify-between">
-                                <span>压缩后</span>
+                                <span>{{ $t('upload.compressedSize') }}</span>
                                 <span class="font-bold text-green-600 dark:text-green-400">{{
                                     formatBytes(imagesTotalSize)
                                     }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none' && compressionRatio < 1"
                                 class="flex justify-between">
-                                <span>节省</span>
+                                <span>{{ $t('upload.saved') }}</span>
                                 <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ Math.round((1 -
                                     compressionRatio) * 100) }}%</span>
                             </div>
@@ -217,12 +217,12 @@
                                 :disabled="loading" @click="uploadImages">
                                 <font-awesome-icon :icon="faUpload" v-if="!loading" />
                                 <font-awesome-icon :icon="faSpinner" spin v-else />
-                                立即上传
+                                {{ $t('upload.uploadNow') }}
                             </button>
                             <button
                                 class="w-full py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl font-medium transition-all"
                                 @click="clearInput">
-                                清空选择
+                                {{ $t('upload.clearSelection') }}
                             </button>
                         </div>
                     </div>
@@ -230,7 +230,7 @@
                     <div v-else
                         class="bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center text-gray-400">
                         <font-awesome-icon :icon="faImages" class="text-3xl mb-3 opacity-20" />
-                        <p class="text-xs">暂无待上传图片</p>
+                        <p class="text-xs">{{ $t('upload.noPending') }}</p>
                     </div>
                 </div>
             </div>
@@ -242,6 +242,7 @@
 import { faImages, faTrashAlt, faCopy, faCheckSquare } from '@fortawesome/free-regular-svg-icons'
 import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, faChevronDown, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import { ElNotification as elNotify } from 'element-plus'
@@ -252,6 +253,7 @@ import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
+const { t } = useI18n()
 
 const isDragging = ref(false)
 const convertedImages = ref<ConvertedImage[]>([])
@@ -416,7 +418,7 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
         if (!file) continue
         if (file.size > imageSizeLimit) {
             elNotify({
-                message: `${file.name} 文件过大`,
+                message: t('upload.fileTooLarge', { name: file.name }),
                 type: 'error'
             })
             continue
@@ -424,7 +426,7 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
 
         if (!file.type.startsWith('image/')) {
             elNotify({
-                message: `${file.name} 不是图片文件`,
+                message: t('upload.notImage', { name: file.name }),
                 type: 'error'
             })
             continue
@@ -496,10 +498,8 @@ const uploadImages = () => {
     requestUploadImages(formData)
         .then((res) => {
             elNotify({
-                title: '上传完成',
-                message: `共 ${convertedImages.value.length} 张图片，${formatBytes(
-                    imagesTotalSize.value
-                )}`,
+                title: t('upload.uploadComplete'),
+                message: t('upload.uploadCompleteMsg', { count: convertedImages.value.length, size: formatBytes(imagesTotalSize.value) }),
                 type: 'success'
             })
             convertedImages.value = []
