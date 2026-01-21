@@ -270,6 +270,8 @@ export default {
         loadMore: '加载更多',
         setQuota: '设置存储配额',
         storageQuotaMb: '存储配额 (MB)',
+        unlimited: '无限制',
+        quotaHint: '设置为 0 表示无限制',
         currentUsed: '当前使用',
         noPermission: '无权访问管理页面',
         confirmPromote: '确定要将 {user} 提升为管理员吗？',

@@ -270,6 +270,8 @@ export default {
         loadMore: 'Load More',
         setQuota: 'Set Storage Quota',
         storageQuotaMb: 'Storage Quota (MB)',
+        unlimited: 'Unlimited',
+        quotaHint: 'Set to 0 for unlimited storage',
         currentUsed: 'Currently Used',
         noPermission: 'No permission to access admin page',
         confirmPromote: 'Are you sure you want to promote {user} to Admin?',

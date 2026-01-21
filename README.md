@@ -215,9 +215,18 @@ npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_i
 1. 获取你的管理员 Token (`PICX_AUTH_TOKEN`)。
 2. 调用同步接口：
    ```bash
-   curl -H "Authorization: <YOUR_ADMIN_TOKEN>" "https://your-domain.com/rest/admin/sync-r2-to-d1?limit=100"
+   curl -X POST -H "Authorization: <YOUR_ADMIN_TOKEN>" \
+     -H "Content-Type: application/json" \
+     -d '{"limit": 100}' \
+     "https://your-domain.com/rest/admin/sync-r2-to-d1"
    ```
-3. 如果返回数据中 `hasMore` 为 `true`，请使用返回的 `nextCursor` 继续同步。
+3. 如果返回数据中 `hasMore` 为 `true`，请将返回的 `nextCursor` 放入下一次调用的 `cursor` 参数中：
+   ```bash
+   curl -X POST -H "Authorization: <YOUR_ADMIN_TOKEN>" \
+     -H "Content-Type: application/json" \
+     -d '{"limit": 100, "cursor": "YOUR_NEXT_CURSOR_HERE"}' \
+     "https://your-domain.com/rest/admin/sync-r2-to-d1"
+   ```
 
 
 ---
