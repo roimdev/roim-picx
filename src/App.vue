@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt } from '@fortawesome/free-solid-svg-icons'
+import { faCog, faUpload, faSignOutAlt, faUserCircle, faShieldAlt, faBars, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useRoute } from 'vue-router'
-import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar } from 'element-plus'
+import { ElScrollbar, ElConfigProvider, ElMessage, ElAvatar, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -103,47 +103,94 @@ const logout = () => {
 					<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
 						<div class="flex items-center gap-3 cursor-pointer" @click="router.push('/')">
 							<img src="./assets/picx-logo.png" class="w-8 h-8 object-contain drop-shadow-sm" />
-							<span
-								class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-								{{ appName }}
-							</span>
 						</div>
 
 						<div class="flex items-center gap-2">
-							<div v-for="item in navItems" :key="item.path"
-								class="px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2"
-								:class="[
-									$route.path === item.path
-										? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-800'
-										: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-								]" @click="handleNavClick(item)">
-								<font-awesome-icon :icon="item.icon" />
-								<span class="hidden sm:inline-block">{{ item.label }}</span>
+							<!-- Desktop Navigation -->
+							<div class="hidden md:flex items-center gap-2">
+								<div v-for="item in navItems" :key="item.path"
+									class="px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2"
+									:class="[
+										$route.path === item.path
+											? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-800'
+											: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+									]" @click="handleNavClick(item)">
+									<font-awesome-icon :icon="item.icon" />
+									<span>{{ item.label }}</span>
+								</div>
 							</div>
 
-                            <!-- User Profile / Logout -->
-                            <div v-if="token" class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700 ml-2">
-                                <div class="flex items-center gap-2 group relative cursor-pointer" @click="logout" title="点击退出登录">
-                                    <div class="relative">
-                                        <el-avatar :size="32" :src="currentUser?.avatar_url" class="ring-2 ring-white dark:ring-gray-800 shadow-sm transition-transform group-hover:scale-105">
-                                            <template #default>
-                                                <font-awesome-icon :icon="faUserCircle" class="text-xl text-gray-400" />
-                                            </template>
-                                        </el-avatar>
-                                        <span v-if="!currentUser" class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 rounded-full border-2 border-white dark:border-gray-800" title="Admin Token"></span>
-                                        <span v-else class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" title="GitHub User"></span>
-                                    </div>
-                                    <div class="hidden md:flex flex-col items-start leading-none gap-1">
-                                        <span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{ currentUser?.name || 'Administrator' }}</span>
-                                        <span class="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{{ currentUser ? 'GitHub' : 'System' }}</span>
-                                    </div>
-                                    <div class="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/10 rounded-full md:rounded-lg transition-colors -m-1"></div>
-                                </div>
-                            </div>
+							<!-- User Profile / Logout (Desktop Only) -->
+							<div v-if="token"
+								class="hidden md:flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700 ml-2">
+								<div class="flex items-center gap-2 group relative cursor-pointer" @click="logout"
+									title="点击退出登录">
+									<div class="relative">
+										<el-avatar :size="32" :src="currentUser?.avatar_url"
+											class="ring-2 ring-white dark:ring-gray-800 shadow-sm transition-transform group-hover:scale-105">
+											<template #default>
+												<font-awesome-icon :icon="faUserCircle" class="text-xl text-gray-400" />
+											</template>
+										</el-avatar>
+										<span v-if="!currentUser"
+											class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 rounded-full border-2 border-white dark:border-gray-800"
+											title="Admin Token"></span>
+										<span v-else
+											class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"
+											title="GitHub User"></span>
+									</div>
+									<div class="hidden lg:flex flex-col items-start leading-none gap-1">
+										<span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{
+											currentUser?.name || 'Administrator' }}</span>
+										<span class="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{{
+											currentUser ? 'GitHub' : 'System' }}</span>
+									</div>
+									<div
+										class="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/10 rounded-full md:rounded-lg transition-colors -m-1">
+									</div>
+								</div>
+							</div>
 
-							<div class="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700 flex items-center gap-2">
+							<!-- Essential Actions (Theme, Language, Mobile Avatar) -->
+							<div class="flex items-center gap-3 pl-2 sm:pl-4 border-l border-gray-200 dark:border-gray-700 ml-1 sm:ml-2">
+								<!-- Mobile Avatar (Hidden on Desktop) -->
+								<div v-if="token" class="md:hidden">
+									<el-avatar :size="28" :src="currentUser?.avatar_url">
+										<template #default>
+											<font-awesome-icon :icon="faUserCircle" class="text-lg text-gray-400" />
+										</template>
+									</el-avatar>
+								</div>
 								<LanguageSwitcher />
 								<theme-toggle />
+							</div>
+
+							<!-- Mobile Menu Icon (Far Right) -->
+							<div class="md:hidden flex items-center border-l border-gray-200 dark:border-gray-700 pl-2">
+								<el-dropdown trigger="click" @command="(cmd: string) => cmd === 'logout' ? logout() : router.push(cmd)">
+									<div class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+										<font-awesome-icon :icon="faBars" class="text-xl" />
+									</div>
+									<template #dropdown>
+										<el-dropdown-menu class="w-48">
+											<el-dropdown-item v-for="item in navItems" :key="item.path" :command="item.path">
+												<div class="flex items-center justify-between w-full py-1">
+													<div class="flex items-center gap-3">
+														<font-awesome-icon :icon="item.icon" class="w-4" />
+														<span>{{ item.label }}</span>
+													</div>
+													<font-awesome-icon :icon="faChevronRight" class="text-[10px] opacity-30" />
+												</div>
+											</el-dropdown-item>
+											<el-dropdown-item divided command="logout" class="!text-red-500">
+												<div class="flex items-center gap-3 py-1">
+													<font-awesome-icon :icon="faSignOutAlt" class="w-4" />
+													<span>{{ $t('nav.logout') }}</span>
+												</div>
+											</el-dropdown-item>
+										</el-dropdown-menu>
+									</template>
+								</el-dropdown>
 							</div>
 						</div>
 					</div>
