@@ -1,7 +1,7 @@
 <template>
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
     <el-tabs v-model="activeName" class="custom-tabs" @tab-click="handleClick" type="border-card">
-      <el-tab-pane label="预览" name="first">
+      <el-tab-pane :label="$t('upload.preview')" name="first">
         <div class="p-4 bg-white dark:bg-gray-800">
           <image-item :image-list="imageList" ref="imageItem" />
         </div>
@@ -18,7 +18,7 @@
               class="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
               @click="copyText(getTabContent(tab.name))">
               <font-awesome-icon :icon="faCopy" />
-              <span>复制</span>
+              <span>{{ $t('common.copy') }}</span>
             </button>
           </div>
         </div>
@@ -30,6 +30,8 @@
 <script setup lang="ts">
 import { ElMessage, ElTabs, ElTabPane } from 'element-plus'
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import type { TabsPaneContext } from 'element-plus'
 import ImageItem from '../components/ImageItem.vue'
 import type { ImgItem } from '../utils/types'
@@ -52,7 +54,7 @@ const availableTabs = computed(() => {
   ]
 
   if (props.imageList.some(it => it.delToken)) {
-    tabs.push({ name: 'delete', label: '删除链接' })
+    tabs.push({ name: 'delete', label: t('upload.deleteLinks') })
   }
 
   return tabs
@@ -115,9 +117,9 @@ function deleteLinks() {
 function copyText(text: string) {
   const res = copy(text)
   if (res) {
-    ElMessage.success('链接已复制到剪贴板')
+    ElMessage.success(t('upload.copyToClipboard'))
   } else {
-    ElMessage.error('复制失败，请手动复制')
+    ElMessage.error(t('upload.copyFailedManual'))
   }
 }
 

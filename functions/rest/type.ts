@@ -21,6 +21,8 @@ export interface ImgList {
     cursor?: string
     list: Array<ImgItem>
     prefixes?: Array<String>
+    canViewAll?: boolean  // 当前用户是否可以查看所有图片
+    total?: number        // 总数量（用于分页显示）
 }
 
 export interface ImgReq {
@@ -87,6 +89,53 @@ export interface User {
     name: string
     login: string
     avatar_url: string
+    role?: 'admin' | 'user'
+    canViewAll?: boolean
+    storageQuota?: number
+    storageUsed?: number
+    uploadCount?: number
+}
+
+// D1 数据库用户记录
+export interface DbUser {
+    id: number
+    github_id: number
+    login: string
+    name: string | null
+    avatar_url: string | null
+    role: 'admin' | 'user'
+    can_view_all: number  // 0 or 1
+    storage_quota: number
+    storage_used: number
+    upload_count: number
+    created_at: string
+    last_login_at: string | null
+}
+
+// D1 图片记录
+export interface DbImage {
+    id: number
+    key: string
+    user_id: number | null
+    user_login: string
+    original_name: string | null
+    size: number
+    mime_type: string | null
+    folder: string
+    tags: string | null
+    is_public: number
+    view_count: number
+    download_count: number
+    expires_at: string | null
+    created_at: string
+}
+
+// 用户统计信息
+export interface UserStats {
+    totalImages: number
+    totalSize: number
+    totalViews: number
+    recentUploads: number  // 最近7天
 }
 
 export default StatusCode

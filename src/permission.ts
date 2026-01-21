@@ -6,7 +6,7 @@ router.beforeEach((to, from, next) => {
     const path = to.path
     const token = storage.local.get('auth-token')
     // 不需要授权的页面
-    if (path === '/auth' || path.startsWith('/delete')) {
+    if (path === '/auth' || path.startsWith('/delete') || path.startsWith('/s/') || to.meta.public) {
         next()
         return
     }
@@ -16,3 +16,4 @@ router.beforeEach((to, from, next) => {
     }
     next()
 })
+
