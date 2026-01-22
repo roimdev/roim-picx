@@ -87,8 +87,12 @@ export class HFStorageProvider implements StorageProvider {
         // We need to first upload the file content, then create a commit
 
         // Convert ReadableStream to ArrayBuffer if needed
+        // Convert body to ArrayBuffer
         let fileContent: ArrayBuffer
-        if (body instanceof ReadableStream) {
+        console.log(`[HF] Uploading ${key}, body type: ${body?.constructor?.name}`)
+
+        if (body && typeof body.getReader === 'function') {
+            console.log('[HF] Reading from ReadableStream')
             const reader = body.getReader()
             const chunks: Uint8Array[] = []
             let done = false
@@ -111,9 +115,14 @@ export class HFStorageProvider implements StorageProvider {
             fileContent = body
         } else if (typeof body === 'string') {
             fileContent = new TextEncoder().encode(body).buffer
+        } else if (body && typeof body.arrayBuffer === 'function') {
+            fileContent = await body.arrayBuffer()
         } else {
+            console.warn('[HF] Unknown body type, assuming ArrayBuffer or compatible:', body)
             fileContent = body
         }
+
+        console.log(`[HF] File size: ${fileContent.byteLength}`)
 
         // Use the HF Hub commit API directly
         // POST /api/datasets/{repo}/commit/main
@@ -132,7 +141,7 @@ export class HFStorageProvider implements StorageProvider {
         const commitPayload = {
             summary: `Upload ${key}`,
             operations: [{
-                operation: 'add',
+                operation: 'addOrUpdate',
                 path: key,
                 content: base64Content,
                 encoding: 'base64'
