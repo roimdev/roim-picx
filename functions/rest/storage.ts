@@ -115,67 +115,42 @@ export class HFStorageProvider implements StorageProvider {
             fileContent = body
         }
 
-        // Use the HF Hub commit API
-        // POST /api/datasets/{repo}/upload/{revision}/{path}
-        // This is the newer multipart upload endpoint
-        const uploadPath = `${this.uploadUrl}/api/datasets/${this.repo}/upload/main/${key}`
+        // Use the HF Hub commit API directly
+        // POST /api/datasets/{repo}/commit/main
+        const commitUrl = `${this.baseUrl}/${this.repo}/commit/main`
 
-        // Create a FormData for multipart upload
-        const formData = new FormData()
-        const blob = new Blob([fileContent], { type: options.contentType || 'application/octet-stream' })
-        formData.append('file', blob, key.split('/').pop() || 'file')
+        // Encode content to Base64
+        const uint8Array = new Uint8Array(fileContent)
+        let binary = ''
+        const len = uint8Array.byteLength
+        // Process in chunks to avoid stack overflow with String.fromCharCode
+        for (let i = 0; i < len; i += 32768) {
+            binary += String.fromCharCode.apply(null, Array.from(uint8Array.subarray(i, Math.min(i + 32768, len))))
+        }
+        const base64Content = btoa(binary)
 
-        const response = await fetch(uploadPath, {
+        const commitPayload = {
+            summary: `Upload ${key}`,
+            operations: [{
+                operation: 'add',
+                path: key,
+                content: base64Content,
+                encoding: 'base64'
+            }]
+        }
+
+        const commitResponse = await fetch(commitUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.token}`,
+                'Content-Type': 'application/json'
             },
-            body: formData
+            body: JSON.stringify(commitPayload)
         })
 
-        if (!response.ok) {
-            const errorText = await response.text()
-
-            // If the simple upload fails, try the commit API
-            if (response.status === 410 || response.status === 404) {
-                // Use the alternative: direct upload via the Git LFS endpoint
-                // POST https://huggingface.co/api/datasets/{repo}/commit/main
-                const commitUrl = `${this.baseUrl}/${this.repo}/commit/main`
-
-                // For the commit API, we need to base64 encode the content
-                const uint8Array = new Uint8Array(fileContent)
-                let binary = ''
-                for (let i = 0; i < uint8Array.length; i++) {
-                    binary += String.fromCharCode(uint8Array[i])
-                }
-                const base64Content = btoa(binary)
-
-                const commitPayload = {
-                    summary: `Upload ${key}`,
-                    operations: [{
-                        operation: 'upload',
-                        path: key,
-                        content: base64Content,
-                        encoding: 'base64'
-                    }]
-                }
-
-                const commitResponse = await fetch(commitUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(commitPayload)
-                })
-
-                if (!commitResponse.ok) {
-                    const commitError = await commitResponse.text()
-                    throw new Error(`HF Commit failed: ${commitResponse.status} ${commitError}`)
-                }
-            } else {
-                throw new Error(`HF Upload failed: ${response.status} ${errorText}`)
-            }
+        if (!commitResponse.ok) {
+            const commitError = await commitResponse.text()
+            throw new Error(`HF Commit failed: ${commitResponse.status} ${commitError}`)
         }
 
         return {
