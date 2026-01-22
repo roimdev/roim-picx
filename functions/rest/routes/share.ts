@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { Ok, Fail } from '../type'
 import { auth, type AppEnv } from '../middleware/auth'
+import { getProviderByType } from '../storage'
 
 // Share record stored in KV
 interface ShareRecord {
@@ -53,10 +54,27 @@ shareRoutes.post('/share', auth, async (c) => {
             return c.json(Fail('缺少必要参数'))
         }
 
-        // Verify image exists
-        const imageExists = await c.env.PICX.head(data.imageKey)
-        if (!imageExists) {
+        // Verify image exists in DB (multi-storage)
+        const img = await c.env.DB.prepare('SELECT key, storage_type, expires_at FROM images WHERE key = ?')
+            .bind(data.imageKey)
+            .first<{ key: string, storage_type?: 'R2' | 'HF', expires_at?: string | null }>()
+
+        if (!img) {
             return c.json(Fail('图片不存在'))
+        }
+
+        // Check expiration if set
+        if (img.expires_at) {
+            const expiresAt = new Date(img.expires_at).getTime()
+            if (!isNaN(expiresAt) && Date.now() > expiresAt) {
+                return c.json(Fail('图片已过期'))
+            }
+        }
+
+        const provider = getProviderByType(c, img.storage_type || 'R2')
+        const object = await provider.head(img.key)
+        if (!object) {
+            return c.json(Fail('图片不存在或已被删除'))
         }
 
         const shareId = generateShareId()
@@ -64,8 +82,8 @@ shareRoutes.post('/share', auth, async (c) => {
 
         const record: ShareRecord = {
             id: shareId,
-            imageKey: data.imageKey,
-            imageUrl: data.imageUrl,
+            imageKey: img.key,
+            imageUrl: provider.getPublicUrl(img.key),
             password: data.password ? await hashPassword(data.password) : undefined,
             expireAt: data.expireAt,
             maxViews: data.maxViews,
