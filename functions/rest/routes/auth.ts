@@ -12,7 +12,8 @@ const authRoutes = new Hono<AppEnv>()
  * 同步用户到 D1 数据库
  */
 async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string): Promise<Partial<User>> {
-    const isAdmin = isAdminUser(userData.login, adminUsers)
+    const login = `gh_${userData.login}`  // Add prefix to prevent conflicts with other providers
+    const isAdmin = isAdminUser(login, adminUsers) || isAdminUser(userData.login, adminUsers)
 
     try {
         // 检查用户是否存在
@@ -58,7 +59,7 @@ async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string):
                  VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 userData.id,
-                userData.login,
+                login,
                 userData.name || userData.login,
                 userData.avatar_url,
                 isAdmin ? 'admin' : 'user',
@@ -150,11 +151,11 @@ authRoutes.post('/github/login', async (c) => {
         // 同步用户到 D1 数据库并获取权限
         const permissions = await syncUserToDb(c.env.DB, userData, c.env.ADMIN_USERS)
 
-        // Create JWT Payload with User Info
+        // Create JWT Payload with User Info (with gh_ prefix for login)
         const userPayload: User = {
             id: userData.id,
             name: userData.name || userData.login,
-            login: userData.login,
+            login: `gh_${userData.login}`,
             avatar_url: userData.avatar_url,
             role: permissions.role,
             canViewAll: permissions.canViewAll
@@ -424,8 +425,8 @@ async function syncSteamUserToDb(db: D1Database, player: any, adminUsers?: strin
  * 同步 Google 用户到 D1 数据库
  */
 async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string): Promise<Partial<User>> {
-    const isAdmin = isAdminUser(googleUser.email, adminUsers)
-    const login = googleUser.email.split('@')[0] // Use email prefix as login
+    const login = `google_${googleUser.id}` // Use Google sub ID with prefix to prevent conflicts
+    const isAdmin = isAdminUser(googleUser.email, adminUsers) || isAdminUser(login, adminUsers)
 
     try {
         // 检查用户是否存在
@@ -603,7 +604,7 @@ authRoutes.get('/google/callback', async (c) => {
         const dbUserData = await syncGoogleUserToDb(c.env.DB, googleUser, c.env.ADMIN_USERS)
 
         // Create JWT token
-        const login = googleUser.email.split('@')[0]
+        const login = `google_${googleUser.id}`
         const user: User = {
             id: parseInt(googleUser.id.substring(0, 10)) || Date.now(),
             login: login,
