@@ -435,16 +435,18 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
         ).bind(googleUser.id).first<DbUser>()
 
         if (existing) {
-            // 更新最后登录时间
+            // 更新最后登录时间和邮箱
             await db.prepare(
                 `UPDATE users SET 
                     name = ?, 
-                    avatar_url = ?, 
+                    avatar_url = ?,
+                    email = ?,
                     last_login_at = datetime('now')
                  WHERE google_id = ?`
             ).bind(
                 googleUser.name,
                 googleUser.picture,
+                googleUser.email,
                 googleUser.id
             ).run()
 
@@ -468,12 +470,13 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
         } else {
             // 创建新用户
             await db.prepare(
-                `INSERT INTO users (github_id, google_id, login, name, avatar_url, role, can_view_all, last_login_at) 
-                 VALUES (0, ?, ?, ?, ?, ?, ?, datetime('now'))`
+                `INSERT INTO users (github_id, google_id, login, name, email, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (0, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 googleUser.id,
                 login,
                 googleUser.name,
+                googleUser.email,
                 googleUser.picture,
                 isAdmin ? 'admin' : 'user',
                 isAdmin ? 1 : 0
