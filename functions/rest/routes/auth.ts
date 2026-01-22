@@ -468,8 +468,8 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
         } else {
             // 创建新用户
             await db.prepare(
-                `INSERT INTO users (google_id, login, name, avatar_url, role, can_view_all, last_login_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+                `INSERT INTO users (github_id, google_id, login, name, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (0, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 googleUser.id,
                 login,
