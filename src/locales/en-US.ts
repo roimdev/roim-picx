@@ -135,6 +135,7 @@ export default {
         positionTopRight: 'Top Right',
         positionTopLeft: 'Top Left',
         positionCenter: 'Center',
+        storageProvider: 'Storage',
     },
     manage: {
         title: 'Image Management',

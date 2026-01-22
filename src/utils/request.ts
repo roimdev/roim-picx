@@ -88,11 +88,18 @@ export const requestPublicDeleteImage = (token: string): Promise<any> => request
 export const requestGithubLogin = (code: string): Promise<string> => request.post('/rest/github/login', { code })
 
 // Auth Config
+export interface StorageProvider {
+	type: 'R2' | 'HF'
+	name: string
+	enabled: boolean
+}
 export interface AuthConfig {
 	allowTokenLogin: boolean
 	githubLoginEnabled: boolean
 	steamLoginEnabled: boolean
 	googleLoginEnabled: boolean
+	storageProviders: StorageProvider[]
+	defaultStorage: 'R2' | 'HF'
 }
 export const requestAuthConfig = (): Promise<AuthConfig> => request.get('/rest/auth/config')
 

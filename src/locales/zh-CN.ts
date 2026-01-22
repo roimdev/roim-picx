@@ -135,6 +135,7 @@ export default {
         positionTopRight: '右上角',
         positionTopLeft: '左上角',
         positionCenter: '居中',
+        storageProvider: '存储平台',
     },
     manage: {
         title: '图片管理',

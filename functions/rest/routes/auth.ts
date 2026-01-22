@@ -22,16 +22,18 @@ async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string):
         ).bind(userData.id).first<DbUser>()
 
         if (existing) {
-            // 更新最后登录时间
+            // 更新最后登录时间和邮箱
             await db.prepare(
                 `UPDATE users SET 
                     name = ?, 
-                    avatar_url = ?, 
+                    avatar_url = ?,
+                    email = ?,
                     last_login_at = datetime('now')
                  WHERE github_id = ?`
             ).bind(
                 userData.name || userData.login,
                 userData.avatar_url,
+                userData.email || null,
                 userData.id
             ).run()
 
@@ -55,12 +57,13 @@ async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string):
         } else {
             // 创建新用户
             const result = await db.prepare(
-                `INSERT INTO users (github_id, login, name, avatar_url, role, can_view_all, last_login_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+                `INSERT INTO users (github_id, login, name, email, avatar_url, role, can_view_all, last_login_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 userData.id,
                 login,
                 userData.name || userData.login,
+                userData.email || null,
                 userData.avatar_url,
                 isAdmin ? 'admin' : 'user',
                 isAdmin ? 1 : 0
@@ -92,14 +95,38 @@ async function syncUserToDb(db: D1Database, userData: any, adminUsers?: string):
 
 /**
  * 获取认证配置
- * 用于前端判断可用的登录方式
+ * 用于前端判断可用的登录方式和存储平台
  */
 authRoutes.get('/auth/config', async (c) => {
+    // 检查可用的存储平台
+    const storageProviders: Array<{ type: 'R2' | 'HF', name: string, enabled: boolean }> = []
+
+    // R2 总是可用的（默认）
+    storageProviders.push({
+        type: 'R2',
+        name: 'Cloudflare R2',
+        enabled: true
+    })
+
+    // HF 只有配置了 token 和 repo 才可用
+    if (c.env.HF_TOKEN && c.env.HF_REPO) {
+        storageProviders.push({
+            type: 'HF',
+            name: 'Hugging Face',
+            enabled: true
+        })
+    }
+
+    const defaultStorage = c.env.STORAGE_TYPE || 'R2'
+
     return c.json(Ok({
         allowTokenLogin: c.env.ALLOW_TOKEN_LOGIN === 'true',
         githubLoginEnabled: !!c.env.GITHUB_CLIENT_ID,
         steamLoginEnabled: c.env.STEAM_LOGIN_ENABLED === 'true' && !!c.env.STEAM_API_KEY,
-        googleLoginEnabled: c.env.GOOGLE_LOGIN_ENABLED === 'true' && !!c.env.GOOGLE_CLIENT_ID
+        googleLoginEnabled: c.env.GOOGLE_LOGIN_ENABLED === 'true' && !!c.env.GOOGLE_CLIENT_ID,
+        // 存储平台配置
+        storageProviders,
+        defaultStorage
     }))
 })
 
@@ -142,6 +169,26 @@ authRoutes.post('/github/login', async (c) => {
             }
         })
         const userData = await userRes.json<any>()
+
+        // 获取用户邮箱（GitHub 用户信息可能不包含邮箱，需要单独获取）
+        let userEmail = userData.email
+        if (!userEmail) {
+            try {
+                const emailRes = await fetch('https://api.github.com/user/emails', {
+                    headers: {
+                        'Authorization': `token ${tokenData.access_token}`,
+                        'User-Agent': 'ROIM-PICX'
+                    }
+                })
+                const emails = await emailRes.json<Array<{ email: string; primary: boolean; verified: boolean }>>()
+                // 优先使用已验证的主邮箱
+                const primaryEmail = emails.find(e => e.primary && e.verified)
+                userEmail = primaryEmail?.email || emails.find(e => e.verified)?.email || null
+            } catch (e) {
+                console.error('Failed to fetch GitHub emails:', e)
+            }
+        }
+        userData.email = userEmail
 
         // If owner is configured and not wildcard, verify user
         if (owner && owner !== '*' && userData.login !== owner) {

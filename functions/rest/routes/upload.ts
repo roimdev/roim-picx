@@ -4,7 +4,7 @@ import type { User } from '../type'
 import { checkFileType, getFileName } from '../utils'
 import { auth, type AppEnv } from '../middleware/auth'
 import { uploadRateLimit } from '../middleware/rateLimit'
-import { getStorageProvider } from '../storage'
+import { getStorageProvider, getProviderByType } from '../storage'
 
 const uploadRoutes = new Hono<AppEnv>()
 
@@ -16,10 +16,15 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
     const keepName = files.get("keepName") === 'true'
     const expireAt = files.get("expireAt")
 
+    // 获取存储类型（从表单或环境变量）
+    const requestedStorageType = files.get("storageType")?.toString() as 'R2' | 'HF' | undefined
+    const storageType: 'R2' | 'HF' = (requestedStorageType === 'R2' || requestedStorageType === 'HF')
+        ? requestedStorageType
+        : (c.env.STORAGE_TYPE || 'R2')
+
     // Get authenticated user info from context
     const user = c.get('user') as User | undefined
-    const storage = getStorageProvider(c)
-    const storageType = c.env.STORAGE_TYPE || 'R2'
+    const storage = getProviderByType(c, storageType)
 
     if (customPath) {
         customPath = customPath.toString()
