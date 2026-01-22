@@ -264,6 +264,24 @@ npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_i
       <sub><b>🗑️ 删除页面</b></sub>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/share_pwd.png" alt="图片分享" width="400"><br>
+      <sub><b>图片分享1</b></sub>
+    </td>
+    <td align="center">
+      <img src="docs/share_view.png" alt="图片分享" width="400"><br>
+      <sub><b>图片分享</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/admin.png" alt="系统管理" width="400"><br>
+      <sub><b>系统管理</b></sub>
+    </td>
+    <td align="center">
+    </td>
+  </tr>
 </table>
 
 ---
