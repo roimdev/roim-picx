@@ -155,7 +155,8 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                 storageType: storageType as 'R2' | 'HF'
             })
         }
-        return c.json(Build(urls, errs.toString()))
-    })
+    }
+    return c.json(Build(urls, errs.toString()))
+})
 
 export default uploadRoutes
