@@ -77,39 +77,110 @@ export class R2StorageProvider implements StorageProvider {
 
 export class HFStorageProvider implements StorageProvider {
     private baseUrl = 'https://huggingface.co/api/datasets'
+    private uploadUrl = 'https://huggingface.co'
     private resolveUrl = 'https://huggingface.co/datasets'
 
     constructor(private token: string, private repo: string, private appBaseUrl: string) { }
 
     async put(key: string, body: any, options: any): Promise<StorageResult> {
-        // body could be ReadableStream, but HF API usually wants a Blob or buffer
-        // For Cloudflare Workers, we can use fetch with the stream
-        const url = `${this.baseUrl}/${this.repo}/upload/main/${key}`
+        // The HF Hub API now requires using the commit endpoint
+        // We need to first upload the file content, then create a commit
 
-        // HF API requires Content-Type: application/octet-stream for the upload itself?
-        // Actually, HF upload API uses a specific format or simple PUT for single file
-        // Let's use the Hub API style: PUT https://huggingface.co/api/datasets/REPO/upload/main/PATH
+        // Convert ReadableStream to ArrayBuffer if needed
+        let fileContent: ArrayBuffer
+        if (body instanceof ReadableStream) {
+            const reader = body.getReader()
+            const chunks: Uint8Array[] = []
+            let done = false
+            while (!done) {
+                const result = await reader.read()
+                done = result.done
+                if (result.value) {
+                    chunks.push(result.value)
+                }
+            }
+            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+            const combined = new Uint8Array(totalLength)
+            let offset = 0
+            for (const chunk of chunks) {
+                combined.set(chunk, offset)
+                offset += chunk.length
+            }
+            fileContent = combined.buffer
+        } else if (body instanceof ArrayBuffer) {
+            fileContent = body
+        } else if (typeof body === 'string') {
+            fileContent = new TextEncoder().encode(body).buffer
+        } else {
+            fileContent = body
+        }
 
-        const response = await fetch(url, {
+        // Use the HF Hub commit API
+        // POST /api/datasets/{repo}/upload/{revision}/{path}
+        // This is the newer multipart upload endpoint
+        const uploadPath = `${this.uploadUrl}/api/datasets/${this.repo}/upload/main/${key}`
+
+        // Create a FormData for multipart upload
+        const formData = new FormData()
+        const blob = new Blob([fileContent], { type: options.contentType || 'application/octet-stream' })
+        formData.append('file', blob, key.split('/').pop() || 'file')
+
+        const response = await fetch(uploadPath, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.token}`,
             },
-            body: body // multipart is usually better but for single file POST works
+            body: formData
         })
 
         if (!response.ok) {
-            const error = await response.text()
-            throw new Error(`HF Upload failed: ${response.status} ${error}`)
-        }
+            const errorText = await response.text()
 
-        // We need the size. If body is ReadableStream, we might not have it easily unless passed in options
-        // For now, let's assume we can get it from the response or options
-        // In roim-picx, the size is available in the File object before stream()
+            // If the simple upload fails, try the commit API
+            if (response.status === 410 || response.status === 404) {
+                // Use the alternative: direct upload via the Git LFS endpoint
+                // POST https://huggingface.co/api/datasets/{repo}/commit/main
+                const commitUrl = `${this.baseUrl}/${this.repo}/commit/main`
+
+                // For the commit API, we need to base64 encode the content
+                const uint8Array = new Uint8Array(fileContent)
+                let binary = ''
+                for (let i = 0; i < uint8Array.length; i++) {
+                    binary += String.fromCharCode(uint8Array[i])
+                }
+                const base64Content = btoa(binary)
+
+                const commitPayload = {
+                    summary: `Upload ${key}`,
+                    operations: [{
+                        operation: 'upload',
+                        path: key,
+                        content: base64Content,
+                        encoding: 'base64'
+                    }]
+                }
+
+                const commitResponse = await fetch(commitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(commitPayload)
+                })
+
+                if (!commitResponse.ok) {
+                    const commitError = await commitResponse.text()
+                    throw new Error(`HF Commit failed: ${commitResponse.status} ${commitError}`)
+                }
+            } else {
+                throw new Error(`HF Upload failed: ${response.status} ${errorText}`)
+            }
+        }
 
         return {
             key,
-            size: 0 // Will be updated by caller if needed, or we fetch head
+            size: fileContent.byteLength
         }
     }
 
