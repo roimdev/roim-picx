@@ -21,6 +21,9 @@ export type Bindings = {
     GOOGLE_CLIENT_ID?: string  // Google OAuth Client ID
     GOOGLE_CLIENT_SECRET?: string  // Google OAuth Client Secret
     GOOGLE_LOGIN_ENABLED?: string  // 是否启用 Google 登录
+    HF_TOKEN?: string // Hugging Face Token
+    HF_REPO?: string // Hugging Face Repository (username/dataset)
+    STORAGE_TYPE?: 'R2' | 'HF' // Default storage type
 }
 
 export type Variables = {

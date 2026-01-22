@@ -14,6 +14,7 @@ export interface ImgItem {
     uploaderName?: string
     uploadedBy?: string
     uploadedAt?: number
+    storageType?: 'R2' | 'HF'
 }
 
 export interface ImgList {
@@ -130,6 +131,7 @@ export interface DbImage {
     download_count: number
     expires_at: string | null
     created_at: string
+    storage_type: 'R2' | 'HF'
 }
 
 // 用户统计信息
