@@ -16,6 +16,14 @@ export type Bindings = {
     GITHUB_OWNER: string
     ADMIN_USERS?: string  // 超级管理员 GitHub 用户名列表，逗号分隔
     ALLOW_TOKEN_LOGIN?: string  // 是否允许 Token 登录，设置为 'true' 启用
+    STEAM_API_KEY?: string  // Steam Web API Key
+    STEAM_LOGIN_ENABLED?: string  // 是否启用 Steam 登录
+    GOOGLE_CLIENT_ID?: string  // Google OAuth Client ID
+    GOOGLE_CLIENT_SECRET?: string  // Google OAuth Client Secret
+    GOOGLE_LOGIN_ENABLED?: string  // 是否启用 Google 登录
+    HF_TOKEN?: string // Hugging Face Token
+    HF_REPO?: string // Hugging Face Repository (username/dataset)
+    STORAGE_TYPE?: 'R2' | 'HF' // Default storage type
 }
 
 export type Variables = {
@@ -148,7 +156,10 @@ export const auth = async (c: Context<AppEnv>, next: Next) => {
     }
 
     // 跳过登录相关路由和配置接口
-    if (c.req.path.startsWith('/rest/github/login') || c.req.path === '/rest/auth/config') {
+    if (c.req.path.startsWith('/rest/github/login') ||
+        c.req.path.startsWith('/rest/steam/') ||
+        c.req.path.startsWith('/rest/google/') ||
+        c.req.path === '/rest/auth/config') {
         await next()
         return
     }

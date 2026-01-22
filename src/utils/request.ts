@@ -88,11 +88,23 @@ export const requestPublicDeleteImage = (token: string): Promise<any> => request
 export const requestGithubLogin = (code: string): Promise<string> => request.post('/rest/github/login', { code })
 
 // Auth Config
+export interface StorageProvider {
+	type: 'R2' | 'HF'
+	name: string
+	enabled: boolean
+}
 export interface AuthConfig {
 	allowTokenLogin: boolean
 	githubLoginEnabled: boolean
+	steamLoginEnabled: boolean
+	googleLoginEnabled: boolean
+	storageProviders: StorageProvider[]
+	defaultStorage: 'R2' | 'HF'
 }
 export const requestAuthConfig = (): Promise<AuthConfig> => request.get('/rest/auth/config')
+
+// Steam Login
+export const requestSteamLogin = (): Promise<{ authUrl: string }> => request.get('/rest/steam/login')
 
 // Share API
 export interface CreateShareRequest {
@@ -131,6 +143,22 @@ export const requestCreateShare = (data: CreateShareRequest): Promise<ShareInfo>
 export const requestGetShareInfo = (id: string): Promise<ShareDetail> => request.get(`/rest/share/${id}`)
 export const requestVerifyShare = (id: string, password?: string): Promise<ShareImageResult> => request.post(`/rest/share/${id}/verify`, { password })
 export const requestDeleteShare = (id: string): Promise<any> => request.delete(`/rest/share/${id}`)
+
+// My Shares
+export interface MyShare {
+	id: string
+	imageKey: string
+	imageUrl: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	views: number
+	createdAt: number
+	isExpired: boolean
+	isMaxedOut: boolean
+	url: string
+}
+export const requestMyShares = (): Promise<MyShare[]> => request.get('/rest/share/my')
 
 // ============================================
 // 当前用户 API

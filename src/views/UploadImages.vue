@@ -16,7 +16,8 @@
             class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.storageDir') }}</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.storageDir') }}</label>
                     <div class="relative group">
                         <font-awesome-icon :icon="faFolder"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
@@ -32,12 +33,14 @@
                         </el-autocomplete>
                     </div>
                     <p class="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-                        {{ $t('upload.storageDirHint') }}<code class="text-indigo-600 dark:text-indigo-400">2024/travel/</code>
+                        {{ $t('upload.storageDirHint') }}<code
+                            class="text-indigo-600 dark:text-indigo-400">2024/travel/</code>
                     </p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.fileName') }}</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.fileName') }}</label>
                     <div class="flex items-center h-[46px]">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative">
@@ -47,13 +50,15 @@
                                 </div>
                             </div>
                             <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{ $t('upload.useOriginalName') }}</span>
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
+                                    $t('upload.useOriginalName') }}</span>
                         </label>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.expiry') }}</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.expiry') }}</label>
                     <div class="space-y-3">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative">
@@ -63,22 +68,25 @@
                                 </div>
                             </div>
                             <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{ $t('upload.enableExpiry') }}</span>
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
+                                $t('upload.enableExpiry') }}</span>
                         </label>
                         <transition name="el-fade-in">
                             <div v-if="enableExpiry" class="relative group">
                                 <font-awesome-icon :icon="faClock"
                                     class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                                <el-date-picker v-model="expireTime" type="datetime" :placeholder="$t('upload.selectExpireTime')"
-                                    format="YYYY-MM-DD HH:mm:ss" :disabled-date="disabledDate"
-                                    class="!w-full custom-date-picker" />
+                                <el-date-picker v-model="expireTime" type="datetime"
+                                    :placeholder="$t('upload.selectExpireTime')" format="YYYY-MM-DD HH:mm:ss"
+                                    :disabled-date="disabledDate" class="!w-full custom-date-picker" />
                             </div>
                         </transition>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('upload.compression') }}</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.compression')
+                        }}</label>
                     <div class="relative" ref="compressionDropdownRef">
                         <button type="button" @click="compressionDropdownOpen = !compressionDropdownOpen"
                             class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
@@ -112,14 +120,153 @@
                                             'M' : 'S' }}
                                     </div>
                                     <div class="flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $t(level.label)
-                                        }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t(level.description) }} · {{ $t('upload.maxSize') }}
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{
+                                            $t(level.label)
+                                            }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t(level.description) }}
+                                            · {{
+                                            $t('upload.maxSize') }}
                                             {{
                                                 level.maxSizeMB }}MB</p>
                                     </div>
                                     <font-awesome-icon v-if="compressionLevel === level.value" :icon="faCheck"
                                         class="text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+
+                <!-- 存储平台选择 -->
+                <div v-if="storageProviders.length > 1">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.storageProvider') ||
+                        '存储平台' }}</label>
+                    <div class="relative" ref="storageDropdownRef">
+                        <button type="button" @click="storageDropdownOpen = !storageDropdownOpen"
+                            class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
+                            <font-awesome-icon :icon="faDatabase"
+                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
+                            <span class="flex-1">
+                                <span class="font-medium">{{ currentStorageProvider?.name || selectedStorageType
+                                    }}</span>
+                            </span>
+                            <font-awesome-icon :icon="faChevronDown"
+                                class="text-gray-400 text-xs transition-transform duration-200"
+                                :class="{ 'rotate-180': storageDropdownOpen }" />
+                        </button>
+                        <transition name="el-zoom-in-top">
+                            <div v-if="storageDropdownOpen"
+                                class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
+                                <div v-for="provider in storageProviders" :key="provider.type"
+                                    @click="selectStorageProvider(provider.type)"
+                                    class="px-4 py-3 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3"
+                                    :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': selectedStorageType === provider.type }">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                                        :class="{
+                                            'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400': provider.type === 'R2',
+                                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400': provider.type === 'HF'
+                                        }">
+                                        {{ provider.type }}
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ provider.name
+                                            }}</p>
+                                    </div>
+                                    <font-awesome-icon v-if="selectedStorageType === provider.type" :icon="faCheck"
+                                        class="text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+
+                <!-- 水印设置 -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('upload.watermark')
+                        }}</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" v-model="watermarkConfig.enabled" class="sr-only peer" />
+                                <div
+                                    class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                </div>
+                            </div>
+                            <span
+                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
+                                    $t('upload.enableWatermark') }}</span>
+                        </label>
+                        <transition name="el-fade-in">
+                            <div v-if="watermarkConfig.enabled" class="space-y-3 pl-1">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                            $t('upload.watermarkText')
+                                            }}</label>
+                                        <input type="text" v-model="watermarkConfig.text"
+                                            :placeholder="$t('upload.watermarkTextPlaceholder')"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                            $t('upload.watermarkPosition') }}</label>
+                                        <div class="relative" ref="positionDropdownRef">
+                                            <button type="button" @click="positionDropdownOpen = !positionDropdownOpen"
+                                                class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-left flex items-center justify-between">
+                                                <span class="flex items-center gap-2">
+                                                    <span
+                                                        class="w-5 h-5 bg-indigo-100 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px]">
+                                                        {{ getPositionIcon(watermarkConfig.position) }}
+                                                    </span>
+                                                    <span>{{
+                                                        $t(`upload.position${getPositionKey(watermarkConfig.position)}`)
+                                                        }}</span>
+                                                </span>
+                                                <font-awesome-icon :icon="faChevronDown"
+                                                    class="text-gray-400 text-xs transition-transform duration-200"
+                                                    :class="{ 'rotate-180': positionDropdownOpen }" />
+                                            </button>
+                                            <transition name="el-zoom-in-top">
+                                                <div v-if="positionDropdownOpen"
+                                                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                                                    <div v-for="pos in watermarkPositions" :key="pos.value"
+                                                        @click="selectWatermarkPosition(pos.value)"
+                                                        class="px-3 py-2 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                                        :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': watermarkConfig.position === pos.value }">
+                                                        <span
+                                                            class="w-5 h-5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center justify-center text-[10px]"
+                                                            :class="{ 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400': watermarkConfig.position === pos.value }">
+                                                            {{ pos.icon }}
+                                                        </span>
+                                                        <span class="text-sm text-gray-700 dark:text-gray-300">{{
+                                                            $t(`upload.position${pos.label}`) }}</span>
+                                                        <font-awesome-icon v-if="watermarkConfig.position === pos.value"
+                                                            :icon="faCheck"
+                                                            class="ml-auto text-indigo-600 dark:text-indigo-400 text-xs" />
+                                                    </div>
+                                                </div>
+                                            </transition>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                            $t('upload.watermarkOpacity') }} ({{ watermarkConfig.opacity }}%)</label>
+                                        <input type="range" v-model.number="watermarkConfig.opacity" min="10" max="100"
+                                            step="5"
+                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                            $t('upload.watermarkSize')
+                                            }} ({{ watermarkConfig.fontSize }}%)</label>
+                                        <input type="range" v-model.number="watermarkConfig.fontSize" min="1" max="10"
+                                            step="1"
+                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                    </div>
                                 </div>
                             </div>
                         </transition>
@@ -145,7 +292,8 @@
                                 class="w-20 h-20 mb-6 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                                 <font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl" />
                             </div>
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ $t('upload.dropzone') }}</h2>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ $t('upload.dropzone')
+                                }}</h2>
                             <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
                                 {{ $t('upload.dropzoneHint') }}
                             </p>
@@ -185,7 +333,9 @@
                     <div v-if="convertedImages.length > 0"
                         class="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl p-5 border border-indigo-100 dark:border-indigo-900/30">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">{{ $t('upload.pendingInfo') }}</h3>
+                            <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">{{
+                                $t('upload.pendingInfo') }}
+                            </h3>
                             <span
                                 class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
                                 {{ $t('upload.count', { count: convertedImages.length }) }}
@@ -196,13 +346,13 @@
                                 <span>{{ $t('upload.originalSize') }}</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100">{{
                                     formatBytes(originalTotalSize)
-                                    }}</span>
+                                }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none'" class="flex justify-between">
                                 <span>{{ $t('upload.compressedSize') }}</span>
                                 <span class="font-bold text-green-600 dark:text-green-400">{{
                                     formatBytes(imagesTotalSize)
-                                    }}</span>
+                                }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none' && compressionRatio < 1"
                                 class="flex justify-between">
@@ -240,19 +390,20 @@
 
 <script setup lang="ts">
 import { faImages, faTrashAlt, faCopy, faCheckSquare } from '@fortawesome/free-regular-svg-icons'
-import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, faChevronDown, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, faChevronDown, faCheck, faDatabase } from '@fortawesome/free-solid-svg-icons'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import { ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages, requestListImages } from '../utils/request'
+import { requestUploadImages, requestListImages, requestAuthConfig, type StorageProvider } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
+import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
 const { t } = useI18n()
 
 const isDragging = ref(false)
@@ -276,6 +427,46 @@ const compressionLevel = ref('none')
 const originalTotalSize = ref(0)
 const compressionDropdownOpen = ref(false)
 const compressionDropdownRef = ref<HTMLElement | null>(null)
+const watermarkConfig = ref<WatermarkConfig>({ ...defaultWatermarkConfig })
+const positionDropdownOpen = ref(false)
+const positionDropdownRef = ref<HTMLElement | null>(null)
+
+// Storage provider selection
+const storageProviders = ref<StorageProvider[]>([])
+const selectedStorageType = ref<'R2' | 'HF'>('R2')
+const storageDropdownOpen = ref(false)
+const storageDropdownRef = ref<HTMLElement | null>(null)
+const currentStorageProvider = computed(() => storageProviders.value.find(p => p.type === selectedStorageType.value))
+
+const selectStorageProvider = (type: 'R2' | 'HF') => {
+    selectedStorageType.value = type
+    storageDropdownOpen.value = false
+}
+
+// Watermark position options
+const watermarkPositions = [
+    { value: 'bottom-right', label: 'BottomRight', icon: '↘' },
+    { value: 'bottom-left', label: 'BottomLeft', icon: '↙' },
+    { value: 'bottom-center', label: 'BottomCenter', icon: '↓' },
+    { value: 'top-right', label: 'TopRight', icon: '↗' },
+    { value: 'top-left', label: 'TopLeft', icon: '↖' },
+    { value: 'center', label: 'Center', icon: '◎' }
+]
+
+const getPositionIcon = (position: string) => {
+    const pos = watermarkPositions.find(p => p.value === position)
+    return pos?.icon || '↘'
+}
+
+const getPositionKey = (position: string) => {
+    const pos = watermarkPositions.find(p => p.value === position)
+    return pos?.label || 'BottomRight'
+}
+
+const selectWatermarkPosition = (value: string) => {
+    watermarkConfig.value.position = value as any
+    positionDropdownOpen.value = false
+}
 
 const selectCompressionLevel = async (value: string) => {
     if (value === compressionLevel.value) {
@@ -296,6 +487,12 @@ const handleClickOutside = (event: MouseEvent) => {
     if (compressionDropdownRef.value && !compressionDropdownRef.value.contains(event.target as Node)) {
         compressionDropdownOpen.value = false
     }
+    if (positionDropdownRef.value && !positionDropdownRef.value.contains(event.target as Node)) {
+        positionDropdownOpen.value = false
+    }
+    if (storageDropdownRef.value && !storageDropdownRef.value.contains(event.target as Node)) {
+        storageDropdownOpen.value = false
+    }
 }
 
 const currentCompressionLevel = computed(() =>
@@ -307,7 +504,7 @@ const compressionRatio = computed(() => {
     return imagesTotalSize.value / originalTotalSize.value
 })
 
-// Re-compress all images with new compression level
+// Re-compress all images with new compression level (and re-apply watermark)
 const recompressImages = async () => {
     if (originalFiles.value.length === 0) return
 
@@ -320,12 +517,17 @@ const recompressImages = async () => {
     // Re-compress each original file
     for (const file of originalFiles.value) {
         try {
-            const result = await compressImage(file, currentCompressionLevel.value)
+            // Step 1: Compress
+            const compressResult = await compressImage(file, currentCompressionLevel.value)
+
+            // Step 2: Apply watermark
+            const watermarkResult = await applyWatermark(compressResult.file, watermarkConfig.value)
+
             convertedImages.value = [
                 ...convertedImages.value,
                 {
-                    file: result.file,
-                    tmpSrc: URL.createObjectURL(result.file)
+                    file: watermarkResult.file,
+                    tmpSrc: URL.createObjectURL(watermarkResult.file)
                 }
             ]
         } catch (e) {
@@ -389,6 +591,13 @@ onMounted(() => {
     document.onpaste = onPaste
     document.addEventListener('click', handleClickOutside)
     fetchDirectories()
+    // Fetch storage config
+    requestAuthConfig().then(config => {
+        if (config.storageProviders && config.storageProviders.length > 0) {
+            storageProviders.value = config.storageProviders
+            selectedStorageType.value = config.defaultStorage || 'R2'
+        }
+    }).catch(e => console.error('Failed to fetch auth config:', e))
 })
 
 onUnmounted(() => {
@@ -436,18 +645,23 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
         originalFiles.value = [...originalFiles.value, file]
         originalTotalSize.value += file.size
 
-        // Compress image if compression is enabled
+        // Compress image if compression is enabled, then apply watermark
         try {
-            const result = await compressImage(file, currentCompressionLevel.value)
+            // Step 1: Compress
+            const compressResult = await compressImage(file, currentCompressionLevel.value)
+
+            // Step 2: Apply watermark
+            const watermarkResult = await applyWatermark(compressResult.file, watermarkConfig.value)
+
             convertedImages.value = [
                 ...convertedImages.value,
                 {
-                    file: result.file,
-                    tmpSrc: URL.createObjectURL(result.file)
+                    file: watermarkResult.file,
+                    tmpSrc: URL.createObjectURL(watermarkResult.file)
                 }
             ]
         } catch (e) {
-            console.error('Compression error:', e)
+            console.error('Compression/watermark error:', e)
             convertedImages.value = [
                 ...convertedImages.value,
                 {
@@ -491,6 +705,8 @@ const uploadImages = () => {
     if (enableExpiry.value && expireTime.value) {
         formData.append('expireAt', expireTime.value.getTime().toString())
     }
+    // 添加存储类型
+    formData.append('storageType', selectedStorageType.value)
     for (let item of convertedImages.value) {
         formData.append('files', item.file)
     }

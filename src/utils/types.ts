@@ -25,6 +25,7 @@ export interface ImgItem {
 	originalName?: string
 	uploaderName?: string
 	uploadedBy?: string
+	storageType?: 'R2' | 'HF'
 }
 
 export interface ImgList {

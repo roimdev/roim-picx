@@ -4,6 +4,7 @@ import type { User } from '../type'
 import { checkFileType, getFileName } from '../utils'
 import { auth, type AppEnv } from '../middleware/auth'
 import { uploadRateLimit } from '../middleware/rateLimit'
+import { getStorageProvider, getProviderByType } from '../storage'
 
 const uploadRoutes = new Hono<AppEnv>()
 
@@ -15,8 +16,15 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
     const keepName = files.get("keepName") === 'true'
     const expireAt = files.get("expireAt")
 
+    // 获取存储类型（从表单或环境变量）
+    const requestedStorageType = files.get("storageType")?.toString() as 'R2' | 'HF' | undefined
+    const storageType: 'R2' | 'HF' = (requestedStorageType === 'R2' || requestedStorageType === 'HF')
+        ? requestedStorageType
+        : (c.env.STORAGE_TYPE || 'R2')
+
     // Get authenticated user info from context
     const user = c.get('user') as User | undefined
+    const storage = getProviderByType(c, storageType)
 
     if (customPath) {
         customPath = customPath.toString()
@@ -65,16 +73,12 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
 
         // If keeping original name, check if file already exists to prevent overwrite
         if (keepName) {
-            const existing = await c.env.PICX.head(fullPath)
+            const existing = await storage.head(fullPath)
             if (existing) {
                 errs.push(`${file.name}: File already exists`)
                 continue
             }
         }
-
-        const header = new Headers()
-        header.set("content-type", fileType)
-        header.set("content-length", `${file.size}`)
 
         const metadata: Record<string, string> = {}
         metadata['delToken'] = delToken
@@ -96,11 +100,13 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
             }
         }
 
-        const object = await c.env.PICX.put(fullPath, file.stream(), {
-            httpMetadata: header,
-            customMetadata: metadata
+        const object = await storage.put(fullPath, file.stream(), {
+            contentType: fileType,
+            metadata: metadata
         })
+
         if (object && object.key) {
+            const finalSize = object.size || file.size
             // 存储删除token
             await c.env.XK.put(`del:${delToken}`, object.key)
 
@@ -109,17 +115,18 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                 console.log(`[Upload] Syncing to DB - key: ${object.key}, user_login: ${user.login}`)
                 c.executionCtx.waitUntil(
                     c.env.DB.prepare(
-                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, storage_type) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
                     ).bind(
                         object.key,
                         null,  // user_id 设为 null，避免外键约束失败（JWT 中的 id 是 GitHub ID）
                         user.login,
                         originalName || null,
-                        object.size,
+                        finalSize,
                         fileType,
                         customPath || '',
-                        expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null
+                        expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null,
+                        storageType
                     ).run().then((result) => {
                         console.log(`[Upload] Image inserted to DB successfully - key: ${object.key}, meta: ${JSON.stringify(result.meta)}`)
                         // 更新用户统计
@@ -128,9 +135,14 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                                 storage_used = storage_used + ?, 
                                 upload_count = upload_count + 1 
                              WHERE login = ?`
-                        ).bind(object.size, user.login).run()
+                        ).bind(finalSize, user.login).run()
                     }).then((result) => {
                         console.log(`[Upload] User stats updated - login: ${user.login}, meta: ${JSON.stringify(result.meta)}`)
+                        // 记录上传审计日志
+                        return c.env.DB.prepare(
+                            `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                             VALUES (?, ?, 'upload', ?, ?)`
+                        ).bind(user.id, user.login, object.key, JSON.stringify({ size: finalSize, originalName: originalName, storageType })).run()
                     }).catch(e => {
                         console.error(`[Upload] Failed to sync image to DB - key: ${object.key}, error:`, e)
                     })
@@ -141,10 +153,11 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
 
             urls.push({
                 key: object.key,
-                size: object.size,
-                url: `${c.env.BASE_URL}/rest/${object.key}`,
+                size: finalSize,
+                url: storage.getPublicUrl(object.key),
                 filename: file.name,
-                delToken: delToken
+                delToken: delToken,
+                storageType: storageType as 'R2' | 'HF'
             })
         }
     }

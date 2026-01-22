@@ -5,6 +5,7 @@ import type { User, DbImage } from '../type'
 import { parseRange } from '../utils'
 import { auth, type AppEnv } from '../middleware/auth'
 import { listRateLimit } from '../middleware/rateLimit'
+import { getProviderByType, getStorageProvider } from '../storage'
 
 const imageRoutes = new Hono<AppEnv>()
 
@@ -94,10 +95,6 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
             countParams.push(likePattern, likePattern)
         }
 
-        // 过滤已过期的图片
-        query += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
-        countQuery += " AND (expires_at IS NULL OR expires_at > datetime('now'))"
-
         // 排序和分页
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
         params.push(data.limit + 1, offset)  // 多查一条用于判断是否还有更多
@@ -113,25 +110,27 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
         const limitedImages = images.slice(0, data.limit)
 
         // 转换为 ImgItem 格式
-        const urls: ImgItem[] = limitedImages.map((img: DbImage) => ({
-            url: `${c.env.BASE_URL}/rest/${img.key}`,
-            key: img.key,
-            size: img.size,
-            originalName: img.original_name || undefined,
-            uploadedBy: img.user_login,
-            uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined
-        }))
+        const urls: ImgItem[] = limitedImages.map((img: DbImage) => {
+            const provider = getProviderByType(c, img.storage_type || 'R2')
+            return {
+                url: provider.getPublicUrl(img.key),
+                key: img.key,
+                size: img.size,
+                originalName: img.original_name || undefined,
+                uploadedBy: img.user_login,
+                uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined,
+                storageType: img.storage_type
+            }
+        })
 
         // 获取子文件夹列表（如果不是搜索模式）
         let prefixes: string[] = []
         if (!keyword) {
             const folderQuery = viewAll
                 ? `SELECT DISTINCT folder FROM images 
-                   WHERE folder LIKE ? AND folder != ? AND folder IS NOT NULL
-                   AND (expires_at IS NULL OR expires_at > datetime('now'))`
+                   WHERE folder LIKE ? AND folder != ? AND folder IS NOT NULL`
                 : `SELECT DISTINCT folder FROM images 
-                   WHERE user_login = ? AND folder LIKE ? AND folder != ? AND folder IS NOT NULL
-                   AND (expires_at IS NULL OR expires_at > datetime('now'))`
+                   WHERE user_login = ? AND folder LIKE ? AND folder != ? AND folder IS NOT NULL`
 
             const folderParams = viewAll
                 ? [`${folder}%`, folder]
@@ -179,19 +178,28 @@ imageRoutes.post('/rename', auth, async (c) => {
             return c.json(Fail("Missing oldKey or newKey"))
         }
 
-        const oldObject = await c.env.PICX.get(data.oldKey)
+        // 获取图片详情以确定存储方式
+        const img = await c.env.DB.prepare('SELECT * FROM images WHERE key = ?')
+            .bind(data.oldKey).first<DbImage>()
+
+        if (!img) {
+            return c.json(Fail("Image not found in DB"))
+        }
+
+        const provider = getProviderByType(c, img.storage_type || 'R2')
+        const oldObject = await provider.get(data.oldKey)
         if (!oldObject) {
-            return c.json(Fail("File not found"))
+            return c.json(Fail("File not found in storage"))
         }
 
         // Copy file to new key
-        await c.env.PICX.put(data.newKey, oldObject.body, {
-            httpMetadata: oldObject.httpMetadata,
-            customMetadata: oldObject.customMetadata,
+        await provider.put(data.newKey, oldObject.body!, {
+            contentType: oldObject.contentType!,
+            metadata: oldObject.metadata,
         })
 
         // Delete old file
-        await c.env.PICX.delete(data.oldKey)
+        await provider.delete(data.oldKey)
 
         // 同步更新 D1 数据库
         c.executionCtx.waitUntil(
@@ -212,7 +220,7 @@ imageRoutes.post('/rename', auth, async (c) => {
                     user.id,
                     user.login,
                     data.newKey,
-                    JSON.stringify({ oldKey: data.oldKey, newKey: data.newKey })
+                    JSON.stringify({ oldKey: data.oldKey, newKey: data.newKey, storageType: img.storage_type })
                 ).run().catch(e => console.error('Failed to log rename:', e))
             )
         }
@@ -226,13 +234,18 @@ imageRoutes.post('/rename', auth, async (c) => {
 /**
  * 从 D1 删除图片记录并更新用户统计
  */
-async function deleteImageFromDb(db: D1Database, key: string): Promise<void> {
+async function deleteImageFromDb(c: any, key: string): Promise<void> {
     try {
+        const db = c.env.DB
         // 获取图片信息用于更新用户统计
-        const image = await db.prepare('SELECT user_login, size FROM images WHERE key = ?')
-            .bind(key).first<{ user_login: string, size: number }>()
+        const image = await db.prepare('SELECT user_login, size, storage_type FROM images WHERE key = ?')
+            .bind(key).first<{ user_login: string, size: number, storage_type: string }>()
 
         if (image) {
+            // 从物理存储删除
+            const provider = getProviderByType(c, (image.storage_type as any) || 'R2')
+            await provider.delete(key)
+
             // 删除图片记录
             await db.prepare('DELETE FROM images WHERE key = ?').bind(key).run()
 
@@ -242,7 +255,7 @@ async function deleteImageFromDb(db: D1Database, key: string): Promise<void> {
             ).bind(image.size, image.user_login).run()
         }
     } catch (e) {
-        console.error('Failed to delete image from DB:', e)
+        console.error('Failed to delete image from DB/Storage:', e)
     }
 }
 
@@ -252,13 +265,8 @@ imageRoutes.get('/del/:id{.+}', async (c) => {
     if (!key) {
         return c.json(Fail("not delete key"))
     }
-    try {
-        await c.env.PICX.delete(key)
-        // 同步删除 D1 记录
-        c.executionCtx.waitUntil(deleteImageFromDb(c.env.DB, key))
-    } catch (e) {
-        console.log(`img delete error:${(e as Error).message}`,)
-    }
+    // 同步删除 D1 记录和物理文件
+    c.executionCtx.waitUntil(deleteImageFromDb(c, key))
     return c.json(Ok(key))
 })
 
@@ -275,9 +283,8 @@ imageRoutes.delete("/", auth, async (c) => {
     try {
         for (let it of arr) {
             if (it && it.length) {
-                await c.env.PICX.delete(it)
-                // 同步删除 D1 记录
-                c.executionCtx.waitUntil(deleteImageFromDb(c.env.DB, it))
+                // 同步删除 D1 记录和物理文件
+                c.executionCtx.waitUntil(deleteImageFromDb(c, it))
 
                 // 记录审计日志
                 if (user) {
@@ -307,16 +314,24 @@ imageRoutes.get('/delInfo/:token', async (c) => {
     if (!key) {
         return c.json(Fail("Invalid or expired deletion link"))
     }
-    const object = await c.env.PICX.head(key)
+
+    // 获取图片详情
+    const img = await c.env.DB.prepare('SELECT * FROM images WHERE key = ?').bind(key).first<DbImage>()
+    if (!img) {
+        return c.json(Fail("Image metadata not found"))
+    }
+
+    const provider = getProviderByType(c, img.storage_type || 'R2')
+    const object = await provider.head(key)
     if (!object) {
-        return c.json(Fail("Image not found"))
+        return c.json(Fail("Image not found in storage"))
     }
 
     return c.json(Ok({
         key: key,
-        url: `${c.env.BASE_URL}/rest/${key}`,
+        url: provider.getPublicUrl(key),
         size: object.size,
-        originalName: object.customMetadata?.originalName
+        originalName: img.original_name
     }))
 })
 
@@ -332,7 +347,7 @@ imageRoutes.post('/delImage/:token', async (c) => {
     }
 
     try {
-        await c.env.PICX.delete(key)
+        await deleteImageFromDb(c, key)
         await c.env.XK.delete(`del:${token}`)
         return c.json(Ok("Delete success"))
     } catch (e) {
@@ -341,10 +356,6 @@ imageRoutes.post('/delImage/:token', async (c) => {
 })
 
 // image detail - catch-all for image keys
-// 注意：这是一个通配符路由，会匹配所有 GET 请求
-// 需要排除被其他路由模块处理的路径
-
-// 系统保留的路径前缀，这些路径不应该被当作图片处理
 const RESERVED_PREFIXES = ['user', 'admin', 'github', 'share', 'folder', 'list', 'upload', 'rename', 'del', 'delInfo', 'delImage', 'checkToken']
 
 function isReservedPath(id: string): boolean {
@@ -357,45 +368,46 @@ imageRoutes.get("/:id{.+}", async (c) => {
 
     // 跳过系统保留路径，让其他路由处理
     if (isReservedPath(id)) {
-        // 使用 Hono 的方式跳过这个路由
         return c.text('Not Found', 404)
     }
+
+    // 获取图片信息以确定存储
+    const img = await c.env.DB.prepare('SELECT * FROM images WHERE key = ?').bind(id).first<DbImage>()
+    if (!img) {
+        return c.json(Fail("Image not found in DB"), 404)
+    }
+
+    const provider = getProviderByType(c, img.storage_type || 'R2')
     const range = parseRange(c.req.header('range') || null)
-    const object = await c.env.PICX.get(id, {
-        range,
-        onlyIf: c.req.raw.headers as any,
-    })
+
+    const object = await provider.get(id, { range })
     if (object == null) {
-        return c.json(Fail("object not found"))
+        return c.json(Fail("object not found in storage"), 404)
     }
 
     // Check for expiration
-    if (object.customMetadata && object.customMetadata.expires) {
-        const expiresAt = parseInt(object.customMetadata.expires)
+    if (img.expires_at) {
+        const expiresAt = new Date(img.expires_at).getTime()
         if (!isNaN(expiresAt) && Date.now() > expiresAt) {
-            // Expired: Delete asynchronously and return 404
-            c.executionCtx.waitUntil(c.env.PICX.delete(id))
+            c.executionCtx.waitUntil(deleteImageFromDb(c, id))
             return c.json(Fail("Image expired"), 404)
         }
     }
 
-    // 记录访问统计（异步，不阻塞响应）
+    // 记录访问统计
     c.executionCtx.waitUntil((async () => {
         try {
             const referer = c.req.header('referer') || null
             const userAgent = c.req.header('user-agent') || null
-            // Cloudflare 提供的地理位置信息
             const cf = (c.req.raw as any).cf
             const country = cf?.country || null
             const city = cf?.city || null
 
-            // 插入访问记录
             await c.env.DB.prepare(
                 `INSERT INTO image_stats (image_key, referer, user_agent, country, city) 
                  VALUES (?, ?, ?, ?, ?)`
             ).bind(id, referer, userAgent, country, city).run()
 
-            // 更新图片访问计数
             await c.env.DB.prepare(
                 'UPDATE images SET view_count = view_count + 1 WHERE key = ?'
             ).bind(id).run()
@@ -405,13 +417,14 @@ imageRoutes.get("/:id{.+}", async (c) => {
     })())
 
     const headers = new Headers()
-    object.writeHttpMetadata(headers)
-    headers.set('etag', object.httpEtag)
+    if (object.contentType) headers.set('content-type', object.contentType)
+    headers.set('content-length', object.size.toString())
+
     if (range) {
-        headers.set("content-range", `bytes ${range.offset}-${range.end}/${object.size}`)
+        headers.set("content-range", `bytes ${range.offset}-${range.offset + object.size - 1}/${object.size}`)
     }
-    const status = (object as any).body ? (range ? 206 : 200) : 304
-    return new Response((object as any).body, {
+    const status = object.body ? (range ? 206 : 200) : 304
+    return new Response(object.body, {
         headers,
         status
     })
