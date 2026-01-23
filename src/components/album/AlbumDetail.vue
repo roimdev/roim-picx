@@ -18,7 +18,7 @@ import SearchInput from '../common/SearchInput.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
 import LoadingOverlay from '../LoadingOverlay.vue'
-import ShareDialog from './ShareAlbumDialog.vue'
+import ShareDialog from '../ShareDialog.vue'
 import AddImagesDialog from './AddImagesToAlbumDialog.vue'
 
 const router = useRouter()
@@ -197,17 +197,19 @@ onMounted(() => {
         <LoadingOverlay :loading="loading" />
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div class="flex items-center gap-4">
-                <BaseButton circle @click="goBack">
+            <div class="flex items-center gap-3">
+                <BaseButton circle @click="goBack" class="flex-shrink-0">
                     <font-awesome-icon :icon="faArrowLeft" />
                 </BaseButton>
-                <div>
-                    <h1 class="text-2xl font-bold flex items-center gap-2">
-                        {{ album?.name }}
+                <div class="min-w-0">
+                    <h1
+                        class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100 mb-0.5">
+                        <span class="truncate">{{ album?.name }}</span>
                         <font-awesome-icon :icon="faPen"
-                            class="text-xs text-gray-400 cursor-pointer hover:text-indigo-500" @click="handleEdit" />
+                            class="text-[10px] text-gray-400 cursor-pointer hover:text-indigo-500 flex-shrink-0"
+                            @click="handleEdit" />
                     </h1>
-                    <p class="text-sm text-gray-500">{{ album?.description }}</p>
+                    <p class="text-xs sm:text-sm text-gray-500 truncate">{{ album?.description }}</p>
                 </div>
             </div>
 
@@ -218,39 +220,51 @@ onMounted(() => {
                 </BaseButton>
 
                 <template v-if="isSelectionMode">
-                    <span class="text-xs text-gray-500 mr-2">{{ selectedKeys.size }} selected</span>
-                    <BaseButton type="danger" @click="handleRemoveSelected" :disabled="selectedKeys.size === 0">
-                        {{ $t('album.removeImages') }}
-                    </BaseButton>
-                    <BaseButton type="indigo" @click="handleSetCover" :disabled="selectedKeys.size !== 1">
-                        {{ $t('album.setCover') }}
-                    </BaseButton>
-                    <BaseButton circle @click="toggleSelectionMode">
-                        <font-awesome-icon :icon="faTimes" />
-                    </BaseButton>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <span class="text-[10px] text-gray-500 mr-1 whitespace-nowrap">{{ selectedKeys.size }}
+                            selected</span>
+                        <BaseButton type="danger" @click="handleRemoveSelected" :disabled="selectedKeys.size === 0"
+                            class="flex-1 sm:flex-initial">
+                            <span class="hidden sm:inline">{{ $t('album.removeImages') }}</span>
+                            <span class="sm:hidden">{{ $t('common.delete') }}</span>
+                        </BaseButton>
+                        <BaseButton type="indigo" @click="handleSetCover" :disabled="selectedKeys.size !== 1"
+                            class="flex-1 sm:flex-initial">
+                            <span class="hidden sm:inline">{{ $t('album.setCover') }}</span>
+                            <span class="sm:hidden">{{ $t('common.save') }}</span>
+                        </BaseButton>
+                        <BaseButton circle @click="toggleSelectionMode" class="flex-shrink-0">
+                            <font-awesome-icon :icon="faTimes" />
+                        </BaseButton>
+                    </div>
                 </template>
                 <template v-else>
-                    <BaseButton type="indigo" @click="toggleSelectionMode">
-                        <font-awesome-icon :icon="faCheckSquare" class="mr-2" /> {{ $t('common.edit') }}
-                    </BaseButton>
-                    <BaseButton type="indigo" @click="handleOpenAddImages">
-                        <font-awesome-icon :icon="faPlus" class="mr-2" /> {{ $t('album.addImages') }}
-                    </BaseButton>
-                    <BaseButton type="indigo" @click="handleOpenShare">
-                        <font-awesome-icon :icon="faShareAlt" class="mr-2" /> {{ $t('album.share') }}
-                    </BaseButton>
-                    <el-dropdown trigger="click">
-                        <BaseButton circle>
-                            <font-awesome-icon :icon="faCog" />
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <BaseButton type="indigo" @click="toggleSelectionMode" class="flex-1 sm:flex-initial">
+                            <font-awesome-icon :icon="faCheckSquare" class="sm:mr-2" />
+                            <span class="hidden sm:inline">{{ $t('common.edit') }}</span>
                         </BaseButton>
-                        <template #dropdown>
-                            <el-dropdown-menu>
-                                <el-dropdown-item class="text-red-500" @click="handleDeleteAlbum">
-                                    <font-awesome-icon :icon="faTrash" class="mr-2" />{{ $t('common.delete') }}
-                                </el-dropdown-item>
-                            </el-dropdown-menu>
-                        </template>
-                    </el-dropdown>
+                        <BaseButton type="indigo" @click="handleOpenAddImages" class="flex-1 sm:flex-initial">
+                            <font-awesome-icon :icon="faPlus" class="sm:mr-2" />
+                            <span class="hidden sm:inline">{{ $t('album.addImages') }}</span>
+                        </BaseButton>
+                        <BaseButton type="indigo" @click="handleOpenShare" class="flex-1 sm:flex-initial">
+                            <font-awesome-icon :icon="faShareAlt" class="sm:mr-2" />
+                            <span class="hidden sm:inline">{{ $t('album.share') }}</span>
+                        </BaseButton>
+                        <el-dropdown trigger="click">
+                            <BaseButton circle>
+                                <font-awesome-icon :icon="faCog" />
+                            </BaseButton>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item class="text-red-500" @click="handleDeleteAlbum">
+                                        <font-awesome-icon :icon="faTrash" class="mr-2" />{{ $t('common.delete') }}
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
+                    </div>
                 </template>
             </div>
         </div>
@@ -296,7 +310,8 @@ onMounted(() => {
         </div>
 
         <!-- Share Dialog -->
-        <ShareDialog v-if="album" v-model="shareDialogVisible" :album-id="album.id" :album-name="album.name" />
+        <ShareDialog v-if="album" v-model="shareDialogVisible" type="album" :album-id="album.id"
+            :album-name="album.name" :cover-image="album.cover_image" />
 
         <AddImagesDialog v-if="album" v-model="addImagesDialogVisible" :album-id="album.id" @success="handleRefresh" />
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElDialog, ElInput, ElButton, ElMessage, ElPagination, ElImage } from 'element-plus'
+import { ElMessage, ElImage, ElEmpty } from 'element-plus'
 import { faSearch, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
 import { requestListImages, requestAddImagesToAlbum } from '../../utils/request'
 import type { ImgItem, ImgReq } from '../../utils/types'
@@ -123,17 +123,17 @@ const handleSearch = () => {
 
 <template>
     <BaseDialog :model-value="modelValue" :title="$t('album.addImages')" width="800px" @close="handleClose"
-        :show-footer="true">
+        @confirm="handleConfirm" :loading="loading" :confirm-disabled="selectedKeys.size === 0">
         <div class="flex flex-col h-[60vh]">
             <!-- Search -->
-            <div class="flex gap-2 mb-4">
+            <div class="flex gap-2 mb-4 items-center">
                 <BaseInput v-model="searchQuery" :placeholder="$t('manage.searchPlaceholder')"
-                    @keyup.enter="handleSearch" @clear="handleSearch">
+                    @keyup.enter="handleSearch" @clear="handleSearch" class="flex-1">
                     <template #prefix>
                         <font-awesome-icon :icon="faSearch" />
                     </template>
                 </BaseInput>
-                <BaseButton type="indigo" @click="handleSearch">{{ $t('common.search') }}</BaseButton>
+                <BaseButton type="indigo" @click="handleSearch" class="!py-3">{{ $t('common.search') }}</BaseButton>
             </div>
 
             <!-- List -->
@@ -164,17 +164,5 @@ const handleSearch = () => {
                 {{ $t('manage.selected', { count: selectedKeys.size }) }}
             </div>
         </div>
-
-        <template #footer>
-            <div class="flex gap-3 w-full">
-                <BaseButton @click="handleClose" class="flex-1 !rounded-xl !py-3">
-                    {{ $t('common.cancel') }}
-                </BaseButton>
-                <BaseButton type="indigo" @click="handleConfirm" :loading="loading" :disabled="selectedKeys.size === 0"
-                    class="flex-1 !rounded-xl !py-3 font-bold">
-                    {{ $t('common.confirm') }}
-                </BaseButton>
-            </div>
-        </template>
     </BaseDialog>
 </template>

@@ -167,8 +167,9 @@
         <link-format-dialog v-model="linkDialogVisible" :url="currentLinkImage.url" :name="currentLinkImage.name" />
 
         <!-- Share Dialog -->
-        <share-dialog v-model="shareDialogVisible" :image-key="currentShareImage.key" :image-url="currentShareImage.url"
-            :image-name="currentShareImage.name" :image-size="currentShareImage.size" />
+        <share-dialog v-model="shareDialogVisible" type="image" :image-key="currentShareImage.key"
+            :image-url="currentShareImage.url" :image-name="currentShareImage.name"
+            :image-size="currentShareImage.size" />
 
         <AddToAlbumDialog v-model="addToAlbumDialogVisible" :image-keys="currentAddToAlbumImages.keys"
             :image-urls="currentAddToAlbumImages.urls" />
@@ -193,6 +194,7 @@ import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
+import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import SearchInput from '../components/common/SearchInput.vue'
 import BaseButton from '../components/common/BaseButton.vue' // Import BaseButton

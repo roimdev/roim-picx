@@ -127,19 +127,18 @@ onMounted(() => {
 <template>
     <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
         <LoadingOverlay :loading="loading" />
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-bold">{{ $t('album.title') }}</h1>
-            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <!-- Search Input -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('album.title') }}</h1>
+            <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <SearchInput v-model="searchQuery" :placeholder="$t('common.search')" @search="handleSearch"
-                    @clear="handleSearch" />
+                    @clear="handleSearch" class="flex-1 sm:flex-initial" />
 
-                <BaseButton type="indigo" @click="handleCreate">
+                <BaseButton type="indigo" @click="handleCreate" class="flex-shrink-0">
                     <font-awesome-icon :icon="faPlus" />
-                    <span>{{ $t('album.create') }}</span>
+                    <span class="hidden sm:inline ml-1">{{ $t('album.create') }}</span>
+                    <span class="sm:hidden ml-1">{{ $t('common.add') }}</span>
                 </BaseButton>
             </div>
-
         </div>
         <div>
             <div v-if="albums.length > 0"
