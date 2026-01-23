@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElSelect, ElOption, ElInput, ElButton, ElTable, ElTableColumn, ElTag, ElTooltip } from 'element-plus'
+import { ElSelect, ElOption, ElInput, ElButton, ElTable, ElTableColumn, ElTag, ElTooltip, ElPagination } from 'element-plus'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { requestAuditLogs } from '../../utils/request'
 import type { AuditLog } from '../../utils/types'
@@ -10,36 +10,39 @@ const { t, tm, locale } = useI18n()
 
 const loading = ref(false)
 const auditLogs = ref<AuditLog[]>([])
-const auditLogsHasMore = ref(false)
-const auditOffset = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 const auditActionFilter = ref('')
 const auditUserFilter = ref('')
 
-const loadAuditLogs = async (reset = false) => {
-    if (reset) {
-        auditOffset.value = 0
-        auditLogs.value = []
-    }
+const loadAuditLogs = async () => {
     loading.value = true
     try {
+        const offset = (currentPage.value - 1) * pageSize.value
         const result = await requestAuditLogs({
-            limit: 50,
-            offset: auditOffset.value,
+            limit: pageSize.value,
+            offset: offset,
             action: auditActionFilter.value || undefined,
             user: auditUserFilter.value || undefined
         })
-        if (reset) {
-            auditLogs.value = result.logs
-        } else {
-            auditLogs.value.push(...result.logs)
-        }
-        auditLogsHasMore.value = result.hasMore
-        auditOffset.value += result.logs.length
+        auditLogs.value = result.logs
+        total.value = result.total
     } catch (e) {
         console.error('Failed to load audit logs:', e)
     } finally {
         loading.value = false
     }
+}
+
+const handlePageChange = (page: number) => {
+    currentPage.value = page
+    loadAuditLogs()
+}
+
+const handleSearch = () => {
+    currentPage.value = 1
+    loadAuditLogs()
 }
 
 const getActionLabel = (action: string) => {
@@ -67,7 +70,7 @@ defineExpose({
     loadAuditLogs,
     init: () => {
         if (auditLogs.value.length === 0) {
-            loadAuditLogs(true)
+            loadAuditLogs()
         }
     }
 })
@@ -77,16 +80,16 @@ defineExpose({
     <div>
         <div class="mb-4 flex items-center gap-4 flex-wrap">
             <el-select v-model="auditActionFilter" :placeholder="$t('admin.actionType')" clearable class="!w-40"
-                @change="loadAuditLogs(true)">
+                @change="handleSearch">
                 <el-option v-for="(label, key) in tm('admin.actions_labels')" :key="key" :label="label" :value="key" />
             </el-select>
             <el-input v-model="auditUserFilter" :placeholder="$t('admin.username')" clearable class="!w-40"
-                @change="loadAuditLogs(true)">
+                @change="handleSearch" @keyup.enter="handleSearch" @clear="handleSearch">
                 <template #prefix>
                     <font-awesome-icon :icon="faSearch" class="text-gray-400" />
                 </template>
             </el-input>
-            <el-button @click="loadAuditLogs(true)" :loading="loading">{{ $t('admin.search') }}</el-button>
+            <el-button @click="handleSearch" :loading="loading">{{ $t('admin.search') }}</el-button>
         </div>
 
         <div class="relative w-full overflow-x-auto pb-4" style="max-width: calc(100vw - 4rem);">
@@ -132,8 +135,9 @@ defineExpose({
             </el-table>
         </div>
 
-        <div v-if="auditLogsHasMore" class="mt-4 text-center">
-            <el-button @click="loadAuditLogs(false)" :loading="loading">{{ $t('admin.loadMore') }}</el-button>
+        <div class="flex justify-center mt-6">
+            <el-pagination background layout="prev, pager, next" :total="total" :page-size="pageSize"
+                :current-page="currentPage" @current-change="handlePageChange" />
         </div>
     </div>
 </template>

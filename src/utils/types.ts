@@ -158,7 +158,41 @@ export interface CurrentUserInfo {
 	uploadCount?: number
 }
 
+
 export interface UploadConfigItem {
 	type: string;
 	ext: string;
+}
+
+// ============================================
+// 相册相关类型
+// ============================================
+export interface Album {
+	id: number
+	user_id: number
+	name: string
+	description: string | null
+	cover_image: string | null
+	created_at: number
+	updated_at: number
+	imageCount?: number
+}
+
+export interface AlbumImage {
+	key: string
+	url: string
+	added_at: number
+}
+
+export interface AlbumShareInfo {
+	id: string
+	url: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	albumName?: string
+	description?: string | null
+	coverImage?: string | null
+	ownerName?: string
+	createdAt?: number
 }

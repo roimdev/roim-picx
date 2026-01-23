@@ -69,7 +69,7 @@
                             </div>
                             <span
                                 class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
-                                $t('upload.enableExpiry') }}</span>
+                                    $t('upload.enableExpiry') }}</span>
                         </label>
                         <transition name="el-fade-in">
                             <div v-if="enableExpiry" class="relative group">
@@ -125,11 +125,69 @@
                                             }}</p>
                                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t(level.description) }}
                                             · {{
-                                            $t('upload.maxSize') }}
+                                                $t('upload.maxSize') }}
                                             {{
                                                 level.maxSizeMB }}MB</p>
                                     </div>
                                     <font-awesome-icon v-if="compressionLevel === level.value" :icon="faCheck"
+                                        class="text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+
+                <!-- Album Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('album.uploadTo') }}</label>
+                    <div class="relative" ref="albumDropdownRef">
+                        <button type="button" @click="albumDropdownOpen = !albumDropdownOpen"
+                            class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
+                            <font-awesome-icon :icon="faImages"
+                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
+                            <span class="flex-1 truncate">
+                                <span class="font-medium">{{ currentAlbum ? currentAlbum.name : $t('common.default')
+                                }}</span>
+                            </span>
+                            <font-awesome-icon :icon="faChevronDown"
+                                class="text-gray-400 text-xs transition-transform duration-200"
+                                :class="{ 'rotate-180': albumDropdownOpen }" />
+                        </button>
+                        <transition name="el-zoom-in-top">
+                            <div v-if="albumDropdownOpen"
+                                class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                                <div @click="selectedAlbumId = undefined; albumDropdownOpen = false"
+                                    class="px-4 py-3 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3"
+                                    :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': !selectedAlbumId }">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500">
+                                        <font-awesome-icon :icon="faCloudUploadAlt" />
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{
+                                            $t('common.default') }}</p>
+                                    </div>
+                                    <font-awesome-icon v-if="!selectedAlbumId" :icon="faCheck"
+                                        class="text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <div v-for="album in albums" :key="album.id"
+                                    @click="selectedAlbumId = album.id; albumDropdownOpen = false"
+                                    class="px-4 py-3 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3"
+                                    :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': selectedAlbumId === album.id }">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                                        <img v-if="album.cover_image" :src="album.cover_image"
+                                            class="w-full h-full object-cover" />
+                                        <div v-else class="w-full h-full flex items-center justify-center">
+                                            <font-awesome-icon :icon="faImages" class="text-gray-400" />
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{
+                                            album.name }}</p>
+                                    </div>
+                                    <font-awesome-icon v-if="selectedAlbumId === album.id" :icon="faCheck"
                                         class="text-indigo-600 dark:text-indigo-400" />
                                 </div>
                             </div>
@@ -396,11 +454,11 @@ import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
 import { ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages, requestListImages, requestAuthConfig, type StorageProvider } from '../utils/request'
+import { requestUploadImages, requestListImages, requestAuthConfig, requestListAlbums, type StorageProvider } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
-import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
+import type { ConvertedImage, ImgItem, ImgReq, Album } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
 import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
@@ -437,6 +495,13 @@ const selectedStorageType = ref<'R2' | 'HF'>('R2')
 const storageDropdownOpen = ref(false)
 const storageDropdownRef = ref<HTMLElement | null>(null)
 const currentStorageProvider = computed(() => storageProviders.value.find(p => p.type === selectedStorageType.value))
+
+// Album selection
+const albums = ref<Album[]>([])
+const selectedAlbumId = ref<number | undefined>(undefined)
+const albumDropdownOpen = ref(false)
+const albumDropdownRef = ref<HTMLElement | null>(null)
+const currentAlbum = computed(() => albums.value.find(a => a.id === selectedAlbumId.value))
 
 const selectStorageProvider = (type: 'R2' | 'HF') => {
     selectedStorageType.value = type
@@ -492,6 +557,9 @@ const handleClickOutside = (event: MouseEvent) => {
     }
     if (storageDropdownRef.value && !storageDropdownRef.value.contains(event.target as Node)) {
         storageDropdownOpen.value = false
+    }
+    if (albumDropdownRef.value && !albumDropdownRef.value.contains(event.target as Node)) {
+        albumDropdownOpen.value = false
     }
 }
 
@@ -598,6 +666,11 @@ onMounted(() => {
             selectedStorageType.value = config.defaultStorage || 'R2'
         }
     }).catch(e => console.error('Failed to fetch auth config:', e))
+
+    // Fetch albums
+    requestListAlbums().then(res => {
+        albums.value = res
+    }).catch(e => { })
 })
 
 onUnmounted(() => {
@@ -707,6 +780,9 @@ const uploadImages = () => {
     }
     // 添加存储类型
     formData.append('storageType', selectedStorageType.value)
+    if (selectedAlbumId.value) {
+        formData.append('albumId', selectedAlbumId.value.toString())
+    }
     for (let item of convertedImages.value) {
         formData.append('files', item.file)
     }

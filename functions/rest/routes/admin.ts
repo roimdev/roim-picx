@@ -11,15 +11,34 @@ const adminRoutes = new Hono<AppEnv>()
 // ============================================
 
 /**
- * 获取所有用户列表
+ * 获取用户列表 (支持分页和搜索)
  */
 adminRoutes.get('/users', auth, adminAuth, async (c) => {
-    try {
-        const result = await c.env.DB.prepare(
-            'SELECT * FROM users ORDER BY created_at DESC'
-        ).all()
+    const page = parseInt(c.req.query('page') || '1')
+    const limit = parseInt(c.req.query('limit') || '10')
+    const keyword = c.req.query('q') || ''
+    const offset = (page - 1) * limit
 
-        const users = ((result.results || []) as unknown as DbUser[]).map((u: DbUser) => ({
+    try {
+        let query = 'SELECT * FROM users'
+        let countQuery = 'SELECT COUNT(*) as count FROM users'
+        const params: any[] = []
+
+        if (keyword) {
+            const condition = ' WHERE login LIKE ? OR name LIKE ?'
+            query += condition
+            countQuery += condition
+            params.push(`%${keyword}%`, `%${keyword}%`)
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+
+        const [listResult, countResult] = await Promise.all([
+            c.env.DB.prepare(query).bind(...params, limit, offset).all(),
+            c.env.DB.prepare(countQuery).bind(...params).first<{ count: number }>()
+        ])
+
+        const users = ((listResult.results || []) as unknown as DbUser[]).map((u: DbUser) => ({
             id: u.id,
             githubId: u.github_id,
             login: u.login,
@@ -34,7 +53,10 @@ adminRoutes.get('/users', auth, adminAuth, async (c) => {
             lastLoginAt: u.last_login_at
         }))
 
-        return c.json(Ok(users))
+        return c.json(Ok({
+            list: users,
+            total: countResult?.count || 0
+        }))
     } catch (e) {
         console.error('Failed to get users:', e)
         return c.json(Fail(`获取用户列表失败: ${(e as Error).message}`))
@@ -260,24 +282,32 @@ adminRoutes.get('/audit-logs', auth, adminAuth, async (c) => {
 
     try {
         let query = 'SELECT * FROM audit_logs WHERE 1=1'
+        let countQuery = 'SELECT COUNT(*) as count FROM audit_logs WHERE 1=1'
         const params: any[] = []
 
         if (action) {
-            query += ' AND action = ?'
+            const condition = ' AND action = ?'
+            query += condition
+            countQuery += condition
             params.push(action)
         }
         if (userLogin) {
-            query += ' AND user_login = ?'
+            const condition = ' AND user_login = ?'
+            query += condition
+            countQuery += condition
             params.push(userLogin)
         }
 
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-        params.push(limit, offset)
 
-        const result = await c.env.DB.prepare(query).bind(...params).all()
+        const [result, countResult] = await Promise.all([
+            c.env.DB.prepare(query).bind(...params, limit, offset).all(),
+            c.env.DB.prepare(countQuery).bind(...params).first<{ count: number }>()
+        ])
 
         return c.json(Ok({
             logs: result.results || [],
+            total: countResult?.count || 0,
             hasMore: (result.results?.length || 0) === limit
         }))
     } catch (e) {

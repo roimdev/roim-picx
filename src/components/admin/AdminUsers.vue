@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox, ElTable, ElTableColumn, ElButton, ElTag, ElSwitch, ElInput, ElDialog, ElAvatar, ElProgress, ElTooltip } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTable, ElTableColumn, ElButton, ElTag, ElSwitch, ElInput, ElDialog, ElAvatar, ElProgress, ElTooltip, ElPagination } from 'element-plus'
 import {
     faUsers, faSync, faSearch, faUser, faUserShield, faHardDrive
 } from '@fortawesome/free-solid-svg-icons'
@@ -16,30 +16,40 @@ const { t, locale } = useI18n()
 const loading = ref(false)
 const users = ref<AdminUser[]>([])
 const userSearch = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0) // 总用户数
 
-const filteredUsers = computed(() => {
-    if (!userSearch.value) return users.value
-    const search = userSearch.value.toLowerCase()
-    return users.value.filter(u =>
-        u.login.toLowerCase().includes(search) ||
-        (u.name && u.name.toLowerCase().includes(search))
-    )
-})
+const loadUsers = async () => {
+    loading.value = true
+    try {
+        const res = await requestAdminUsers({
+            page: currentPage.value,
+            limit: pageSize.value,
+            keyword: userSearch.value || undefined
+        })
+        users.value = res.list
+        total.value = res.total
+    } catch (e) {
+        console.error('Failed to load users:', e)
+    } finally {
+        loading.value = false
+    }
+}
 
 // 配额设置对话框
 const quotaDialogVisible = ref(false)
 const quotaEditUser = ref<AdminUser | null>(null)
 const quotaValue = ref(0)
 
-const loadUsers = async () => {
-    loading.value = true
-    try {
-        users.value = await requestAdminUsers()
-    } catch (e) {
-        console.error('Failed to load users:', e)
-    } finally {
-        loading.value = false
-    }
+const handlePageChange = (page: number) => {
+    currentPage.value = page
+    loadUsers()
+}
+
+const handleSearch = () => {
+    currentPage.value = 1
+    loadUsers()
 }
 
 const toggleViewAll = async (user: AdminUser) => {
@@ -115,12 +125,13 @@ defineExpose({
 <template>
     <div>
         <div class="mb-4 flex items-center gap-4">
-            <el-input v-model="userSearch" :placeholder="$t('admin.searchUser')" clearable class="!w-64">
+            <el-input v-model="userSearch" :placeholder="$t('admin.searchUser')" clearable class="!w-64"
+                @keyup.enter="handleSearch" @clear="handleSearch">
                 <template #prefix>
                     <font-awesome-icon :icon="faSearch" class="text-gray-400" />
                 </template>
             </el-input>
-            <el-button @click="loadUsers" :loading="loading">
+            <el-button @click="handleSearch" :loading="loading">
                 <template #icon>
                     <font-awesome-icon :icon="faSync" />
                 </template>
@@ -129,7 +140,7 @@ defineExpose({
         </div>
 
         <div class="relative w-full overflow-x-auto pb-4" style="max-width: calc(100vw - 4rem);">
-            <el-table :data="filteredUsers" v-loading="loading" stripe table-layout="fixed"
+            <el-table :data="users" v-loading="loading" stripe table-layout="fixed"
                 style="width: 100%; min-width: 1100px;">
                 <el-table-column :label="$t('admin.user')" min-width="200">
                     <template #default="{ row }">
@@ -171,7 +182,7 @@ defineExpose({
                                 :color="row.storageQuota === 0 ? '#67c23a' : (getStoragePercent(row) > 90 ? '#f56c6c' : getStoragePercent(row) > 70 ? '#e6a23c' : '#67c23a')" />
                             <div class="text-xs text-gray-400">
                                 {{ formatBytes(row.storageUsed) }} / {{ row.storageQuota === 0 ? $t('admin.unlimited') :
-                                formatBytes(row.storageQuota) }}
+                                    formatBytes(row.storageQuota) }}
                             </div>
                         </div>
                     </template>

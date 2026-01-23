@@ -10,6 +10,7 @@ import uploadRoutes from './routes/upload'
 import imageRoutes from './routes/images'
 import folderRoutes from './routes/folders'
 import shareRoutes from './routes/share'
+import albumRoutes from './routes/album'
 import adminRoutes from './routes/admin'
 import settingsRoutes from './routes/settings'
 // 导入 user 路由的处理函数
@@ -26,6 +27,7 @@ app.route('/', authRoutes)
 app.route('/', uploadRoutes)
 app.route('/', folderRoutes)
 app.route('/', shareRoutes)
+app.route('/', albumRoutes) // Albums
 app.route('/admin', adminRoutes)  // 管理员和用户接口
 app.route('/settings', settingsRoutes) // 系统设置接口
 app.route('/', imageRoutes) // Must be last due to catch-all route

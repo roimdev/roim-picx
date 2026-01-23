@@ -116,9 +116,10 @@
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
                         <image-box :src="item.url" :name="item.key" :size="item.size" @delete="deleteImage(item.key)"
                             @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
-                            @preview="showPreview(item.url)" @share="showShareDialog(item)" mode="uploaded"
-                            :uploaded-at="item.uploadedAt" :original-name="item.originalName"
-                            :uploader-name="item.uploaderName" class="w-full h-full" />
+                            @preview="showPreview(item.url)" @share="showShareDialog(item)"
+                            @addToAlbum="showAddToAlbumDialog(item)" mode="uploaded" :uploaded-at="item.uploadedAt"
+                            :original-name="item.originalName" :uploader-name="item.uploaderName"
+                            class="w-full h-full" />
                     </div>
                 </transition-group>
             </div>
@@ -130,7 +131,7 @@
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
                         :uploader-name="item.uploaderName" @delete="deleteImage(item.key)" @rename="renameImage(item)"
                         @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
-                        @share="showShareDialog(item)" />
+                        @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)" />
                 </transition-group>
             </div>
 
@@ -176,6 +177,9 @@
         <share-dialog v-model="shareDialogVisible" :image-key="currentShareImage.key" :image-url="currentShareImage.url"
             :image-name="currentShareImage.name" :image-size="currentShareImage.size" />
 
+        <AddToAlbumDialog v-model="addToAlbumDialogVisible" :image-keys="currentAddToAlbumImages.keys"
+            :image-urls="currentAddToAlbumImages.urls" />
+
         <!-- Image Preview -->
         <el-image-viewer v-if="previewVisible" :url-list="[previewUrl]" @close="closePreview" hide-on-click-modal />
     </div>
@@ -192,6 +196,7 @@ import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import ShareDialog from '../components/ShareDialog.vue'
+import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
 import { ElMessageBox, ElMessage, ElImageViewer } from 'element-plus'
 import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -232,6 +237,18 @@ const showShareDialog = (item: ImgItem) => {
         size: item.size
     }
     shareDialogVisible.value = true
+}
+
+// Add to Album dialog state
+const addToAlbumDialogVisible = ref(false)
+const currentAddToAlbumImages = ref<{ keys: string[], urls: string[] }>({ keys: [], urls: [] })
+
+const showAddToAlbumDialog = (item: ImgItem) => {
+    currentAddToAlbumImages.value = {
+        keys: [item.key],
+        urls: [item.url]
+    }
+    addToAlbumDialogVisible.value = true
 }
 
 // Preview state
