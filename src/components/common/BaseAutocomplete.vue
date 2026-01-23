@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faTimes, faFolder } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import BaseInput from './BaseInput.vue'
 
@@ -142,13 +142,14 @@ onUnmounted(() => {
 
         <transition name="el-zoom-in-top">
             <div v-if="showSuggestions"
-                class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl p-2 max-h-60 overflow-y-auto">
+                class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-600 rounded-xl shadow-xl p-2 max-h-60 overflow-y-auto">
                 <div v-for="(suggestion, index) in filteredSuggestions" :key="suggestion"
                     class="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer text-sm transition-colors rounded-xl"
                     :class="{
                         'bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium': modelValue === suggestion,
                         'bg-gray-50 dark:bg-gray-700/50': highlightedIndex === index && modelValue !== suggestion
                     }" @click="selectSuggestion(suggestion)">
+                    <font-awesome-icon :icon="faFolder" class="mr-2 text-indigo-300 dark:text-indigo-600" />
                     {{ suggestion }}
                 </div>
                 <div v-if="filteredSuggestions.length === 0 && suggestions.length > 0"

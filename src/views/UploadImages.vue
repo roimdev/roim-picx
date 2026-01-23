@@ -18,7 +18,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
                         $t('upload.storageDir') }}</label>
-                    <div class="relative group">
+                    <div class="relative group dark:border-gray-600">
                         <font-awesome-icon :icon="faFolder"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
                         <BaseAutocomplete v-model="customPath" :suggestions="directorySuggestions"
@@ -36,21 +36,19 @@
 
                 <div>
                     <BaseSwitch v-model="keepName" :label="$t('upload.fileName')" />
-                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 h-[46px] flex items-center">
                         {{ $t('upload.useOriginalName') }}
                     </p>
                 </div>
 
                 <div>
                     <BaseSwitch v-model="enableExpiry" :label="$t('upload.expiry')" />
-                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 h-[46px] flex items-center">
                         {{ $t('upload.enableExpiry') }}
                     </p>
                     <transition name="el-fade-in">
                         <div v-if="enableExpiry" class="relative group mt-2">
-                            <font-awesome-icon :icon="faClock"
-                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                            <el-date-picker v-model="expireTime" type="datetime"
+                            <BaseDatePicker v-model="expireTime" type="datetime"
                                 :placeholder="$t('upload.selectExpireTime')" format="YYYY-MM-DD HH:mm:ss"
                                 :disabled-date="disabledDate" class="!w-full custom-date-picker" />
                         </div>
@@ -345,7 +343,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import BaseAutocomplete from '../components/common/BaseAutocomplete.vue'
-import SearchInput from '../components/common/SearchInput.vue'
+import BaseDatePicker from '../components/common/BaseDatePicker.vue'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import BaseSwitch from '../components/common/BaseSwitch.vue'

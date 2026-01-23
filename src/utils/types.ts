@@ -26,6 +26,10 @@ export interface ImgItem {
 	uploaderName?: string
 	uploadedBy?: string
 	storageType?: 'R2' | 'HF'
+
+	// Folder support
+	isFolder?: boolean
+	name?: string
 }
 
 export interface ImgList {
@@ -33,7 +37,7 @@ export interface ImgList {
 	cursor?: string
 	list: Array<ImgItem>
 
-	prefixes?: Array<String>
+	prefixes?: string[]
 	canViewAll?: boolean
 	total?: number
 }

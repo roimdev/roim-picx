@@ -29,14 +29,21 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ $t('share.passwordHint') }}</p>
                 </div>
 
-                <form @submit.prevent="verifyPassword" class="space-y-6">
-                    <div class="flex justify-center">
+                <form @submit.prevent="verifyPassword" class="space-y-4">
+                    <p class="text-center text-sm text-gray-600 dark:text-gray-400">{{ $t('share.passwordHint') }}
+                    </p>
+                    <div class="flex flex-col justify-center">
                         <BaseInput v-model="password" type="password" :placeholder="$t('share.passwordPlaceholder')"
-                            autofocus class="w-full !text-center !text-lg !tracking-widest" />
+                            autofocus class="w-full" @input="passwordError = ''" />
+                        <div v-if="passwordError"
+                            class="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center justify-center gap-2 animate-pulse">
+                            <font-awesome-icon :icon="faExclamationCircle" />
+                            <span>{{ passwordError }}</span>
+                        </div>
                     </div>
                     <BaseButton type="indigo" block @click="verifyPassword" :loading="verifying" :disabled="!password"
-                        class="!py-4 !font-bold">
-                        <font-awesome-icon v-if="!verifying" :icon="faUnlock" class="mr-2" />
+                        class="!py-3">
+                        <font-awesome-icon v-if="!verifying" :icon="faUnlock" class="ml-2" />
                         {{ $t('share.verifyPassword') }}
                     </BaseButton>
                 </form>
@@ -84,8 +91,8 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { faSpinner, faLock, faUnlock, faEye, faDownload, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
-import { ElImageViewer, ElMessage } from 'element-plus'
+import { faSpinner, faLock, faUnlock, faEye, faDownload, faExclamationTriangle, faExclamationCircle, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { ElImageViewer, ElMessage, ElCard } from 'element-plus'
 import { requestGetShareInfo, requestVerifyShare, type ShareDetail, type ShareImageResult } from '../utils/request'
 import BaseInput from '../components/common/BaseInput.vue'
 import BaseButton from '../components/common/BaseButton.vue'
@@ -102,6 +109,7 @@ const errorMessage = ref('')
 const shareInfo = ref<ShareDetail | null>(null)
 const needPassword = ref(false)
 const password = ref('')
+const passwordError = ref('')
 const verifying = ref(false)
 
 const imageUrl = ref('')
@@ -120,16 +128,8 @@ onMounted(async () => {
         }
     } catch (e: any) {
         error.value = true
-        if (e.includes('过期')) {
-            errorTitle.value = t('share.linkExpiredTitle')
-            errorMessage.value = t('share.linkExpiredMessage')
-        } else if (e.includes('次数')) {
-            errorTitle.value = t('share.maxViewsReachedTitle')
-            errorMessage.value = t('share.maxViewsReachedMessage')
-        } else {
-            errorTitle.value = t('share.invalidLinkTitle')
-            errorMessage.value = t('share.invalidLinkMessage')
-        }
+        errorTitle.value = t('share.linkExpiredTitle')
+        errorMessage.value = e
     } finally {
         loading.value = false
     }
@@ -143,13 +143,7 @@ const verifyPassword = async () => {
         imageUrl.value = result.imageUrl
         imageName.value = result.imageKey.split('/').pop() || 'image'
     } catch (e: any) {
-        if (e.includes('密码')) {
-            ElMessage.error(t('share.passwordError'))
-        } else {
-            error.value = true
-            errorTitle.value = t('share.verifyFailed')
-            errorMessage.value = e
-        }
+        passwordError.value = e
     } finally {
         verifying.value = false
     }

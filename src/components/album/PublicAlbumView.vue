@@ -2,11 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElInput, ElButton, ElMessage, ElImage, ElEmpty, ElCard, ElImageViewer } from 'element-plus'
-import { faLock, faArrowRight, faThLarge, faImage as faImageIcon } from '@fortawesome/free-solid-svg-icons'
+import { ElMessage, ElImage, ElEmpty, ElCard, ElImageViewer } from 'element-plus'
+import { faLock, faUnlock, faThLarge, faImage as faImageIcon, faExclamationCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { requestGetAlbumShareInfo, requestVerifyAlbumShare } from '../../utils/request'
 import type { AlbumShareInfo, AlbumImage } from '../../utils/types'
 import formatBytes from '../../utils/format-bytes'
+import BaseButton from '../common/BaseButton.vue'
+import BaseInput from '../common/BaseInput.vue'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -17,6 +19,7 @@ const shareInfo = ref<AlbumShareInfo | null>(null)
 const images = ref<AlbumImage[]>([])
 const verified = ref(false)
 const password = ref('')
+const passwordError = ref('')
 
 const errorTitle = ref('')
 const errorMsg = ref('')
@@ -53,12 +56,7 @@ const verifyAndLoad = async () => {
         previewUrls.value = res.images.map(i => i.image_url)
         verified.value = true
     } catch (e: any) {
-        if (e === '密码错误' || e === 'Password error') {
-            ElMessage.error(t('share.passwordError'))
-        } else {
-            errorTitle.value = t('share.invalidLinkTitle')
-            errorMsg.value = e || t('share.invalidLinkMessage')
-        }
+        passwordError.value = e
     } finally {
         loading.value = false
     }
@@ -91,37 +89,50 @@ onMounted(() => {
         <div class="max-w-7xl mx-auto p-4 md:p-8">
             <!-- Error State -->
             <div v-if="errorTitle" class="flex flex-col items-center justify-center py-20">
-                <div class="text-6xl mb-4">😕</div>
-                <h2 class="text-2xl font-bold mb-2">{{ errorTitle }}</h2>
+                <div
+                    class="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <font-awesome-icon :icon="faExclamationTriangle" class="text-3xl text-red-500" />
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ errorTitle }}</h2>
                 <p class="text-gray-500">{{ errorMsg }}</p>
             </div>
 
             <!-- Lock Screen -->
-            <div v-else-if="!verified && shareInfo" class="max-w-md mx-auto mt-20">
-                <el-card class="!rounded-xl shadow-lg !border-0 dark:bg-gray-800">
-                    <div class="text-center mb-6">
+            <div v-else-if="!verified && shareInfo" class="max-w-lg mx-auto mt-20">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8">
+                    <div class="text-center mb-8">
                         <div v-if="shareInfo.coverImage"
                             class="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4 shadow-md">
                             <img :src="shareInfo.coverImage" class="w-full h-full object-cover" />
                         </div>
                         <div v-else
-                            class="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                            <font-awesome-icon :icon="faLock" class="text-2xl text-gray-400" />
+                            class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <font-awesome-icon :icon="faLock" class="text-2xl text-indigo-600 dark:text-indigo-400" />
                         </div>
-                        <h2 class="text-xl font-bold mb-1">{{ shareInfo.albumName }}</h2>
-                        <p class="text-sm text-gray-500">{{ shareInfo.ownerName }}</p>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ shareInfo.albumName }}
+                        </h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ shareInfo.ownerName }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ $t('share.passwordHint') }}</p>
                     </div>
 
-                    <div class="space-y-4">
-                        <p class="text-center text-sm text-gray-600 dark:text-gray-400">{{ $t('share.passwordHint') }}
-                        </p>
-                        <el-input v-model="password" type="password" :placeholder="$t('share.enterPassword')"
-                            @keyup.enter="verifyAndLoad" size="large" />
-                        <el-button type="primary" class="w-full" size="large" @click="verifyAndLoad" :loading="loading">
-                            {{ $t('share.verify') }} <font-awesome-icon :icon="faArrowRight" class="ml-2" />
-                        </el-button>
+                    <div class="space-y-6">
+                        <div class="flex flex-col justify-center">
+                            <BaseInput v-model="password" type="password" :placeholder="$t('share.enterPassword')"
+                                @keyup.enter="verifyAndLoad" class="w-full !text-center !text-lg !tracking-widest"
+                                @input="passwordError = ''" />
+                            <div v-if="passwordError"
+                                class="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center justify-center gap-2 animate-pulse">
+                                <font-awesome-icon :icon="faExclamationCircle" />
+                                <span>{{ passwordError }}</span>
+                            </div>
+                        </div>
+                        <BaseButton type="indigo" @click="verifyAndLoad" :loading="loading" block :disabled="!password"
+                            class="!py-4 !font-bold">
+                            <font-awesome-icon v-if="!loading" :icon="faUnlock" class="mr-2" />
+                            {{ $t('share.verify') }}
+                        </BaseButton>
                     </div>
-                </el-card>
+                </div>
             </div>
 
             <!-- Album Content -->

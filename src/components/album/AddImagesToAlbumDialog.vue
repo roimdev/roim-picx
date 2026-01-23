@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElImage, ElEmpty } from 'element-plus'
-import { faSearch, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+import { faSearch, faCheckCircle, faFolder, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { requestListImages, requestAddImagesToAlbum } from '../../utils/request'
 import type { ImgItem, ImgReq } from '../../utils/types'
 import BaseDialog from '../common/BaseDialog.vue'
@@ -19,8 +19,10 @@ const emit = defineEmits(['update:modelValue', 'success'])
 const { t } = useI18n()
 const loading = ref(false)
 const images = ref<ImgItem[]>([])
+const folders = ref<string[]>([])
 const searchQuery = ref('')
 const selectedKeys = ref<Set<string>>(new Set())
+const delimiter = ref('/')
 
 // Pagination
 const cursor = ref<string | undefined>(undefined)
@@ -45,7 +47,8 @@ const loadImages = async (reset = true) => {
         const res = await requestListImages(<ImgReq>{
             limit: 24, // 4x6 grid
             cursor: cursor.value,
-            keyword: searchQuery.value || undefined
+            keyword: searchQuery.value || undefined,
+            delimiter: delimiter.value
         })
 
         if (reset) {
@@ -54,6 +57,8 @@ const loadImages = async (reset = true) => {
             images.value = [...images.value, ...res.list]
         }
 
+        // Store folders from prefixes
+        folders.value = res.prefixes || []
         cursor.value = res.cursor
         hasMore.value = res.next
     } catch (e) {
@@ -119,12 +124,52 @@ watch(() => props.modelValue, (val) => {
 const handleSearch = () => {
     loadImages(true)
 }
+
+// Breadcrumb navigation
+const breadcrumbSegments = computed(() => {
+    if (delimiter.value === '/') return []
+    const path = delimiter.value.replace(/\/$/, '')
+    return path.split('/').filter(s => s.length > 0)
+})
+
+const navigateToBreadcrumb = (index: number) => {
+    const segments = breadcrumbSegments.value.slice(0, index + 1)
+    const newPath = segments.join('/') + '/'
+    changeFolder(newPath)
+}
+
+const changeFolder = (path: string) => {
+    delimiter.value = path
+    searchQuery.value = ''
+    loadImages(true)
+}
+
+const goToRoot = () => {
+    changeFolder('/')
+}
 </script>
 
 <template>
     <BaseDialog :model-value="modelValue" :title="$t('album.addImages')" width="800px" @close="handleClose"
         @confirm="handleConfirm" :loading="loading" :confirm-disabled="selectedKeys.size === 0">
         <div class="flex flex-col h-[60vh]">
+            <!-- Breadcrumb Navigation -->
+            <div v-if="breadcrumbSegments.length > 0" class="flex items-center gap-2 mb-3 text-sm">
+                <button @click="goToRoot"
+                    class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400">
+                    <font-awesome-icon :icon="faFolder" class="mr-1" />
+                    {{ $t('manage.rootFolder') }}
+                </button>
+                <template v-for="(segment, index) in breadcrumbSegments" :key="index">
+                    <font-awesome-icon :icon="faChevronRight" class="text-gray-400 text-xs" />
+                    <button @click="navigateToBreadcrumb(index)"
+                        class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        :class="index === breadcrumbSegments.length - 1 ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-gray-600 dark:text-gray-400'">
+                        {{ segment }}
+                    </button>
+                </template>
+            </div>
+
             <!-- Search -->
             <div class="flex gap-2 mb-4 items-center">
                 <BaseInput v-model="searchQuery" :placeholder="$t('manage.searchPlaceholder')"
@@ -138,7 +183,21 @@ const handleSearch = () => {
 
             <!-- List -->
             <div class="flex-1 overflow-y-auto min-h-0 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
-                <div v-if="images.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                <div v-if="images.length > 0 || folders.length > 0"
+                    class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    <!-- Folders -->
+                    <div v-for="folder in folders" :key="folder"
+                        class="aspect-square relative rounded overflow-hidden cursor-pointer group bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 transition-all"
+                        @click="changeFolder(folder)">
+                        <div class="w-full h-full flex flex-col items-center justify-center">
+                            <font-awesome-icon :icon="faFolder"
+                                class="text-4xl text-indigo-500 dark:text-indigo-400 mb-2" />
+                            <p class="text-xs text-center px-2 truncate w-full text-gray-700 dark:text-gray-300">{{
+                                folder.split('/').filter(s => s).pop()}}
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Images -->
                     <div v-for="img in images" :key="img.key"
                         class="aspect-square relative rounded overflow-hidden cursor-pointer group"
                         @click="toggleSelect(img.key)">

@@ -28,8 +28,7 @@
                     <BaseSwitch v-model="enableExpiry" :label="$t('share.setExpiry')" class="mb-3" />
                     <transition name="el-fade-in">
                         <div v-if="enableExpiry">
-                            <el-date-picker v-model="expireTime" type="datetime"
-                                :placeholder="$t('share.expirePlaceholder')" format="YYYY-MM-DD HH:mm"
+                            <BaseDatePicker v-model="expireTime" :placeholder="$t('share.expirePlaceholder')"
                                 :disabled-date="disabledDate" class="!w-full" />
                         </div>
                     </transition>
@@ -51,7 +50,7 @@
             <div v-else
                 class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                 <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">{{ $t('share.shareUrlGenerated')
-                }}</p>
+                    }}</p>
                 <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                     <BaseInput :model-value="shareUrl" readonly class="flex-1 min-w-0" />
                     <BaseButton type="indigo" size="sm" @click="copyLink" class="whitespace-nowrap flex-shrink-0">
@@ -81,7 +80,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElDatePicker, ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { faShare, faSpinner, faRedo, faTimes } from '@fortawesome/free-solid-svg-icons'
 import formatBytes from '../utils/format-bytes'
 import copy from 'copy-to-clipboard'
@@ -90,6 +89,7 @@ import BaseDialog from './common/BaseDialog.vue'
 import BaseButton from './common/BaseButton.vue'
 import BaseInput from './common/BaseInput.vue'
 import BaseSwitch from './common/BaseSwitch.vue'
+import BaseDatePicker from './common/BaseDatePicker.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const { t } = useI18n()
