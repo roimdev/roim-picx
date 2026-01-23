@@ -6,13 +6,18 @@ import {
     ElButton, ElEmpty, ElPagination, ElMessageBox, ElMessage, ElDropdown, ElDropdownMenu, ElDropdownItem, ElDialog, ElImage
 } from 'element-plus'
 import {
-    faArrowLeft, faPlus, faShareAlt, faCog, faTrash, faPen, faCheckSquare, faTimes
+    faArrowLeft, faPlus, faShareAlt, faCog, faTrash, faPen, faCheckSquare, faTimes, faSpinner, faThLarge, faTh, faEye
 } from '@fortawesome/free-solid-svg-icons'
 import {
     requestGetAlbum, requestDeleteAlbum, requestUpdateAlbum, requestRemoveImagesFromAlbum, requestSetAlbumCover
 } from '../../utils/request'
 import type { Album, AlbumImage } from '../../utils/types'
-import ImageBox from '../ImageBox.vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { ElImageViewer } from 'element-plus'
+import SearchInput from '../common/SearchInput.vue'
+import BaseButton from '../common/BaseButton.vue'
+import BaseDialog from '../common/BaseDialog.vue'
+import LoadingOverlay from '../LoadingOverlay.vue'
 import ShareDialog from './ShareAlbumDialog.vue'
 import AddImagesDialog from './AddImagesToAlbumDialog.vue'
 
@@ -35,7 +40,31 @@ const selectedKeys = ref<Set<string>>(new Set())
 const shareDialogVisible = ref(false)
 const addImagesDialogVisible = ref(false)
 
-const loadAlbum = async () => {
+// Big Image Mode
+const isBigMode = ref(false)
+
+// Image Preview
+const previewVisible = ref(false)
+const previewIndex = ref(0)
+const previewList = computed(() => images.value.map(img => img.image_url))
+
+const handlePreview = (index: number) => {
+    previewIndex.value = index
+    previewVisible.value = true
+}
+
+const hasMore = computed(() => images.value.length < total.value)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+const loadAlbum = async (isLoadMore = false) => {
+    if (loading.value) return
+    if (isLoadMore && !hasMore.value) return
+
+    if (!isLoadMore) {
+        currentPage.value = 1
+        images.value = []
+    }
+
     loading.value = true
     try {
         const res = await requestGetAlbum(albumId, {
@@ -43,19 +72,32 @@ const loadAlbum = async () => {
             limit: pageSize.value
         })
         album.value = res.album
-        images.value = res.images
+        if (isLoadMore) {
+            images.value = [...images.value, ...res.images]
+        } else {
+            images.value = res.images
+        }
         total.value = res.total
     } catch (e) {
         ElMessage.error(t('common.error'))
-        router.push('/albums')
+        if (!isLoadMore) router.push('/albums')
     } finally {
         loading.value = false
     }
 }
 
-const handlePageChange = (page: number) => {
-    currentPage.value = page
-    loadAlbum()
+useIntersectionObserver(
+    loadMoreTrigger,
+    ([{ isIntersecting }]) => {
+        if (isIntersecting && hasMore.value && !loading.value) {
+            currentPage.value++
+            loadAlbum(true)
+        }
+    }
+)
+
+const handleRefresh = () => {
+    loadAlbum(false)
 }
 
 const goBack = () => {
@@ -88,6 +130,14 @@ const handleDeleteAlbum = async () => {
     } catch (e) { /* cancel */ }
 }
 
+const handleOpenAddImages = () => {
+    addImagesDialogVisible.value = true
+}
+
+const handleOpenShare = () => {
+    shareDialogVisible.value = true
+}
+
 // Selection Logic
 const toggleSelectionMode = () => {
     isSelectionMode.value = !isSelectionMode.value
@@ -110,7 +160,7 @@ const handleRemoveSelected = async () => {
         ElMessage.success(t('common.success'))
         selectedKeys.value.clear()
         isSelectionMode.value = false
-        loadAlbum()
+        handleRefresh()
     } catch (e) { /* error or cancel */ }
 }
 
@@ -132,11 +182,10 @@ const handleSetCover = async () => {
     } catch (e) { /* error */ }
 }
 
-// Add Images (Placeholder for now, usually needs a picker)
-// For MV, maybe just show a message or link to upload page?
-// "在上传图片的时候选择指定的相册" -> This means modification to Upload page.
-// "用户可以选择已有的图片加入到相册" -> Needs a picker.
-// Let's implement picker later.
+// Image mode toggle
+const toggleMode = () => {
+    isBigMode.value = !isBigMode.value
+}
 
 onMounted(() => {
     loadAlbum()
@@ -145,12 +194,13 @@ onMounted(() => {
 
 <template>
     <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
+        <LoadingOverlay :loading="loading" />
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div class="flex items-center gap-4">
-                <el-button circle @click="goBack">
+                <BaseButton circle @click="goBack">
                     <font-awesome-icon :icon="faArrowLeft" />
-                </el-button>
+                </BaseButton>
                 <div>
                     <h1 class="text-2xl font-bold flex items-center gap-2">
                         {{ album?.name }}
@@ -162,34 +212,37 @@ onMounted(() => {
             </div>
 
             <div class="flex items-center gap-2">
+                <!-- Mode Toggle -->
+                <BaseButton circle @click="toggleMode" :title="isBigMode ? 'Switch to Grid' : 'Switch to Big Image'">
+                    <font-awesome-icon :icon="isBigMode ? faTh : faThLarge" />
+                </BaseButton>
+
                 <template v-if="isSelectionMode">
-                    <span class="text-sm text-gray-500 mr-2">{{ selectedKeys.size }} selected</span>
-                    <el-button type="danger" plain size="small" @click="handleRemoveSelected"
-                        :disabled="selectedKeys.size === 0">
+                    <span class="text-xs text-gray-500 mr-2">{{ selectedKeys.size }} selected</span>
+                    <BaseButton type="danger" @click="handleRemoveSelected" :disabled="selectedKeys.size === 0">
                         {{ $t('album.removeImages') }}
-                    </el-button>
-                    <el-button type="primary" plain size="small" @click="handleSetCover"
-                        :disabled="selectedKeys.size !== 1">
+                    </BaseButton>
+                    <BaseButton type="indigo" @click="handleSetCover" :disabled="selectedKeys.size !== 1">
                         {{ $t('album.setCover') }}
-                    </el-button>
-                    <el-button circle size="small" @click="toggleSelectionMode">
+                    </BaseButton>
+                    <BaseButton circle @click="toggleSelectionMode">
                         <font-awesome-icon :icon="faTimes" />
-                    </el-button>
+                    </BaseButton>
                 </template>
                 <template v-else>
-                    <el-button type="primary" plain @click="toggleSelectionMode">
+                    <BaseButton type="indigo" @click="toggleSelectionMode">
                         <font-awesome-icon :icon="faCheckSquare" class="mr-2" /> {{ $t('common.edit') }}
-                    </el-button>
-                    <el-button type="primary" @click="addImagesDialogVisible = true">
+                    </BaseButton>
+                    <BaseButton type="indigo" @click="handleOpenAddImages">
                         <font-awesome-icon :icon="faPlus" class="mr-2" /> {{ $t('album.addImages') }}
-                    </el-button>
-                    <el-button type="primary" @click="shareDialogVisible = true">
+                    </BaseButton>
+                    <BaseButton type="indigo" @click="handleOpenShare">
                         <font-awesome-icon :icon="faShareAlt" class="mr-2" /> {{ $t('album.share') }}
-                    </el-button>
+                    </BaseButton>
                     <el-dropdown trigger="click">
-                        <el-button circle>
+                        <BaseButton circle>
                             <font-awesome-icon :icon="faCog" />
-                        </el-button>
+                        </BaseButton>
                         <template #dropdown>
                             <el-dropdown-menu>
                                 <el-dropdown-item class="text-red-500" @click="handleDeleteAlbum">
@@ -203,20 +256,25 @@ onMounted(() => {
         </div>
 
         <!-- Images -->
-        <div v-loading="loading" class="flex-1">
+        <div class="flex-1">
             <div v-if="images.length > 0">
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    <div v-for="img in images" :key="img.image_key"
-                        class="relative aspect-square rounded-lg overflow-hidden group cursor-pointer border border-gray-100 dark:border-gray-800"
+                <div class="grid gap-4 transition-all duration-300"
+                    :class="isBigMode ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'">
+                    <div v-for="(img, index) in images" :key="img.image_key"
+                        class="relative aspect-square rounded-xl overflow-hidden group cursor-pointer border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all"
                         :class="{ 'ring-2 ring-indigo-500': selectedKeys.has(img.image_key) }"
-                        @click="isSelectionMode ? toggleSelect(img.image_key) : null">
+                        @click="isSelectionMode ? toggleSelect(img.image_key) : handlePreview(index)">
                         <el-image :src="img.image_url" fit="cover"
-                            class="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                            class="w-full h-full transition-transform duration-500 group-hover:scale-105"
                             loading="lazy" />
+                        <div v-if="!isSelectionMode"
+                            class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <font-awesome-icon :icon="faEye" class="text-white text-2xl" />
+                        </div>
 
                         <!-- Checkbox Overlay -->
-                        <div v-if="isSelectionMode" class="absolute top-2 right-2 z-10">
-                            <div class="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center transition-colors"
+                        <div v-if="isSelectionMode" class="absolute top-3 right-3 z-10">
+                            <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center transition-colors shadow-sm"
                                 :class="selectedKeys.has(img.image_key) ? 'bg-indigo-500 border-indigo-500' : 'bg-black/30 hover:bg-black/50'">
                                 <font-awesome-icon v-if="selectedKeys.has(img.image_key)" :icon="faCheckSquare"
                                     class="text-white text-xs" />
@@ -225,9 +283,11 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-center">
-                    <el-pagination background layout="prev, pager, next" :total="total" :page-size="pageSize"
-                        :current-page="currentPage" @current-change="handlePageChange" />
+                <div ref="loadMoreTrigger" class="h-10 flex items-center justify-center mt-4">
+                    <div v-if="loading && images.length > 0" class="flex items-center gap-2 text-gray-400">
+                        <font-awesome-icon :icon="faSpinner" spin />
+                        <span class="text-sm">Loading...</span>
+                    </div>
                 </div>
             </div>
             <el-empty v-else :description="$t('album.empty')">
@@ -238,6 +298,10 @@ onMounted(() => {
         <!-- Share Dialog -->
         <ShareDialog v-if="album" v-model="shareDialogVisible" :album-id="album.id" :album-name="album.name" />
 
-        <AddImagesDialog v-if="album" v-model="addImagesDialogVisible" :album-id="album.id" @success="loadAlbum" />
+        <AddImagesDialog v-if="album" v-model="addImagesDialogVisible" :album-id="album.id" @success="handleRefresh" />
+
+        <!-- Image Viewer -->
+        <el-image-viewer v-if="previewVisible" :url-list="previewList" :initial-index="previewIndex"
+            @close="previewVisible = false" />
     </div>
 </template>

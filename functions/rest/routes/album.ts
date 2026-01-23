@@ -22,10 +22,20 @@ albumRoutes.get('/albums', auth, async (c) => {
     const user = c.get('user')
     if (!user) return c.json(Fail('未登录'), 401)
 
+    const keyword = c.req.query('keyword')
+
     try {
-        const result = await c.env.DB.prepare(
-            'SELECT * FROM albums WHERE user_id = ? ORDER BY created_at DESC'
-        ).bind(user.id).all<DbAlbum>()
+        let sql = 'SELECT * FROM albums WHERE user_id = ?'
+        const binds: any[] = [user.id]
+
+        if (keyword) {
+            sql += ' AND (name LIKE ? OR description LIKE ?)'
+            binds.push(`%${keyword}%`, `%${keyword}%`)
+        }
+
+        sql += ' ORDER BY created_at DESC'
+
+        const result = await c.env.DB.prepare(sql).bind(...binds).all<DbAlbum>()
 
         // Get image count for each album
         const albums = await Promise.all((result.results || []).map(async (album) => {

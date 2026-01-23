@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -12,6 +12,8 @@ import {
 import SearchInput from '../common/SearchInput.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
+import BaseInput from '../common/BaseInput.vue'
+import LoadingOverlay from '../LoadingOverlay.vue'
 import { requestListAlbums, requestCreateAlbum, requestDeleteAlbum, requestUpdateAlbum } from '../../utils/request'
 import type { Album } from '../../utils/types'
 
@@ -27,10 +29,10 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const currentAlbum = ref<Partial<Album>>({})
 const formLoading = ref(false)
 
-const loadAlbums = async () => {
+const loadAlbums = async (keyword?: string) => {
     loading.value = true
     try {
-        const res = await requestListAlbums()
+        const res = await requestListAlbums(keyword)
         albums.value = res
     } catch (e) {
         // error handled in request.ts
@@ -38,6 +40,22 @@ const loadAlbums = async () => {
         loading.value = false
     }
 }
+
+// Debounced search handler
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const handleSearch = () => {
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer)
+    }
+    searchDebounceTimer = setTimeout(() => {
+        loadAlbums(searchQuery.value)
+    }, 300)
+}
+
+// Watch search keyword changes
+watch(searchQuery, () => {
+    handleSearch()
+})
 
 const handleCreate = () => {
     dialogMode.value = 'create'
@@ -108,11 +126,13 @@ onMounted(() => {
 
 <template>
     <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
+        <LoadingOverlay :loading="loading" />
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold">{{ $t('album.title') }}</h1>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <!-- Search Input -->
-                <SearchInput v-model="searchQuery" :placeholder="$t('common.search')" />
+                <SearchInput v-model="searchQuery" :placeholder="$t('common.search')" @search="handleSearch"
+                    @clear="handleSearch" />
 
                 <BaseButton type="indigo" @click="handleCreate">
                     <font-awesome-icon :icon="faPlus" />
@@ -121,7 +141,7 @@ onMounted(() => {
             </div>
 
         </div>
-        <div v-loading="loading">
+        <div>
             <div v-if="albums.length > 0"
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 <div v-for="album in albums" :key="album.id"
@@ -172,15 +192,10 @@ onMounted(() => {
     <BaseDialog v-model="dialogVisible" :title="dialogMode === 'create' ? $t('album.create') : $t('album.edit')"
         @confirm="handleSubmit" :loading="formLoading">
         <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">{{ $t('album.name') }}</label>
-                <el-input v-model="currentAlbum.name" :placeholder="$t('album.namePlaceholder')" />
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">{{ $t('album.description') }}</label>
-                <el-input v-model="currentAlbum.description" type="textarea" :rows="3"
-                    :placeholder="$t('album.descPlaceholder')" />
-            </div>
+            <BaseInput v-model="currentAlbum.name" :label="$t('album.name')"
+                :placeholder="$t('album.namePlaceholder')" />
+            <BaseInput v-model="currentAlbum.description" type="textarea" :label="$t('album.description')"
+                :placeholder="$t('album.descPlaceholder')" />
         </div>
     </BaseDialog>
 

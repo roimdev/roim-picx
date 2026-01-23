@@ -248,7 +248,11 @@ export const requestUpdateUploadConfig = (config: UploadConfigItem[]): Promise<U
 // ============================================
 import { Album, AlbumImage, AlbumShareInfo } from './types'
 
-export const requestListAlbums = (): Promise<Album[]> => request.get('/rest/albums')
+export const requestListAlbums = (keyword?: string): Promise<Album[]> => {
+	const query = new URLSearchParams()
+	if (keyword) query.set('keyword', keyword)
+	return request.get(`/rest/albums?${query.toString()}`)
+}
 export const requestCreateAlbum = (data: { name: string, description?: string, coverImage?: string }): Promise<Album> => request.post('/rest/albums', data)
 export const requestUpdateAlbum = (id: number, data: { name: string, description?: string, coverImage?: string }): Promise<Album> => request.put(`/rest/albums/${id}`, data)
 export const requestDeleteAlbum = (id: number): Promise<any> => request.delete(`/rest/albums/${id}`)

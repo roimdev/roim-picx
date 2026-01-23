@@ -5,6 +5,9 @@ import { ElDialog, ElInput, ElButton, ElMessage, ElPagination, ElImage } from 'e
 import { faSearch, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
 import { requestListImages, requestAddImagesToAlbum } from '../../utils/request'
 import type { ImgItem, ImgReq } from '../../utils/types'
+import BaseDialog from '../common/BaseDialog.vue'
+import BaseButton from '../common/BaseButton.vue'
+import BaseInput from '../common/BaseInput.vue'
 
 const props = defineProps<{
     modelValue: boolean
@@ -119,18 +122,18 @@ const handleSearch = () => {
 </script>
 
 <template>
-    <el-dialog :model-value="modelValue" :title="$t('album.addImages')" class="!w-[95%] sm:!w-[800px]" top="5vh"
-        @close="handleClose" append-to-body>
+    <BaseDialog :model-value="modelValue" :title="$t('album.addImages')" width="800px" @close="handleClose"
+        :show-footer="true">
         <div class="flex flex-col h-[60vh]">
             <!-- Search -->
             <div class="flex gap-2 mb-4">
-                <el-input v-model="searchQuery" :placeholder="$t('manage.searchPlaceholder')" clearable
+                <BaseInput v-model="searchQuery" :placeholder="$t('manage.searchPlaceholder')"
                     @keyup.enter="handleSearch" @clear="handleSearch">
                     <template #prefix>
                         <font-awesome-icon :icon="faSearch" />
                     </template>
-                </el-input>
-                <el-button @click="handleSearch">{{ $t('common.search') }}</el-button>
+                </BaseInput>
+                <BaseButton type="indigo" @click="handleSearch">{{ $t('common.search') }}</BaseButton>
             </div>
 
             <!-- List -->
@@ -151,9 +154,9 @@ const handleSearch = () => {
                 <el-empty v-else-if="!loading" :description="$t('manage.noImages')" />
 
                 <div v-if="hasMore" class="text-center py-4">
-                    <el-button text @click="loadImages(false)" :loading="loadingMore">
+                    <BaseButton type="secondary" @click="loadImages(false)" :loading="loadingMore">
                         {{ $t('manage.loadMore') }}
-                    </el-button>
+                    </BaseButton>
                 </div>
             </div>
 
@@ -163,10 +166,15 @@ const handleSearch = () => {
         </div>
 
         <template #footer>
-            <el-button @click="handleClose">{{ $t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="handleConfirm" :loading="loading" :disabled="selectedKeys.size === 0">
-                {{ $t('common.confirm') }}
-            </el-button>
+            <div class="flex gap-3 w-full">
+                <BaseButton @click="handleClose" class="flex-1 !rounded-xl !py-3">
+                    {{ $t('common.cancel') }}
+                </BaseButton>
+                <BaseButton type="indigo" @click="handleConfirm" :loading="loading" :disabled="selectedKeys.size === 0"
+                    class="flex-1 !rounded-xl !py-3 font-bold">
+                    {{ $t('common.confirm') }}
+                </BaseButton>
+            </div>
         </template>
-    </el-dialog>
+    </BaseDialog>
 </template>

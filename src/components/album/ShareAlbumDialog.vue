@@ -5,6 +5,10 @@ import { ElDialog, ElInput, ElButton, ElSwitch, ElDatePicker, ElMessage } from '
 import { faCopy, faRedo } from '@fortawesome/free-solid-svg-icons'
 import { requestShareAlbum } from '../../utils/request'
 import type { AlbumShareInfo } from '../../utils/types'
+import BaseDialog from '../common/BaseDialog.vue'
+import BaseButton from '../common/BaseButton.vue'
+import BaseInput from '../common/BaseInput.vue'
+import BaseSwitch from '../common/BaseSwitch.vue'
 
 const props = defineProps<{
     modelValue: boolean
@@ -71,23 +75,22 @@ watch(() => props.modelValue, (val) => {
 </script>
 
 <template>
-    <el-dialog :model-value="modelValue" :title="$t('album.shareTitle') + ' - ' + albumName" width="500px"
-        @close="handleClose">
+    <BaseDialog :model-value="modelValue" :title="$t('album.shareTitle') + ' - ' + albumName" @close="handleClose"
+        :show-footer="true">
         <div v-if="!shareResult" class="space-y-4">
             <!-- Password -->
             <div class="flex items-center justify-between">
-                <span class="text-sm font-medium">{{ $t('share.setPassword') }}</span>
-                <el-switch v-model="hasPassword" />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('share.setPassword') }}</span>
+                <BaseSwitch v-model="hasPassword" />
             </div>
             <div v-if="hasPassword">
-                <el-input v-model="password" type="password" show-password
-                    :placeholder="$t('share.passwordPlaceholder')" />
+                <BaseInput v-model="password" type="password" :placeholder="$t('share.passwordPlaceholder')" />
             </div>
 
             <!-- Expiry -->
             <div class="flex items-center justify-between">
-                <span class="text-sm font-medium">{{ $t('share.setExpiry') }}</span>
-                <el-switch v-model="hasExpiry" />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('share.setExpiry') }}</span>
+                <BaseSwitch v-model="hasExpiry" />
             </div>
             <div v-if="hasExpiry">
                 <el-date-picker v-model="expireTime" type="datetime" :placeholder="$t('share.expirePlaceholder')"
@@ -96,8 +99,9 @@ watch(() => props.modelValue, (val) => {
 
             <!-- Max Views -->
             <div>
-                <span class="text-sm font-medium block mb-2">{{ $t('share.limitViews') }}</span>
-                <el-input v-model.number="maxViews" type="number" :placeholder="$t('share.maxViewsPlaceholder')" />
+                <span class="text-sm font-medium block mb-2 text-gray-700 dark:text-gray-300">{{ $t('share.limitViews')
+                    }}</span>
+                <BaseInput v-model.number="maxViews" type="number" :placeholder="$t('share.maxViewsPlaceholder')" />
             </div>
         </div>
 
@@ -105,11 +109,11 @@ watch(() => props.modelValue, (val) => {
             <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p class="text-sm text-gray-500 mb-2">{{ $t('share.link') }}</p>
                 <div class="flex gap-2">
-                    <el-input readonly :model-value="shareResult.url" />
-                    <el-button type="primary" @click="copyLink">
+                    <BaseInput readonly :model-value="shareResult.url" />
+                    <BaseButton type="indigo" @click="copyLink">
                         <font-awesome-icon :icon="faCopy" class="mr-2" />
                         {{ $t('common.copy') }}
-                    </el-button>
+                    </BaseButton>
                 </div>
             </div>
             <div class="text-sm text-gray-500 space-y-1">
@@ -117,23 +121,30 @@ watch(() => props.modelValue, (val) => {
                 <p v-if="shareResult.expireAt">⏱ {{ new Date(shareResult.expireAt).toLocaleString() }}</p>
             </div>
             <div class="text-center pt-2">
-                <el-button text @click="shareResult = null">
+                <BaseButton type="white" @click="shareResult = null">
                     <font-awesome-icon :icon="faRedo" class="mr-2" />
                     {{ $t('share.create') }} {{ $t('common.new') }}
-                </el-button>
+                </BaseButton>
             </div>
         </div>
 
-        <template #footer>
-            <div v-if="!shareResult">
-                <el-button @click="handleClose">{{ $t('common.cancel') }}</el-button>
-                <el-button type="primary" @click="createShare" :loading="loading">
+        <template #footer v-if="!shareResult">
+            <div class="flex gap-3 w-full">
+                <BaseButton @click="handleClose" class="flex-1 !rounded-xl !py-3">
+                    {{ $t('common.cancel') }}
+                </BaseButton>
+                <BaseButton type="indigo" @click="createShare" :loading="loading"
+                    class="flex-1 !rounded-xl !py-3 font-bold">
                     {{ $t('share.generate') }}
-                </el-button>
-            </div>
-            <div v-else>
-                <el-button @click="handleClose">{{ $t('common.close') }}</el-button>
+                </BaseButton>
             </div>
         </template>
-    </el-dialog>
+        <template #footer v-else>
+            <div class="flex w-full">
+                <BaseButton @click="handleClose" type="indigo" class="flex-1 !rounded-xl !py-3 font-bold">
+                    {{ $t('common.close') }}
+                </BaseButton>
+            </div>
+        </template>
+    </BaseDialog>
 </template>

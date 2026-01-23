@@ -10,6 +10,7 @@ interface Props {
     disabled?: boolean
     icon?: any // FontAwesome icon object
     block?: boolean
+    circle?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,10 +18,16 @@ const props = withDefaults(defineProps<Props>(), {
     size: 'md',
     loading: false,
     disabled: false,
-    block: false
+    block: false,
+    circle: false
 })
 
-const baseClasses = "rounded-lg font-medium transition-colors shadow-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+const baseClasses = computed(() => {
+    return [
+        "font-medium transition-colors shadow-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+        props.circle ? "rounded-full p-0" : "rounded-lg"
+    ].join(" ")
+})
 
 const typeClasses = computed(() => {
     switch (props.type) {
@@ -38,6 +45,14 @@ const typeClasses = computed(() => {
 })
 
 const sizeClasses = computed(() => {
+    if (props.circle) {
+        switch (props.size) {
+            case 'sm': return "w-8 h-8 text-xs"
+            case 'lg': return "w-12 h-12 text-lg"
+            case 'md':
+            default: return "w-10 h-10 text-sm"
+        }
+    }
     switch (props.size) {
         case 'sm':
             return "px-3 py-1.5 text-sm"
