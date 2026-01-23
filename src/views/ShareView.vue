@@ -63,7 +63,7 @@
                             <font-awesome-icon :icon="faEye" class="mr-2" />
                             {{ $t('share.viewCount', { count: shareResult?.views || 0 }) }}
                             <span v-if="shareResult?.maxViews">{{ $t('share.viewLimit', { max: shareResult.maxViews })
-                            }}</span>
+                                }}</span>
                         </span>
                     </div>
 

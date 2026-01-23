@@ -15,6 +15,7 @@ export default {
         copied: '已复制',
         close: '关闭',
         clear: '清除',
+        selectAll: '全选',
         clearAll: '清除全部',
         noData: '暂无数据',
         upload: '上传',

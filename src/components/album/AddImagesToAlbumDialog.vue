@@ -147,11 +147,21 @@ const changeFolder = (path: string) => {
 const goToRoot = () => {
     changeFolder('/')
 }
+
+const handleSelectAll = () => {
+    images.value.forEach(img => {
+        selectedKeys.value.add(img.key)
+    })
+}
+
+const handleClearSelection = () => {
+    selectedKeys.value.clear()
+}
 </script>
 
 <template>
     <BaseDialog :model-value="modelValue" :title="$t('album.addImages')" width="800px" @close="handleClose"
-        @confirm="handleConfirm" :loading="loading" :confirm-disabled="selectedKeys.size === 0">
+        @cancel="handleClose" @confirm="handleConfirm" :loading="loading" :confirm-disabled="selectedKeys.size === 0">
         <div class="flex flex-col h-[60vh]">
             <!-- Breadcrumb Navigation -->
             <div v-if="breadcrumbSegments.length > 0" class="flex items-center gap-2 mb-3 text-sm">
@@ -219,8 +229,14 @@ const goToRoot = () => {
                 </div>
             </div>
 
-            <div class="mt-2 text-sm text-gray-500">
-                {{ $t('manage.selected', { count: selectedKeys.size }) }}
+            <div class="mt-2 text-sm text-gray-500 flex justify-between items-center">
+                <span>{{ $t('manage.selected', { count: selectedKeys.size }) }}</span>
+                <div class="flex gap-2">
+                    <BaseButton type="secondary" size="sm" @click="handleSelectAll">{{ $t('common.selectAll') }}
+                    </BaseButton>
+                    <BaseButton type="secondary" size="sm" @click="handleClearSelection">{{ $t('upload.clearSelection')
+                    }}</BaseButton>
+                </div>
             </div>
         </div>
     </BaseDialog>

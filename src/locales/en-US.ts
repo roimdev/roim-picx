@@ -16,6 +16,7 @@ export default {
         close: 'Close',
         clear: 'Clear',
         clearAll: 'Clear All',
+        selectAll: 'Select All',
         noData: 'No Data',
         upload: 'Upload',
         download: 'Download',
