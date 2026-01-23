@@ -25,6 +25,8 @@ export default {
         prev: '上一步',
         submit: '提交',
         reset: '重置',
+        add: '新增',
+        saveSuccess: '保存成功',
     },
     nav: {
         upload: '上传图片',
@@ -331,7 +333,12 @@ export default {
             grant_permission: '授权',
             revoke_permission: '撤销授权',
             login: '登录'
-        }
+        },
+        settings: '系统设置',
+        uploadConfig: '上传配置',
+        mimeType: 'MIME类型',
+        extension: '扩展名',
+        uploadConfigHint: '配置允许上传的文件类型和扩展名。修改后立即生效，但在分布式环境中可能有一分钟延迟。'
     },
     delete: {
         title: '删除图片',

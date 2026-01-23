@@ -44,7 +44,8 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
     for (let item of images) {
         const file = item as File
         const fileType = file.type
-        if (!checkFileType(fileType)) {
+        // checkFileType is now async and needs DB
+        if (!await checkFileType(fileType, c.env.DB)) {
             errs.push(`${fileType} not support.`)
             continue
         }
@@ -66,7 +67,7 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
 
         // Fallback or default filename generation
         if (!filename) {
-            filename = await getFileName(fileType, time)
+            filename = await getFileName(fileType, time, c.env.DB)
         }
 
         const fullPath = customPath + filename

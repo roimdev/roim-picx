@@ -6,7 +6,8 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('manage.title') }}</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ $t('manage.uploadedCount', { count: uploadedImages.length, size: formatBytes(imagesTotalSize) }) }}
+                    {{ $t('manage.uploadedCount', { count: uploadedImages.length, size: formatBytes(imagesTotalSize) })
+                    }}
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -78,7 +79,8 @@
 
         <!-- Folder Navigation -->
         <div class="mb-8" v-if="prefixes.length > 0">
-            <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{{ $t('manage.folderNav') }}</h3>
+            <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{{
+                $t('manage.folderNav') }}</h3>
             <div class="flex items-center gap-3 flex-wrap">
                 <div v-for="it in prefixes" :key="String(it)"
                     class="group px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md cursor-pointer transition-all duration-200 flex items-center gap-3 min-w-[120px]"
@@ -156,9 +158,12 @@
                 <font-awesome-icon :icon="searchKeyword ? faSearch : faFolderOpen"
                     class="text-2xl text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ searchKeyword ? $t('manage.noSearchResult') : $t('manage.noImages') }}
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ searchKeyword ?
+                $t('manage.noSearchResult') :
+                $t('manage.noImages') }}
             </h3>
-            <p class="mt-1 text-gray-500 dark:text-gray-400">{{ searchKeyword ? $t('manage.tryOtherKeyword') : $t('manage.emptyFolder') }}</p>
+            <p class="mt-1 text-gray-500 dark:text-gray-400">{{ searchKeyword ? $t('manage.tryOtherKeyword') :
+                $t('manage.emptyFolder') }}</p>
             <button v-if="searchKeyword" @click="searchKeyword = ''"
                 class="mt-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
                 {{ $t('manage.clearSearch') }}
@@ -316,7 +321,7 @@ const listImages = () => {
         delimiter: delimiter.value,
         keyword: keyword || undefined
     }).then((data) => {
-        uploadedImages.value = data.list
+        uploadedImages.value = data.list.filter((item) => item.size !== 0)
         cursor.value = data.cursor
         hasMore.value = data.next
         if (data.prefixes && data.prefixes.length) {

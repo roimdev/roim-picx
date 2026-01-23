@@ -3,7 +3,7 @@ import { ElNotification as elNotify } from 'element-plus'
 import {
 	ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken,
 	AdminUser, UserStats, SystemStats, AuditLog,
-	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo
+	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo, UploadConfigItem
 } from "./types"
 import storage from "./storage"
 const request = axios.create({
@@ -217,4 +217,12 @@ export const requestImageAnalytics = (key: string): Promise<ImageAnalytics> =>
 	request.get(`/rest/admin/analytics/image/${key}`)
 export const requestUserAnalytics = (login: string): Promise<UserAnalytics> =>
 	request.get(`/rest/admin/analytics/user/${login}`)
+
+
+// ============================================
+// 管理员 API - 系统设置
+// ============================================
+export const requestGetUploadConfig = (): Promise<UploadConfigItem[]> => request.get('/rest/settings/upload')
+export const requestUpdateUploadConfig = (config: UploadConfigItem[]): Promise<UploadConfigItem[]> => request.post('/rest/settings/upload', config)
+
 

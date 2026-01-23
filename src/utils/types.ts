@@ -157,3 +157,8 @@ export interface CurrentUserInfo {
 	storageUsed?: number
 	uploadCount?: number
 }
+
+export interface UploadConfigItem {
+	type: string;
+	ext: string;
+}

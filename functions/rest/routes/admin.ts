@@ -2,36 +2,9 @@ import { Hono } from 'hono'
 import { Ok, Fail, FailCode } from '../type'
 import StatusCode from '../type'
 import type { User, DbUser, UserStats } from '../type'
-import { auth, type AppEnv, isAdminUser } from '../middleware/auth'
+import { auth, type AppEnv, isAdminUser, adminAuth } from '../middleware/auth'
 
 const adminRoutes = new Hono<AppEnv>()
-
-/**
- * 管理员权限中间件
- */
-const adminAuth = async (c: any, next: any) => {
-    const user = c.get('user') as User | undefined
-    const isAdminToken = c.get('isAdminToken') || false
-
-    // 使用管理员 Token 直接通过
-    if (isAdminToken) {
-        await next()
-        return
-    }
-
-    // 检查用户角色
-    if (!user) {
-        return c.json(FailCode('需要登录', StatusCode.NotAuth))
-    }
-
-    // 检查是否是管理员
-    const isAdmin = user.role === 'admin' || isAdminUser(user.login, c.env.ADMIN_USERS)
-    if (!isAdmin) {
-        return c.json(FailCode('需要管理员权限', StatusCode.NotAuth))
-    }
-
-    await next()
-}
 
 // ============================================
 // 用户管理接口
@@ -680,3 +653,5 @@ adminRoutes.post('/sync-r2-to-d1', auth, adminAuth, async (c) => {
 })
 
 export default adminRoutes
+
+
