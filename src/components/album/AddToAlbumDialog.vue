@@ -67,7 +67,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <el-dialog :model-value="modelValue" :title="$t('album.uploadTo')" width="400px"
+    <el-dialog :model-value="modelValue" :title="$t('album.uploadTo')" class="!w-[90%] sm:!w-[400px]"
         @close="emit('update:modelValue', false)" append-to-body>
         <div class="space-y-4">
             <div v-if="albums.length === 0" class="text-gray-500 text-center py-4">

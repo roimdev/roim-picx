@@ -9,6 +9,9 @@ import {
 import {
     faPlus, faSearch, faFolder, faEllipsisVertical, faPen, faTrash, faTimes
 } from '@fortawesome/free-solid-svg-icons'
+import SearchInput from '../common/SearchInput.vue'
+import BaseButton from '../common/BaseButton.vue'
+import BaseDialog from '../common/BaseDialog.vue'
 import { requestListAlbums, requestCreateAlbum, requestDeleteAlbum, requestUpdateAlbum } from '../../utils/request'
 import type { Album } from '../../utils/types'
 
@@ -108,26 +111,16 @@ onMounted(() => {
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold">{{ $t('album.title') }}</h1>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <div class="relative w-full sm:w-auto">
-                    <font-awesome-icon :icon="faSearch"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input v-model="searchQuery" type="text" :placeholder="$t('common.search')"
-                        class="pl-9 pr-8 py-2 w-full sm:w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:outline-none transition-all" />
-                    <button v-if="searchQuery" @click="searchQuery = ''"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                        :title="$t('common.clear')">
-                        <font-awesome-icon :icon="faTimes" class="text-sm" />
-                    </button>
-                </div>
-                <button
-                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm flex items-center gap-2"
-                    @click="handleCreate">
+                <!-- Search Input -->
+                <SearchInput v-model="searchQuery" :placeholder="$t('common.search')" />
+
+                <BaseButton type="indigo" @click="handleCreate">
                     <font-awesome-icon :icon="faPlus" />
                     <span>{{ $t('album.create') }}</span>
-                </button>
+                </BaseButton>
             </div>
-        </div>
 
+        </div>
         <div v-loading="loading">
             <div v-if="albums.length > 0"
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -171,30 +164,24 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
             <el-empty v-else :description="$t('album.empty')" />
         </div>
-
-        <!-- Create/Edit Dialog -->
-        <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? $t('album.create') : $t('album.edit')"
-            width="500px">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">{{ $t('album.name') }}</label>
-                    <el-input v-model="currentAlbum.name" :placeholder="$t('album.namePlaceholder')" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">{{ $t('album.description') }}</label>
-                    <el-input v-model="currentAlbum.description" type="textarea" :rows="3"
-                        :placeholder="$t('album.descPlaceholder')" />
-                </div>
-            </div>
-            <template #footer>
-                <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
-                <el-button type="primary" @click="handleSubmit" :loading="formLoading">
-                    {{ $t('common.confirm') }}
-                </el-button>
-            </template>
-        </el-dialog>
     </div>
+
+    <!-- Create/Edit Dialog -->
+    <BaseDialog v-model="dialogVisible" :title="dialogMode === 'create' ? $t('album.create') : $t('album.edit')"
+        @confirm="handleSubmit" :loading="formLoading">
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">{{ $t('album.name') }}</label>
+                <el-input v-model="currentAlbum.name" :placeholder="$t('album.namePlaceholder')" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">{{ $t('album.description') }}</label>
+                <el-input v-model="currentAlbum.description" type="textarea" :rows="3"
+                    :placeholder="$t('album.descPlaceholder')" />
+            </div>
+        </div>
+    </BaseDialog>
+
 </template>

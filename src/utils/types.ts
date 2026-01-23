@@ -179,8 +179,9 @@ export interface Album {
 }
 
 export interface AlbumImage {
-	key: string
-	url: string
+	album_id: number
+	image_url: string
+	image_key: string
 	added_at: number
 }
 

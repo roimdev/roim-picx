@@ -119,8 +119,8 @@ const handleSearch = () => {
 </script>
 
 <template>
-    <el-dialog :model-value="modelValue" :title="$t('album.addImages')" width="800px" top="5vh" @close="handleClose"
-        append-to-body>
+    <el-dialog :model-value="modelValue" :title="$t('album.addImages')" class="!w-[95%] sm:!w-[800px]" top="5vh"
+        @close="handleClose" append-to-body>
         <div class="flex flex-col h-[60vh]">
             <!-- Search -->
             <div class="flex gap-2 mb-4">
@@ -134,7 +134,7 @@ const handleSearch = () => {
             </div>
 
             <!-- List -->
-            <div class="flex-1 overflow-y-auto min-h-0 border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+            <div class="flex-1 overflow-y-auto min-h-0 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                 <div v-if="images.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                     <div v-for="img in images" :key="img.key"
                         class="aspect-square relative rounded overflow-hidden cursor-pointer group"

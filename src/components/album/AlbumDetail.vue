@@ -120,13 +120,13 @@ const handleSetCover = async () => {
         return
     }
     const key = Array.from(selectedKeys.value)[0]
-    const img = images.value.find(i => i.key === key)
+    const img = images.value.find(i => i.image_key === key)
     if (!img) return
 
     try {
-        await requestSetAlbumCover(albumId, img.url)
+        await requestSetAlbumCover(albumId, img.image_url)
         ElMessage.success(t('album.updateSuccess'))
-        if (album.value) album.value.cover_image = img.url
+        if (album.value) album.value.cover_image = img.image_url
         isSelectionMode.value = false
         selectedKeys.value.clear()
     } catch (e) { /* error */ }
@@ -144,7 +144,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="h-full flex flex-col p-4 md:p-6 overflow-y-auto">
+    <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div class="flex items-center gap-4">
@@ -206,19 +206,19 @@ onMounted(() => {
         <div v-loading="loading" class="flex-1">
             <div v-if="images.length > 0">
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    <div v-for="img in images" :key="img.key"
+                    <div v-for="img in images" :key="img.image_key"
                         class="relative aspect-square rounded-lg overflow-hidden group cursor-pointer border border-gray-100 dark:border-gray-800"
-                        :class="{ 'ring-2 ring-indigo-500': selectedKeys.has(img.key) }"
-                        @click="isSelectionMode ? toggleSelect(img.key) : null">
-                        <el-image :src="img.url" fit="cover"
+                        :class="{ 'ring-2 ring-indigo-500': selectedKeys.has(img.image_key) }"
+                        @click="isSelectionMode ? toggleSelect(img.image_key) : null">
+                        <el-image :src="img.image_url" fit="cover"
                             class="w-full h-full transition-transform duration-300 group-hover:scale-105"
                             loading="lazy" />
 
                         <!-- Checkbox Overlay -->
                         <div v-if="isSelectionMode" class="absolute top-2 right-2 z-10">
                             <div class="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center transition-colors"
-                                :class="selectedKeys.has(img.key) ? 'bg-indigo-500 border-indigo-500' : 'bg-black/30 hover:bg-black/50'">
-                                <font-awesome-icon v-if="selectedKeys.has(img.key)" :icon="faCheckSquare"
+                                :class="selectedKeys.has(img.image_key) ? 'bg-indigo-500 border-indigo-500' : 'bg-black/30 hover:bg-black/50'">
+                                <font-awesome-icon v-if="selectedKeys.has(img.image_key)" :icon="faCheckSquare"
                                     class="text-white text-xs" />
                             </div>
                         </div>

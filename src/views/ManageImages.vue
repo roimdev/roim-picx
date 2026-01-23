@@ -12,17 +12,9 @@
             </div>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <!-- Search Input -->
-                <div class="relative w-full sm:w-auto">
-                    <font-awesome-icon :icon="faSearch"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input v-model="searchKeyword" type="text" :placeholder="$t('manage.searchPlaceholder')"
-                        class="pl-9 pr-8 py-2 w-full sm:w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:outline-none transition-all" />
-                    <button v-if="searchKeyword" @click="searchKeyword = ''"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                        :title="$t('manage.clearSearch')">
-                        <font-awesome-icon :icon="faTimes" class="text-sm" />
-                    </button>
-                </div>
+                <!-- Search Input -->
+                <SearchInput v-model="searchKeyword" :placeholder="$t('manage.searchPlaceholder')" />
+
 
                 <!-- View Toggle -->
                 <div class="hidden sm:flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mr-2">
@@ -40,19 +32,20 @@
                     </button>
                 </div>
 
-                <button
-                    class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors shadow-sm flex items-center gap-2"
-                    @click="addFolder">
-                    <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
-                    <span class="hidden sm:inline">{{ $t('manage.newFolder') }}</span>
-                    <span class="sm:hidden">{{ $t('manage.new') }}</span>
-                </button>
-                <button
-                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm flex items-center gap-2"
-                    @click="listImages">
-                    <font-awesome-icon :icon="faRedoAlt" :spin="loading" />
-                    <span class="hidden sm:inline">{{ $t('common.refresh') }}</span>
-                </button>
+                <BaseButton @click="addFolder">
+                    <div class="flex items-center gap-2">
+                        <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
+                        <span class="hidden sm:inline">{{ $t('manage.newFolder') }}</span>
+                        <span class="sm:hidden">{{ $t('manage.new') }}</span>
+                    </div>
+                </BaseButton>
+                <BaseButton type="indigo" @click="listImages" :loading="loading">
+                    <div class="flex items-center gap-2">
+                        <font-awesome-icon v-if="!loading" :icon="faRedoAlt" />
+                        <span class="hidden sm:inline">{{ $t('common.refresh') }}</span>
+                    </div>
+                </BaseButton>
+
             </div>
         </div>
 
@@ -187,18 +180,26 @@
 
 <script setup lang="ts">
 import { requestListImages, requestDeleteImage, createFolder, requestRenameImage } from '../utils/request'
-import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { ImgItem, ImgReq, Folder } from '../utils/types'
+import { ElImageViewer } from 'element-plus'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+    ElMessage, ElDialog, ElButton, ElInput, ElDropdown, ElDropdownMenu, ElDropdownItem,
+    ElBreadcrumb, ElBreadcrumbItem, ElMessageBox
+} from 'element-plus'
 import ImageBox from '../components/ImageBox.vue'
 import ImageListRow from '../components/ImageListRow.vue'
-import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
-import { ElMessageBox, ElMessage, ElImageViewer } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
+import SearchInput from '../components/common/SearchInput.vue'
+import BaseButton from '../components/common/BaseButton.vue' // Import BaseButton
+import {
+    faSearch, faThLarge, faList, faFolderPlus, faRedoAlt, faHome, faChevronRight,
+    faFolder, faCloudUploadAlt, faTimes, faSpinner, faFolderOpen
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const { t } = useI18n()
 

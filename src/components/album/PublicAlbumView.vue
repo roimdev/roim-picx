@@ -47,7 +47,7 @@ const verifyAndLoad = async () => {
     try {
         const res = await requestVerifyAlbumShare(token, password.value)
         images.value = res.images
-        previewUrls.value = res.images.map(i => i.url)
+        previewUrls.value = res.images.map(i => i.image_url)
         verified.value = true
     } catch (e: any) {
         if (e === '密码错误' || e === 'Password error') {
@@ -135,10 +135,10 @@ onMounted(() => {
 
                 <!-- Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    <div v-for="(img, index) in images" :key="img.key"
+                    <div v-for="(img, index) in images" :key="img.image_key"
                         class="aspect-square relative rounded-lg overflow-hidden group cursor-pointer bg-gray-100 dark:bg-gray-800"
                         @click="showPreview(index)">
-                        <el-image :src="img.url" fit="cover"
+                        <el-image :src="img.image_url" fit="cover"
                             class="w-full h-full transition-transform duration-500 group-hover:scale-110"
                             loading="lazy" />
                     </div>
