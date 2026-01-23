@@ -31,8 +31,8 @@
                 <div v-for="share in shares" :key="share.id"
                     class="group flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-all duration-200">
                     <!-- Thumbnail -->
-                    <div
-                        class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+                    <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
+                        @click="openPreview(share.imageUrl)">
                         <el-image class="w-full h-full object-cover" :src="share.imageUrl" fit="cover" lazy>
                             <template #placeholder>
                                 <div
@@ -126,13 +126,16 @@
             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $t('myShares.empty') }}</h3>
             <p class="mt-1 text-gray-500 dark:text-gray-400">{{ $t('myShares.emptyHint') }}</p>
         </div>
+
+        <!-- Image Preview -->
+        <el-image-viewer v-if="previewVisible" :url-list="[previewUrl]" @close="closePreview" hide-on-click-modal />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElTooltip, ElPopconfirm, ElImage } from 'element-plus'
+import { ElMessage, ElTooltip, ElPopconfirm, ElImage, ElImageViewer } from 'element-plus'
 import { requestMyShares, requestDeleteShare, type MyShare } from '../utils/request'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -143,6 +146,10 @@ const { t } = useI18n()
 
 const loading = ref(false)
 const shares = ref<MyShare[]>([])
+
+// Preview state
+const previewVisible = ref(false)
+const previewUrl = ref('')
 
 const fetchMyShares = async () => {
     loading.value = true
@@ -185,4 +192,13 @@ const deleteShare = async (share: MyShare) => {
 onMounted(() => {
     fetchMyShares()
 })
+
+const openPreview = (url: string) => {
+    previewUrl.value = url
+    previewVisible.value = true
+}
+
+const closePreview = () => {
+    previewVisible.value = false
+}
 </script>

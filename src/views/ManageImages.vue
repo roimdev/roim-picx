@@ -174,6 +174,24 @@
         <AddToAlbumDialog v-model="addToAlbumDialogVisible" :image-keys="currentAddToAlbumImages.keys"
             :image-urls="currentAddToAlbumImages.urls" />
 
+        <!-- Rename Dialog -->
+        <BaseDialog v-model="renameDialogVisible" :title="$t('manage.renameImage')" width="400px"
+            @confirm="handleRenameConfirm" :loading="loading">
+            <div class="py-2">
+                <BaseInput v-model="renameValue" :label="$t('manage.renamePrompt')"
+                    :placeholder="$t('manage.renamePrompt')" @keyup.enter="handleRenameConfirm" autofocus />
+            </div>
+        </BaseDialog>
+
+        <!-- New Folder Dialog -->
+        <BaseDialog v-model="folderDialogVisible" :title="$t('manage.newFolder')" width="400px"
+            @confirm="handleAddFolderConfirm" :loading="loading">
+            <div class="py-2">
+                <BaseInput v-model="folderNameValue" :label="$t('manage.folderNamePrompt')"
+                    :placeholder="$t('manage.folderNamePrompt')" @keyup.enter="handleAddFolderConfirm" autofocus />
+            </div>
+        </BaseDialog>
+
         <!-- Image Preview -->
         <el-image-viewer v-if="previewVisible" :url-list="[previewUrl]" @close="closePreview" hide-on-click-modal />
     </div>
@@ -195,6 +213,8 @@ import ImageListRow from '../components/ImageListRow.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
+import BaseDialog from '../components/common/BaseDialog.vue'
+import BaseInput from '../components/common/BaseInput.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import SearchInput from '../components/common/SearchInput.vue'
 import BaseButton from '../components/common/BaseButton.vue' // Import BaseButton
@@ -254,6 +274,17 @@ const showAddToAlbumDialog = (item: ImgItem) => {
     addToAlbumDialogVisible.value = true
 }
 
+// Rename state
+const renameDialogVisible = ref(false)
+const renameValue = ref('')
+const currentRenameItem = ref<ImgItem | null>(null)
+const renamePathPrefix = ref('')
+const oldFileName = ref('')
+
+// Add Folder state
+const folderDialogVisible = ref(false)
+const folderNameValue = ref('')
+
 // Preview state
 const previewVisible = ref(false)
 const previewUrl = ref('')
@@ -308,25 +339,35 @@ const changeFolder = (path: string) => {
     listImages()
 }
 const addFolder = () => {
-    ElMessageBox.prompt(t('manage.folderNamePrompt'), t('manage.newFolder'), {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputPattern: /^[A-Za-z0-9_-\u4e00-\u9fa5]+$/,
-        inputErrorMessage: t('manage.invalidFolderName'),
-    }).then(({ value }) => {
-        loading.value = true
-        createFolder(<Folder>{
-            name: value
-        }).then((res) => {
-            console.log(res)
-            ElMessage.success(t('manage.folderCreated'))
-            listImages()
-        }).catch(() => {
-            ElMessage.error(t('manage.folderCreateFailed'))
-        }).finally(() => {
-            loading.value = false
+    folderNameValue.value = ''
+    folderDialogVisible.value = true
+}
+
+const handleAddFolderConfirm = async () => {
+    if (!folderNameValue.value) {
+        folderDialogVisible.value = false
+        return
+    }
+
+    // Basic validation
+    if (!/^[A-Za-z0-9_-\u4e00-\u9fa5]+$/.test(folderNameValue.value)) {
+        ElMessage.error(t('manage.invalidFolderName'))
+        return
+    }
+
+    loading.value = true
+    try {
+        await createFolder(<Folder>{
+            name: folderNameValue.value
         })
-    }).catch(() => { })
+        ElMessage.success(t('manage.folderCreated'))
+        folderDialogVisible.value = false
+        listImages()
+    } catch (err) {
+        console.error(err)
+    } finally {
+        loading.value = false
+    }
 }
 // Initial load - reset state and load first page
 const listImages = () => {
@@ -435,45 +476,56 @@ const renameImage = (item: ImgItem) => {
     const pathParts = oldKey.split('/')
     const fileName = pathParts.pop() || ''
     const path = pathParts.join('/')
-    const pathPrefix = path ? path + '/' : ''
 
-    ElMessageBox.prompt(t('manage.renamePrompt'), t('manage.renameImage'), {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: fileName,
-        inputPattern: /^[^/\\:*?"<>|]+$/,
-        inputErrorMessage: t('manage.invalidFileName')
-    }).then(({ value }) => {
-        if (value === fileName) return
+    currentRenameItem.value = item
+    renameValue.value = fileName
+    oldFileName.value = fileName
+    renamePathPrefix.value = path ? path + '/' : ''
+    renameDialogVisible.value = true
+}
 
-        loading.value = true
-        const newKey = pathPrefix + value
+const handleRenameConfirm = async () => {
+    if (!currentRenameItem.value || !renameValue.value || renameValue.value === oldFileName.value) {
+        renameDialogVisible.value = false
+        return
+    }
 
-        requestRenameImage({
+    // Basic validation
+    if (/[/\\:*?"<>|]/.test(renameValue.value)) {
+        ElMessage.error(t('manage.invalidFileName'))
+        return
+    }
+
+    loading.value = true
+    const oldKey = currentRenameItem.value.key
+    const newKey = renamePathPrefix.value + renameValue.value
+
+    try {
+        const res = await requestRenameImage({
             oldKey: oldKey,
             newKey: newKey
-        }).then((res: any) => {
-            if (res.code === 200 || res.newKey) {
-                ElMessage.success(t('manage.renameSuccess'))
-                // Update local list
-                const index = uploadedImages.value.findIndex(img => img.key === oldKey)
-                if (index !== -1) {
-                    const updatedItem = { ...uploadedImages.value[index] }
-                    updatedItem.key = res.data?.newKey || newKey
-                    updatedItem.url = updatedItem.url.replace(encodeURIComponent(oldKey), encodeURIComponent(updatedItem.key))
-                        .replace(oldKey, updatedItem.key) // Fallback for simple replace
-                    uploadedImages.value[index] = updatedItem
-                }
-                listImages() // Refresh list to be sure
-            } else {
-                ElMessage.error(res.msg || t('manage.renameFailed'))
+        }) as any
+
+        if (res.code === 200 || res.newKey) {
+            ElMessage.success(t('manage.renameSuccess'))
+            // Update local list
+            const index = uploadedImages.value.findIndex(img => img.key === oldKey)
+            if (index !== -1) {
+                const updatedItem = { ...uploadedImages.value[index] }
+                updatedItem.key = res.data?.newKey || res.newKey || newKey
+                updatedItem.url = updatedItem.url.replace(encodeURIComponent(oldKey), encodeURIComponent(updatedItem.key))
+                    .replace(oldKey, updatedItem.key)
+                uploadedImages.value[index] = updatedItem
             }
-        }).catch((err) => {
-            console.error(err)
-            // ElMessage.error('重命名失败')
-        }).finally(() => {
-            loading.value = false
-        })
-    }).catch(() => { })
+            renameDialogVisible.value = false
+            listImages() // Refresh list to be sure
+        } else {
+            ElMessage.error(res.msg || t('manage.renameFailed'))
+        }
+    } catch (err) {
+        console.error(err)
+    } finally {
+        loading.value = false
+    }
 }
 </script>

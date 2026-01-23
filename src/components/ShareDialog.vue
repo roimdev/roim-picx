@@ -52,9 +52,9 @@
                 class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                 <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">{{ $t('share.shareUrlGenerated')
                 }}</p>
-                <div class="flex items-center gap-2">
-                    <BaseInput :model-value="shareUrl" readonly />
-                    <BaseButton type="indigo" size="sm" @click="copyLink">
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <BaseInput :model-value="shareUrl" readonly class="flex-1 min-w-0" />
+                    <BaseButton type="indigo" size="sm" @click="copyLink" class="whitespace-nowrap flex-shrink-0">
                         {{ $t('share.copy') }}
                     </BaseButton>
                 </div>
@@ -64,13 +64,14 @@
         <template #footer>
             <div class="flex gap-3 w-full">
                 <BaseButton @click="handleClose" class="flex-1 !rounded-xl !py-3">
-                    {{ shareUrl ? $t('common.close') : $t('common.cancel') }}
+                    <font-awesome-icon :icon="faTimes" class="sm:mr-2" />
+                    <span class="hidden sm:inline">{{ shareUrl ? $t('common.close') : $t('common.cancel') }}</span>
                 </BaseButton>
                 <BaseButton type="indigo" @click="handleAction" :loading="loading"
                     class="flex-1 !rounded-xl !py-3 font-bold">
                     <font-awesome-icon :icon="loading ? faSpinner : (shareUrl ? faRedo : faShare)" :spin="loading"
-                        class="mr-2" />
-                    {{ shareUrl ? $t('share.regenerate') : $t('share.generate') }}
+                        class="sm:mr-2" />
+                    <span class="hidden sm:inline">{{ shareUrl ? $t('share.regenerate') : $t('share.generate') }}</span>
                 </BaseButton>
             </div>
         </template>
@@ -81,7 +82,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElDatePicker, ElMessage } from 'element-plus'
-import { faShare, faSpinner, faRedo } from '@fortawesome/free-solid-svg-icons'
+import { faShare, faSpinner, faRedo, faTimes } from '@fortawesome/free-solid-svg-icons'
 import formatBytes from '../utils/format-bytes'
 import copy from 'copy-to-clipboard'
 import { requestCreateShare, requestShareAlbum } from '../utils/request'

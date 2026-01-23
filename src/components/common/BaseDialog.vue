@@ -29,7 +29,7 @@ const { t } = useI18n()
 // Responsive dialog
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const isMobile = computed(() => windowWidth.value < 640)
-const dialogWidth = computed(() => isMobile.value ? '100%' : props.width)
+const dialogWidth = computed(() => isMobile.value ? '90%' : props.width)
 
 const handleResize = () => {
     windowWidth.value = window.innerWidth
@@ -59,7 +59,7 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <el-dialog :model-value="modelValue" :title="title" :width="dialogWidth" :fullscreen="isMobile" @close="handleClose"
+    <el-dialog :model-value="modelValue" :title="title" :width="dialogWidth" align-center @close="handleClose"
         append-to-body class="rounded-2xl">
         <slot />
 
@@ -80,19 +80,52 @@ const handleCancel = () => {
 </template>
 
 <style>
-/* Global override for element-plus dialog to match rounded-xl feel if needed, 
-   though 'class' on el-dialog might put it on the wrapper. 
-   Scope checking: el-dialog appends to body, so scoped styles won't reach it easily without deep selector.
-   However, we can use the 'class' prop. */
+/* Global override for element-plus dialog */
 .el-dialog {
     border-radius: 1rem !important;
-    /* rounded-2xl */
+    /* Remove fixed height - let it adapt to content */
+    max-height: calc(100vh - 100px) !important;
+    /* Use flex to manage internal layout */
+    display: flex !important;
+    flex-direction: column !important;
 }
 
-/* On mobile, remove radius */
+.el-dialog .el-dialog__header {
+    margin-right: 0;
+    padding: 20px 24px 10px;
+    flex-shrink: 0;
+}
+
+.el-dialog .el-dialog__body {
+    /* Let body grow with content, but allow scrolling if too large */
+    overflow-y: auto;
+    padding: 20px 24px;
+    /* Don't force flex: 1, which would make it take all available space */
+    flex-shrink: 1;
+}
+
+.el-dialog .el-dialog__footer {
+    padding: 10px 24px 20px;
+    flex-shrink: 0;
+}
+
+/* On mobile, keep radius and reduce padding */
 @media (max-width: 640px) {
     .el-dialog {
-        border-radius: 0 !important;
+        border-radius: 1.25rem !important;
+    }
+
+    .el-dialog .el-dialog__header {
+        padding: 10px 10px 5px;
+    }
+
+    .el-dialog .el-dialog__body {
+        padding: 10px;
+    }
+
+    .el-dialog .el-dialog__footer {
+        /* Keep more vertical padding for footer to prevent button squeezing */
+        padding: 5px 10px 10px;
     }
 }
 </style>

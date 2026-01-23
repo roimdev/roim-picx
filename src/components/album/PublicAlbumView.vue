@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElInput, ElButton, ElMessage, ElImage, ElEmpty, ElCard, ElImageViewer } from 'element-plus'
-import { faLock, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { faLock, faArrowRight, faThLarge, faImage as faImageIcon } from '@fortawesome/free-solid-svg-icons'
 import { requestGetAlbumShareInfo, requestVerifyAlbumShare } from '../../utils/request'
 import type { AlbumShareInfo, AlbumImage } from '../../utils/types'
 import formatBytes from '../../utils/format-bytes'
@@ -25,6 +25,9 @@ const errorMsg = ref('')
 const previewVisible = ref(false)
 const previewIndex = ref(0)
 const previewUrls = ref<string[]>([])
+
+// View mode: 'grid' or 'large'
+const viewMode = ref<'grid' | 'large'>('grid')
 
 const loadInfo = async () => {
     loading.value = true
@@ -124,23 +127,61 @@ onMounted(() => {
             <!-- Album Content -->
             <div v-else-if="verified && shareInfo">
                 <!-- Album Info -->
-                <div class="mb-8 text-center md:text-left">
-                    <h1 class="text-3xl font-bold mb-2">{{ shareInfo.albumName }}</h1>
-                    <p class="text-gray-500 max-w-2xl">{{ shareInfo.description }}</p>
-                    <div class="flex items-center gap-4 mt-4 text-sm text-gray-400 justify-center md:justify-start">
-                        <span>{{ images.length }} {{ $t('album.items') }}</span>
-                        <!-- <span>{{ new Date(shareInfo.createdAt!).toLocaleDateString() }}</span> -->
+                <div class="mb-8">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div class="flex-1">
+                            <h1 class="text-3xl font-bold mb-2">{{ shareInfo.albumName }}</h1>
+                            <p class="text-gray-500 max-w-2xl">{{ shareInfo.description }}</p>
+                            <div class="flex items-center gap-4 mt-4 text-sm text-gray-400">
+                                <span>{{ images.length }} {{ $t('album.items') }}</span>
+                            </div>
+                        </div>
+                        <!-- View Mode Toggle -->
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button @click="viewMode = 'grid'" :class="[
+                                'p-2 rounded-lg transition-all',
+                                viewMode === 'grid'
+                                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            ]">
+                                <font-awesome-icon :icon="faThLarge" class="text-lg" />
+                            </button>
+                            <button @click="viewMode = 'large'" :class="[
+                                'p-2 rounded-lg transition-all',
+                                viewMode === 'large'
+                                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            ]">
+                                <font-awesome-icon :icon="faImageIcon" class="text-lg" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Grid -->
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <!-- Grid View -->
+                <div v-if="viewMode === 'grid'"
+                    class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     <div v-for="(img, index) in images" :key="img.image_key"
                         class="aspect-square relative rounded-lg overflow-hidden group cursor-pointer bg-gray-100 dark:bg-gray-800"
                         @click="showPreview(index)">
                         <el-image :src="img.image_url" fit="cover"
                             class="w-full h-full transition-transform duration-500 group-hover:scale-110"
                             loading="lazy" />
+                    </div>
+                </div>
+
+                <!-- Large View -->
+                <div v-else class="space-y-6">
+                    <div v-for="(img, index) in images" :key="img.image_key"
+                        class="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer group"
+                        @click="showPreview(index)">
+                        <el-image :src="img.image_url" fit="contain"
+                            class="w-full max-h-[80vh] transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy" />
+                        <div
+                            class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p class="text-white text-sm truncate">{{ img.image_key }}</p>
+                        </div>
                     </div>
                 </div>
 

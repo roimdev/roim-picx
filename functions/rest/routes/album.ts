@@ -394,7 +394,7 @@ albumRoutes.post('/share/album/:token/verify', async (c) => {
         // Get images
         // Only return image URLs.
         const images = await c.env.DB.prepare(
-            'SELECT image_key as key, image_url as url, added_at FROM album_images WHERE album_id = ? ORDER BY added_at DESC'
+            'SELECT image_key, album_id, image_url, added_at FROM album_images WHERE album_id = ? ORDER BY added_at DESC'
         ).bind(share.album_id).all()
 
         return c.json(Ok({
