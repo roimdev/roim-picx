@@ -14,6 +14,7 @@ import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
 import BaseInput from '../common/BaseInput.vue'
 import ShareDialog from '../ShareDialog.vue'
+import AlbumCard from './AlbumCard.vue'
 import LoadingOverlay from '../LoadingOverlay.vue'
 import { requestListAlbums, requestCreateAlbum, requestDeleteAlbum, requestUpdateAlbum } from '../../utils/request'
 import type { Album } from '../../utils/types'
@@ -156,56 +157,8 @@ onMounted(() => {
         <div>
             <div v-if="albums.length > 0"
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                <div v-for="album in albums" :key="album.id"
-                    class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 dark:border-gray-700"
-                    @click="goToAlbum(album.id)">
-                    <!-- Cover Image -->
-                    <div class="aspect-[4/3] bg-gray-100 dark:bg-gray-900 relative">
-                        <!-- Share Badge -->
-                        <div v-if="album.shareInfo && album.shareInfo.id"
-                            class="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-lg text-white text-xs font-bold z-10 flex items-center gap-1">
-                            <font-awesome-icon :icon="faShareNodes" class="text-[10px]" />
-                            <span>{{ $t('album.shared') }}</span>
-                        </div>
-
-                        <img v-if="album.cover_image" :src="album.cover_image" class="w-full h-full object-cover" />
-                        <div v-else
-                            class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
-                            <font-awesome-icon :icon="faFolder" class="text-6xl" />
-                        </div>
-
-                        <!-- Overlay Actions -->
-                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            @click.stop>
-                            <el-dropdown trigger="click">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 cursor-pointer">
-                                    <font-awesome-icon :icon="faEllipsisVertical" />
-                                </div>
-                                <template #dropdown>
-                                    <el-dropdown-menu>
-                                        <el-dropdown-item @click="handleShare(album)">
-                                            <font-awesome-icon :icon="faShareNodes" class="mr-2" />{{ album.shareInfo ?
-                                                $t('album.shareTitle') : $t('album.share') }}
-                                        </el-dropdown-item>
-                                        <el-dropdown-item @click="handleEdit(album)">
-                                            <font-awesome-icon :icon="faPen" class="mr-2" />{{ $t('common.edit') }}
-                                        </el-dropdown-item>
-                                        <el-dropdown-item class="text-red-500" @click="handleDelete(album)">
-                                            <font-awesome-icon :icon="faTrash" class="mr-2" />{{ $t('common.delete') }}
-                                        </el-dropdown-item>
-                                    </el-dropdown-menu>
-                                </template>
-                            </el-dropdown>
-                        </div>
-                    </div>
-
-                    <!-- Info -->
-                    <div class="p-4">
-                        <h3 class="font-medium text-lg truncate mb-1">{{ album.name }}</h3>
-                        <p class="text-sm text-gray-500">{{ album.imageCount }} {{ $t('album.items') }}</p>
-                    </div>
-                </div>
+                <AlbumCard v-for="album in albums" :key="album.id" :album="album" @click="goToAlbum(album.id)"
+                    @share="handleShare(album)" @edit="handleEdit(album)" @delete="handleDelete(album)" />
             </div>
             <el-empty v-else :description="$t('album.empty')" />
         </div>

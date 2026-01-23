@@ -107,11 +107,9 @@
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <transition-group name="el-fade-in-linear">
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
-                        <image-box :src="item.url" :name="item.key" :size="item.size" @delete="deleteImage(item.key)"
-                            @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
-                            @preview="showPreview(item.url)" @share="showShareDialog(item)"
-                            @addToAlbum="showAddToAlbumDialog(item)" mode="uploaded" :uploaded-at="item.uploadedAt"
-                            :original-name="item.originalName" :uploader-name="item.uploaderName"
+                        <ManageImageCard :item="item" @delete="deleteImage(item.key)" @rename="renameImage(item)"
+                            @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
+                            @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)"
                             class="w-full h-full" />
                     </div>
                 </transition-group>
@@ -208,7 +206,7 @@ import {
     ElMessage, ElDialog, ElButton, ElInput, ElDropdown, ElDropdownMenu, ElDropdownItem,
     ElBreadcrumb, ElBreadcrumbItem, ElMessageBox
 } from 'element-plus'
-import ImageBox from '../components/ImageBox.vue'
+import ManageImageCard from '../components/ManageImageCard.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
