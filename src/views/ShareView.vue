@@ -30,15 +30,15 @@
                 </div>
 
                 <form @submit.prevent="verifyPassword" class="space-y-6">
-                    <div>
-                        <input v-model="password" type="password" :placeholder="$t('share.passwordPlaceholder')" autofocus
-                            class="w-full px-4 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-center text-lg tracking-widest focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
+                    <div class="flex justify-center">
+                        <BaseInput v-model="password" type="password" :placeholder="$t('share.passwordPlaceholder')"
+                            autofocus class="w-full !text-center !text-lg !tracking-widest" />
                     </div>
-                    <button type="submit" :disabled="verifying || !password"
-                        class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50">
-                        <font-awesome-icon :icon="verifying ? faSpinner : faUnlock" :spin="verifying" class="mr-2" />
+                    <BaseButton type="indigo" block @click="verifyPassword" :loading="verifying" :disabled="!password"
+                        class="!py-4 !font-bold">
+                        <font-awesome-icon v-if="!verifying" :icon="faUnlock" class="mr-2" />
                         {{ $t('share.verifyPassword') }}
-                    </button>
+                    </BaseButton>
                 </form>
             </div>
 
@@ -55,16 +55,16 @@
                         <span>
                             <font-awesome-icon :icon="faEye" class="mr-2" />
                             {{ $t('share.viewCount', { count: shareResult?.views || 0 }) }}
-                            <span v-if="shareResult?.maxViews">{{ $t('share.viewLimit', { max: shareResult.maxViews }) }}</span>
+                            <span v-if="shareResult?.maxViews">{{ $t('share.viewLimit', { max: shareResult.maxViews })
+                            }}</span>
                         </span>
                     </div>
 
                     <!-- Download Button -->
-                    <a :href="imageUrl" :download="imageName" target="_blank"
-                        class="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-center rounded-xl font-bold transition-colors">
+                    <BaseButton type="indigo" block @click="handleDownload" class="!py-3 !font-bold">
                         <font-awesome-icon :icon="faDownload" class="mr-2" />
                         {{ $t('share.downloadImage') }}
-                    </a>
+                    </BaseButton>
                 </div>
             </div>
 
@@ -87,6 +87,8 @@ import { useRoute } from 'vue-router'
 import { faSpinner, faLock, faUnlock, faEye, faDownload, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { ElImageViewer, ElMessage } from 'element-plus'
 import { requestGetShareInfo, requestVerifyShare, type ShareDetail, type ShareImageResult } from '../utils/request'
+import BaseInput from '../components/common/BaseInput.vue'
+import BaseButton from '../components/common/BaseButton.vue'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -150,6 +152,11 @@ const verifyPassword = async () => {
         }
     } finally {
         verifying.value = false
+    }
+}
+const handleDownload = () => {
+    if (imageUrl.value) {
+        window.open(imageUrl.value, '_blank')
     }
 }
 </script>

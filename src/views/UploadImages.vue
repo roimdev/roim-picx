@@ -21,16 +21,12 @@
                     <div class="relative group">
                         <font-awesome-icon :icon="faFolder"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                        <el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
-                            :placeholder="$t('upload.storageDirPlaceholder')" class="!w-full custom-autocomplete"
-                            :trigger-on-focus="true" clearable>
-                            <template #default="{ item }">
-                                <div class="flex items-center gap-2">
-                                    <font-awesome-icon :icon="faFolder" class="text-amber-500" />
-                                    <span>{{ item.value }}</span>
-                                </div>
+                        <BaseAutocomplete v-model="customPath" :suggestions="directorySuggestions"
+                            :placeholder="$t('upload.storageDirPlaceholder')">
+                            <template #prefix>
+                                <font-awesome-icon :icon="faFolder" class="text-sm" />
                             </template>
-                        </el-autocomplete>
+                        </BaseAutocomplete>
                     </div>
                     <p class="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
                         {{ $t('upload.storageDirHint') }}<code
@@ -64,7 +60,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
                         $t('upload.compression')
-                    }}</label>
+                        }}</label>
                     <CustomSelect v-model="compressionLevel" :options="compressionOptions"
                         @change="selectCompressionLevel">
                         <template #trigger="{ option }">
@@ -218,7 +214,7 @@
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
                                         $t('upload.watermarkSize')
-                                        }} ({{ watermarkConfig.fontSize }}%)</label>
+                                    }} ({{ watermarkConfig.fontSize }}%)</label>
                                     <input type="range" v-model.number="watermarkConfig.fontSize" min="1" max="10"
                                         step="1"
                                         class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
@@ -249,7 +245,7 @@
                                 <font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl" />
                             </div>
                             <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ $t('upload.dropzone')
-                                }}</h2>
+                            }}</h2>
                             <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
                                 {{ $t('upload.dropzoneHint') }}
                             </p>
@@ -302,13 +298,13 @@
                                 <span>{{ $t('upload.originalSize') }}</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100">{{
                                     formatBytes(originalTotalSize)
-                                    }}</span>
+                                }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none'" class="flex justify-between">
                                 <span>{{ $t('upload.compressedSize') }}</span>
                                 <span class="font-bold text-green-600 dark:text-green-400">{{
                                     formatBytes(imagesTotalSize)
-                                    }}</span>
+                                }}</span>
                             </div>
                             <div v-if="compressionLevel !== 'none' && compressionRatio < 1"
                                 class="flex justify-between">
@@ -348,6 +344,7 @@ import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, f
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import BaseAutocomplete from '../components/common/BaseAutocomplete.vue'
 import SearchInput from '../components/common/SearchInput.vue'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseInput from '../components/common/BaseInput.vue'
@@ -381,7 +378,7 @@ const customPath = ref('')
 const keepName = ref(false)
 const enableExpiry = ref(false)
 const expireTime = ref<Date>()
-const directorySuggestions = ref<{ value: string }[]>([])
+const directorySuggestions = ref<string[]>([])
 const compressionLevel = ref('none')
 const originalTotalSize = ref(0)
 const watermarkConfig = ref<WatermarkConfig>({ ...defaultWatermarkConfig })
@@ -404,7 +401,7 @@ const albumOptions = computed(() => {
         cover_image: a.cover_image
     }))
     return [
-        { label: t('common.default'), value: 'default', icon: faCloudUploadAlt }, // Special value for default
+        { label: t('common.none'), value: 'default', icon: faCloudUploadAlt }, // Special value for default
         ...opts
     ]
 })
@@ -526,28 +523,13 @@ const disabledDate = (time: Date) => {
     return time.getTime() < Date.now()
 }
 
-const querySearch = (queryString: string, cb: any) => {
-    const results = queryString
-        ? directorySuggestions.value.filter(createFilter(queryString))
-        : directorySuggestions.value
-    cb(results)
-}
-
-const createFilter = (queryString: string) => {
-    return (restaurant: { value: string }) => {
-        return (restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
-    }
-}
-
 const fetchDirectories = () => {
     requestListImages(<ImgReq>{
         limit: 100,
         delimiter: '/'
     }).then((data) => {
         if (data.prefixes && data.prefixes.length) {
-            directorySuggestions.value = data.prefixes.map(prefix => ({
-                value: String(prefix).replace(/\/$/, '') // Remove trailing slash for display
-            }))
+            directorySuggestions.value = data.prefixes.map(prefix => String(prefix).replace(/\/$/, ''))
         }
     }).catch(err => {
         console.error('Failed to fetch directories:', err)

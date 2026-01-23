@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElCard, ElEmpty, ElTable, ElTableColumn, ElButton, ElTooltip } from 'element-plus'
+import { ElCard, ElEmpty, ElTable, ElTableColumn, ElTooltip } from 'element-plus'
 import {
     faGlobe, faLink, faEye
 } from '@fortawesome/free-solid-svg-icons'
+import BaseButton from '../common/BaseButton.vue'
 import {
     requestAnalyticsOverview, requestAnalyticsTrend, requestTopImages
 } from '../../utils/request'
@@ -54,21 +55,21 @@ defineExpose({
                 <el-card shadow="never" class="!bg-gray-50 dark:!bg-gray-800/50">
                     <div class="text-center">
                         <div class="text-3xl font-bold text-blue-500">{{ analyticsOverview.todayViews.toLocaleString()
-                            }}</div>
+                        }}</div>
                         <div class="text-sm text-gray-500 mt-1">{{ $t('admin.todayViews') }}</div>
                     </div>
                 </el-card>
                 <el-card shadow="never" class="!bg-gray-50 dark:!bg-gray-800/50">
                     <div class="text-center">
                         <div class="text-3xl font-bold text-green-500">{{ analyticsOverview.weekViews.toLocaleString()
-                            }}</div>
+                        }}</div>
                         <div class="text-sm text-gray-500 mt-1">{{ $t('admin.weekViews') }}</div>
                     </div>
                 </el-card>
                 <el-card shadow="never" class="!bg-gray-50 dark:!bg-gray-800/50">
                     <div class="text-center">
                         <div class="text-3xl font-bold text-purple-500">{{ analyticsOverview.monthViews.toLocaleString()
-                            }}</div>
+                        }}</div>
                         <div class="text-sm text-gray-500 mt-1">{{ $t('admin.monthViews') }}</div>
                     </div>
                 </el-card>
@@ -135,8 +136,8 @@ defineExpose({
                             <font-awesome-icon :icon="faEye" class="text-orange-500" />
                             <span>{{ $t('admin.topImages') }}</span>
                         </div>
-                        <el-button size="small" @click="loadAnalytics" :loading="loading">{{ $t('common.refresh')
-                            }}</el-button>
+                        <BaseButton size="sm" @click="loadAnalytics" :loading="loading">{{ $t('common.refresh')
+                        }}</BaseButton>
                     </div>
                 </template>
                 <div class="relative w-full overflow-x-auto pb-4" style="max-width: calc(100vw - 4rem);">

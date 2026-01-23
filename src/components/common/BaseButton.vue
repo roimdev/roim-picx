@@ -4,7 +4,7 @@ import { faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 interface Props {
-    type?: 'primary' | 'secondary' | 'danger' | 'white' | 'indigo' // Add more as needed
+    type?: 'primary' | 'secondary' | 'danger' | 'white' | 'indigo' | 'success' | 'warning' // Add more as needed
     size?: 'sm' | 'md' | 'lg'
     loading?: boolean
     disabled?: boolean
@@ -36,6 +36,10 @@ const typeClasses = computed(() => {
             return "bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500"
         case 'danger':
             return "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 focus:ring-red-500"
+        case 'success':
+            return "bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 focus:ring-green-500"
+        case 'warning':
+            return "bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 focus:ring-amber-500"
         case 'secondary': // Gray/Light
             return "bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 focus:ring-gray-500"
         case 'white':

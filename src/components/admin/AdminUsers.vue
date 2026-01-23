@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox, ElTable, ElTableColumn, ElButton, ElTag, ElSwitch, ElInput, ElDialog, ElAvatar, ElProgress, ElTooltip, ElPagination } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTable, ElTableColumn, ElTag, ElAvatar, ElProgress, ElTooltip, ElPagination } from 'element-plus'
 import {
     faUsers, faSync, faSearch, faUser, faUserShield, faHardDrive
 } from '@fortawesome/free-solid-svg-icons'
+import BaseInput from '../common/BaseInput.vue'
+import BaseSwitch from '../common/BaseSwitch.vue'
+import BaseButton from '../common/BaseButton.vue'
+import BaseDialog from '../common/BaseDialog.vue'
 import {
     requestAdminUsers, requestSetUserViewAll, requestSetUserRole, requestSetUserQuota
 } from '../../utils/request'
@@ -125,18 +129,18 @@ defineExpose({
 <template>
     <div>
         <div class="mb-4 flex items-center gap-4">
-            <el-input v-model="userSearch" :placeholder="$t('admin.searchUser')" clearable class="!w-64"
-                @keyup.enter="handleSearch" @clear="handleSearch">
-                <template #prefix>
-                    <font-awesome-icon :icon="faSearch" class="text-gray-400" />
-                </template>
-            </el-input>
-            <el-button @click="handleSearch" :loading="loading">
-                <template #icon>
-                    <font-awesome-icon :icon="faSync" />
-                </template>
+            <div class="w-64">
+                <BaseInput v-model="userSearch" :placeholder="$t('admin.searchUser')" @keyup.enter="handleSearch"
+                    @clear="handleSearch">
+                    <template #prefix>
+                        <font-awesome-icon :icon="faSearch" class="text-gray-400" />
+                    </template>
+                </BaseInput>
+            </div>
+            <BaseButton @click="handleSearch" :loading="loading">
+                <font-awesome-icon :icon="faSync" class="mr-1" />
                 {{ $t('common.refresh') }}
-            </el-button>
+            </BaseButton>
         </div>
 
         <div class="relative w-full overflow-x-auto pb-4" style="max-width: calc(100vw - 4rem);">
@@ -165,7 +169,7 @@ defineExpose({
                 </el-table-column>
                 <el-table-column :label="$t('admin.viewPermission')" width="120">
                     <template #default="{ row }">
-                        <el-switch v-model="row.canViewAll" @change="toggleViewAll(row)"
+                        <BaseSwitch v-model="row.canViewAll" @change="toggleViewAll(row)"
                             :disabled="row.role === 'admin'" />
                     </template>
                 </el-table-column>
@@ -200,15 +204,15 @@ defineExpose({
                             <el-tooltip
                                 :content="row.role === 'admin' ? $t('admin.demoteUser') : $t('admin.promoteAdmin')"
                                 placement="top">
-                                <el-button size="small" :type="row.role === 'admin' ? 'warning' : 'success'"
+                                <BaseButton size="sm" :type="row.role === 'admin' ? 'warning' : 'success'"
                                     @click="toggleRole(row)" circle>
                                     <font-awesome-icon :icon="row.role === 'admin' ? faUser : faUserShield" />
-                                </el-button>
+                                </BaseButton>
                             </el-tooltip>
                             <el-tooltip :content="$t('admin.quota')" placement="top">
-                                <el-button size="small" type="primary" @click="openQuotaDialog(row)" circle>
+                                <BaseButton size="sm" type="indigo" @click="openQuotaDialog(row)" circle>
                                     <font-awesome-icon :icon="faHardDrive" />
-                                </el-button>
+                                </BaseButton>
                             </el-tooltip>
                         </div>
                     </template>
@@ -217,22 +221,23 @@ defineExpose({
         </div>
 
         <!-- 配额设置对话框 -->
-        <el-dialog v-model="quotaDialogVisible" :title="$t('admin.setQuota')" width="400px">
+        <BaseDialog v-model="quotaDialogVisible" :title="$t('admin.setQuota')" @confirm="saveQuota">
             <div v-if="quotaEditUser" class="space-y-4">
                 <div class="flex items-center gap-3 mb-4">
                     <el-avatar :size="48" :src="quotaEditUser.avatarUrl || undefined">
                         {{ quotaEditUser.login.charAt(0).toUpperCase() }}
                     </el-avatar>
                     <div>
-                        <div class="font-medium">{{ quotaEditUser.name || quotaEditUser.login }}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">{{ quotaEditUser.name ||
+                            quotaEditUser.login
+                            }}</div>
                         <div class="text-sm text-gray-400">@{{ quotaEditUser.login }}</div>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">{{ $t('admin.storageQuotaMb') }}</label>
-                    <el-input v-model.number="quotaValue" type="number" :min="0">
-                        <template #append>MB</template>
-                    </el-input>
+                    <BaseInput v-model.number="quotaValue" type="number" :label="$t('admin.storageQuotaMb')" :min="0">
+                        <template #suffix>MB</template>
+                    </BaseInput>
                     <div class="text-xs text-gray-400 mt-1">
                         {{ $t('admin.quotaHint') }}
                     </div>
@@ -240,17 +245,13 @@ defineExpose({
                         {{ $t('admin.currentUsed') }}: {{ formatBytes(quotaEditUser.storageUsed) }}
                     </div>
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <el-button size="small" @click="quotaValue = 512">512MB</el-button>
-                    <el-button size="small" @click="quotaValue = 1024">1GB</el-button>
-                    <el-button size="small" @click="quotaValue = 2048">2GB</el-button>
-                    <el-button size="small" @click="quotaValue = 5120">5GB</el-button>
+                <div class="flex flex-wrap gap-2 pt-2">
+                    <BaseButton size="sm" @click="quotaValue = 512">512MB</BaseButton>
+                    <BaseButton size="sm" @click="quotaValue = 1024">1GB</BaseButton>
+                    <BaseButton size="sm" @click="quotaValue = 2048">2GB</BaseButton>
+                    <BaseButton size="sm" @click="quotaValue = 5120">5GB</BaseButton>
                 </div>
             </div>
-            <template #footer>
-                <el-button @click="quotaDialogVisible = false">{{ $t('common.cancel') }}</el-button>
-                <el-button type="primary" @click="saveQuota">{{ $t('common.save') }}</el-button>
-            </template>
-        </el-dialog>
+        </BaseDialog>
     </div>
 </template>

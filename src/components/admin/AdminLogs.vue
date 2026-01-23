@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElSelect, ElOption, ElInput, ElButton, ElTable, ElTableColumn, ElTag, ElTooltip, ElPagination } from 'element-plus'
+import { ElTable, ElTableColumn, ElTag, ElTooltip, ElPagination } from 'element-plus'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { requestAuditLogs } from '../../utils/request'
 import type { AuditLog } from '../../utils/types'
+import BaseInput from '../common/BaseInput.vue'
+import BaseButton from '../common/BaseButton.vue'
+import CustomSelect from '../common/CustomSelect.vue'
+import { computed } from 'vue'
 
 const { t, tm, locale } = useI18n()
 
@@ -15,6 +19,17 @@ const pageSize = ref(20)
 const total = ref(0)
 const auditActionFilter = ref('')
 const auditUserFilter = ref('')
+
+const actionOptions = computed(() => {
+    const labels = tm('admin.actions_labels')
+    return [
+        { label: t('common.all'), value: '' },
+        ...Object.entries(labels).map(([value, label]) => ({
+            label: label as string,
+            value
+        }))
+    ]
+})
 
 const loadAuditLogs = async () => {
     loading.value = true
@@ -79,17 +94,19 @@ defineExpose({
 <template>
     <div>
         <div class="mb-4 flex items-center gap-4 flex-wrap">
-            <el-select v-model="auditActionFilter" :placeholder="$t('admin.actionType')" clearable class="!w-40"
-                @change="handleSearch">
-                <el-option v-for="(label, key) in tm('admin.actions_labels')" :key="key" :label="label" :value="key" />
-            </el-select>
-            <el-input v-model="auditUserFilter" :placeholder="$t('admin.username')" clearable class="!w-40"
-                @change="handleSearch" @keyup.enter="handleSearch" @clear="handleSearch">
-                <template #prefix>
-                    <font-awesome-icon :icon="faSearch" class="text-gray-400" />
-                </template>
-            </el-input>
-            <el-button @click="handleSearch" :loading="loading">{{ $t('admin.search') }}</el-button>
+            <div class="w-40">
+                <CustomSelect v-model="auditActionFilter" :options="actionOptions" :placeholder="$t('admin.actionType')"
+                    @change="handleSearch" />
+            </div>
+            <div class="w-48">
+                <BaseInput v-model="auditUserFilter" :placeholder="$t('admin.username')" @change="handleSearch"
+                    @keyup.enter="handleSearch" @clear="handleSearch">
+                    <template #prefix>
+                        <font-awesome-icon :icon="faSearch" class="text-gray-400" />
+                    </template>
+                </BaseInput>
+            </div>
+            <BaseButton @click="handleSearch" :loading="loading">{{ $t('admin.search') }}</BaseButton>
         </div>
 
         <div class="relative w-full overflow-x-auto pb-4" style="max-width: calc(100vw - 4rem);">

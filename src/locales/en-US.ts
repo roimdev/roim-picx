@@ -26,6 +26,8 @@ export default {
         submit: 'Submit',
         add: 'Add',
         saveSuccess: 'Save successful',
+        default: 'Default',
+        none: 'None',
     },
     nav: {
         upload: 'Upload',

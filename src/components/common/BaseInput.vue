@@ -37,21 +37,21 @@ const handleInput = (e: Event) => {
 
             <textarea v-if="type === 'textarea'" :value="modelValue" :placeholder="placeholder" :readonly="readonly"
                 :disabled="disabled" :rows="rows || 3" @input="handleInput" @blur="emit('blur')" @focus="emit('focus')"
-                class="w-full py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed resize-none"
+                class="w-full py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed resize-none"
                 :class="[
                     error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : '',
-                    (!readonly && !disabled) ? 'bg-white dark:bg-gray-950 shadow-sm border-gray-100 dark:border-gray-800' : 'bg-gray-50/50 dark:bg-gray-900/50 cursor-default',
+                    (!readonly && !disabled) ? 'bg-gray-50/80 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800' : 'bg-gray-50/30 dark:bg-gray-900/30 cursor-default',
                     'px-4'
                 ]"></textarea>
 
             <input v-else :value="modelValue" :type="type" :placeholder="placeholder" :readonly="readonly"
                 :disabled="disabled" @input="handleInput" @blur="emit('blur')" @focus="emit('focus')"
-                class="w-full py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                class="w-full py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 :class="[
                     $slots.prefix ? 'pl-10' : 'pl-4',
                     $slots.suffix ? 'pr-10' : 'pr-4',
                     error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : '',
-                    (!readonly && !disabled) ? 'bg-white dark:bg-gray-950 shadow-sm border-gray-100 dark:border-gray-800' : 'bg-gray-50/50 dark:bg-gray-900/50 cursor-default'
+                    (!readonly && !disabled) ? 'bg-gray-50/80 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800' : 'bg-gray-50/30 dark:bg-gray-900/30 cursor-default'
                 ]">
 
             <!-- Suffix slot -->

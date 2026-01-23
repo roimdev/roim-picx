@@ -27,6 +27,8 @@ export default {
         reset: '重置',
         add: '新增',
         saveSuccess: '保存成功',
+        default: '默认',
+        none: '无'
     },
     nav: {
         upload: '上传图片',

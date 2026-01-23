@@ -58,7 +58,7 @@ onUnmounted(() => {
 <template>
     <div class="relative" ref="dropdownRef">
         <button
-            class="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none"
+            class="w-full flex items-center justify-between px-4 py-2 bg-gray-50/80 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none"
             :class="{ 'opacity-50 cursor-not-allowed': disabled }" @click="toggleDropdown" type="button">
             <slot name="trigger" :option="selectedOption" :placeholder="placeholder">
                 <div class="flex items-center gap-2 text-gray-700 dark:text-gray-200">

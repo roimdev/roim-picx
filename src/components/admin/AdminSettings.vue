@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElCard, ElButton, ElTable, ElTableColumn, ElInput } from 'element-plus'
+import { ElMessage, ElCard, ElTable, ElTableColumn } from 'element-plus'
 import {
     faPlus, faSave, faTrash, faQuestionCircle
 } from '@fortawesome/free-solid-svg-icons'
+import BaseButton from '../common/BaseButton.vue'
+import BaseInput from '../common/BaseInput.vue'
 import {
     requestGetUploadConfig, requestUpdateUploadConfig
 } from '../../utils/request'
@@ -63,14 +65,14 @@ defineExpose({
             <div class="flex items-center justify-between">
                 <span>{{ $t('admin.uploadConfig') }}</span>
                 <div class="flex gap-2">
-                    <el-button @click="addConfigItem" size="small">
+                    <BaseButton @click="addConfigItem" size="sm">
                         <font-awesome-icon :icon="faPlus" class="mr-1" />
                         {{ $t('common.add') }}
-                    </el-button>
-                    <el-button type="primary" @click="saveSettings" size="small" :loading="configLoading">
+                    </BaseButton>
+                    <BaseButton type="indigo" @click="saveSettings" size="sm" :loading="configLoading">
                         <font-awesome-icon :icon="faSave" class="mr-1" />
                         {{ $t('common.save') }}
-                    </el-button>
+                    </BaseButton>
                 </div>
             </div>
         </template>
@@ -79,19 +81,19 @@ defineExpose({
             <el-table :data="uploadConfig" stripe style="width: 100%">
                 <el-table-column :label="$t('admin.mimeType')" min-width="200">
                     <template #default="{ row }">
-                        <el-input v-model="row.type" placeholder="e.g. image/png" />
+                        <BaseInput v-model="row.type" placeholder="e.g. image/png" />
                     </template>
                 </el-table-column>
                 <el-table-column :label="$t('admin.extension')" min-width="150">
                     <template #default="{ row }">
-                        <el-input v-model="row.ext" placeholder="e.g. png" />
+                        <BaseInput v-model="row.ext" placeholder="e.g. png" />
                     </template>
                 </el-table-column>
                 <el-table-column :label="$t('admin.actions')" width="100" align="center">
                     <template #default="{ $index }">
-                        <el-button type="danger" circle size="small" @click="removeConfigItem($index)">
+                        <BaseButton type="danger" circle size="sm" @click="removeConfigItem($index)">
                             <font-awesome-icon :icon="faTrash" />
-                        </el-button>
+                        </BaseButton>
                     </template>
                 </el-table-column>
             </el-table>
