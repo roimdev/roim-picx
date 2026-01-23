@@ -365,6 +365,7 @@ export default {
         shareTitle: '分享相册',
         view: '查看相册',
         uploadTo: '上传到相册',
+        shared: '已分享',
     },
     delete: {
         title: '删除图片',

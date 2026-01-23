@@ -43,9 +43,28 @@ albumRoutes.get('/albums', auth, async (c) => {
                 'SELECT COUNT(*) as count FROM album_images WHERE album_id = ?'
             ).bind(album.id).first<{ count: number }>()
 
+            // Get share info
+            const shareRes = await c.env.DB.prepare(
+                'SELECT * FROM album_shares WHERE album_id = ? LIMIT 1'
+            ).bind(album.id).first<any>()
+
+            let share = undefined
+            if (shareRes) {
+                share = {
+                    id: shareRes.id,
+                    url: `${new URL(c.req.url).origin}/s/album/${shareRes.id}`,
+                    hasPassword: !!shareRes.password_hash,
+                    expireAt: shareRes.expires_at ? new Date(shareRes.expires_at).getTime() : undefined,
+                    maxViews: shareRes.max_views,
+                    views: shareRes.current_views,
+                    createdAt: shareRes.created_at
+                }
+            }
+
             return {
                 ...album,
-                imageCount: countRes?.count || 0
+                imageCount: countRes?.count || 0,
+                shareInfo: { ...share }
             }
         }))
 
@@ -275,28 +294,41 @@ albumRoutes.post('/albums/:id/share', auth, async (c) => {
             .bind(id, user!.id).first()
         if (!album) return c.json(Fail('相册不存在'))
 
-        const shareId = generateShareId()
+        // Check for existing share
+        const existingShare = await c.env.DB.prepare('SELECT id FROM album_shares WHERE album_id = ?').bind(id).first<{ id: string }>()
+
+        let shareId = existingShare?.id
         const now = Date.now()
         const passwordHash = password ? await hashPassword(password) : null
 
-        // Insert into DB
-        await c.env.DB.prepare(
-            `INSERT INTO album_shares (id, album_id, user_id, user_login, password_hash, max_views, expires_at, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(
-            shareId, id, user!.id, user!.login,
-            passwordHash, maxViews || null,
-            expireAt ? new Date(expireAt).toISOString() : null,
-            now
-        ).run()
+        if (existingShare) {
+            // Update existing
+            let sql = 'UPDATE album_shares SET max_views = ?, expires_at = ?'
+            const binds: any[] = [maxViews || null, expireAt ? new Date(expireAt).toISOString() : null]
 
-        // Also store in KV for fast access? 
-        // Logic for single image shares uses KV primarily.
-        // For albums, maybe we can stick to DB for "metadata" and avoid KV duplication for now 
-        // to simplify complexity, unless performance is critical. 
-        // However, existing share logic uses KV heavily. 
-        // Let's store minimal metadata in KV for consistency with existing share verification flow if needed,
-        // but since this is a new route `/s/album/:token`, we can just query DB.
+            // Only update password if strictly null (remove) or provided (change). 
+            // If undefined, we MIGHT want to keep it? But standardized API usually means "full replacement" of state.
+            // Given "Edit" dialog behavior, let's treat it as full update.
+            sql += ', password_hash = ?'
+            binds.push(passwordHash) // null removes it, hash updates it.
+
+            sql += ' WHERE id = ?'
+            binds.push(existingShare.id)
+
+            await c.env.DB.prepare(sql).bind(...binds).run()
+        } else {
+            // Create new
+            shareId = generateShareId()
+            await c.env.DB.prepare(
+                `INSERT INTO album_shares (id, album_id, user_id, user_login, password_hash, max_views, expires_at, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                shareId, id, user!.id, user!.login,
+                passwordHash, maxViews || null,
+                expireAt ? new Date(expireAt).toISOString() : null,
+                now
+            ).run()
+        }
 
         const shareUrl = `${c.env.BASE_URL}/s/album/${shareId}`
 
@@ -304,13 +336,13 @@ albumRoutes.post('/albums/:id/share', auth, async (c) => {
         c.executionCtx.waitUntil(
             c.env.DB.prepare(
                 `INSERT INTO audit_logs (user_id, user_login, action, details) VALUES (?, ?, 'share_album', ?)`
-            ).bind(user!.id, user!.login, JSON.stringify({ albumId: id, shareId })).run()
+            ).bind(user!.id, user!.login, JSON.stringify({ albumId: id, shareId, action: existingShare ? 'update' : 'create' })).run()
         )
 
         return c.json(Ok({
             id: shareId,
             url: shareUrl,
-            hasPassword: !!password,
+            hasPassword: !!passwordHash, // Return based on what we just set
             expireAt,
             maxViews
         }))
@@ -338,11 +370,11 @@ albumRoutes.get('/share/album/:token', async (c) => {
         // Check expiry
         if (share.expires_at) {
             const expireTime = new Date(share.expires_at).getTime()
-            if (Date.now() > expireTime) return c.json(Fail('分享已过期'), 410)
+            if (Date.now() > expireTime) return c.json(Fail('分享已过期'), 200)
         }
         // Check views
         if (share.max_views && share.current_views >= share.max_views) {
-            return c.json(Fail('分享已达到最大访问次数'), 410)
+            return c.json(Fail('分享已达到最大访问次数'), 200)
         }
 
         return c.json(Ok({
@@ -373,17 +405,17 @@ albumRoutes.post('/share/album/:token/verify', async (c) => {
 
         // Check validations again
         if (share.expires_at && Date.now() > new Date(share.expires_at).getTime()) {
-            return c.json(Fail('分享已过期'), 410)
+            return c.json(Fail('分享已过期'), 200)
         }
         if (share.max_views && share.current_views >= share.max_views) {
-            return c.json(Fail('分享访问次数已达上限'), 410)
+            return c.json(Fail('分享访问次数已达上限'), 200)
         }
 
         // Verify password
         if (share.password_hash) {
-            if (!password) return c.json(Fail('请输入密码'), 401)
+            if (!password) return c.json(Fail('请输入密码'), 200)
             const inputHash = await hashPassword(password)
-            if (inputHash !== share.password_hash) return c.json(Fail('密码错误'), 401)
+            if (inputHash !== share.password_hash) return c.json(Fail('密码错误'), 200)
         }
 
         // Increment views

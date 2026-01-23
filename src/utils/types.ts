@@ -180,6 +180,7 @@ export interface Album {
 	created_at: number
 	updated_at: number
 	imageCount?: number
+	shareInfo?: AlbumShareInfo
 }
 
 export interface AlbumImage {

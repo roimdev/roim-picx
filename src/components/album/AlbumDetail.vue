@@ -14,7 +14,7 @@ import {
 import type { Album, AlbumImage } from '../../utils/types'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ElImageViewer } from 'element-plus'
-import SearchInput from '../common/SearchInput.vue'
+import BaseInput from '../common/BaseInput.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
 import LoadingOverlay from '../LoadingOverlay.vue'
@@ -39,6 +39,8 @@ const selectedKeys = ref<Set<string>>(new Set())
 
 const shareDialogVisible = ref(false)
 const addImagesDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const editForm = ref({ name: '', description: '' })
 
 // Big Image Mode
 const isBigMode = ref(false)
@@ -106,19 +108,38 @@ const goBack = () => {
 
 // Edit Album Logic
 // ... (Can reuse dialog from AlbumList or simple prompt)
-const handleEdit = async () => {
+const handleEdit = () => {
     if (!album.value) return
-    try {
-        const { value: name } = await ElMessageBox.prompt(t('album.name'), t('album.edit'), {
-            inputValue: album.value.name,
-            inputPattern: /\S+/,
-            inputErrorMessage: t('album.nameRequired')
-        })
+    editForm.value = {
+        name: album.value.name,
+        description: album.value.description || ''
+    }
+    editDialogVisible.value = true
+}
 
-        await requestUpdateAlbum(albumId, { name, description: album.value.description || undefined })
-        album.value.name = name
+const handleSaveEdit = async () => {
+    if (!editForm.value.name) {
+        ElMessage.warning(t('album.nameRequired'))
+        return
+    }
+
+    loading.value = true
+    try {
+        await requestUpdateAlbum(albumId, {
+            name: editForm.value.name,
+            description: editForm.value.description || undefined
+        })
+        if (album.value) {
+            album.value.name = editForm.value.name
+            album.value.description = editForm.value.description
+        }
         ElMessage.success(t('album.updateSuccess'))
-    } catch (e) { /* cancel */ }
+        editDialogVisible.value = false
+    } catch (e) {
+        // error handled
+    } finally {
+        loading.value = false
+    }
 }
 
 const handleDeleteAlbum = async () => {
@@ -314,6 +335,23 @@ onMounted(() => {
             :album-name="album.name" :cover-image="album.cover_image" />
 
         <AddImagesDialog v-if="album" v-model="addImagesDialogVisible" :album-id="album.id" @success="handleRefresh" />
+
+        <!-- Edit Dialog -->
+        <BaseDialog v-model="editDialogVisible" :title="$t('album.edit')" @confirm="handleSaveEdit" :loading="loading">
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('album.name')
+                        }}</label>
+                    <BaseInput v-model="editForm.name" :placeholder="$t('album.namePlaceholder')" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{
+                        $t('album.description') }}</label>
+                    <BaseInput v-model="editForm.description" type="textarea" :rows="3"
+                        :placeholder="$t('album.descPlaceholder')" />
+                </div>
+            </div>
+        </BaseDialog>
 
         <!-- Image Viewer -->
         <el-image-viewer v-if="previewVisible" :url-list="previewList" :initial-index="previewIndex"

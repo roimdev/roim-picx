@@ -364,6 +364,7 @@ export default {
         shareTitle: 'Share Album',
         view: 'View Album',
         uploadTo: 'Upload to Album',
+        shared: 'Shared',
     },
     delete: {
         title: 'Delete Image',

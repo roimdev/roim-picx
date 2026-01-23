@@ -7,12 +7,13 @@ import {
     ElMessageBox, ElMessage
 } from 'element-plus'
 import {
-    faPlus, faSearch, faFolder, faEllipsisVertical, faPen, faTrash, faTimes
+    faPlus, faSearch, faFolder, faEllipsisVertical, faPen, faTrash, faTimes, faShareNodes, faRedo
 } from '@fortawesome/free-solid-svg-icons'
 import SearchInput from '../common/SearchInput.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
 import BaseInput from '../common/BaseInput.vue'
+import ShareDialog from '../ShareDialog.vue'
 import LoadingOverlay from '../LoadingOverlay.vue'
 import { requestListAlbums, requestCreateAlbum, requestDeleteAlbum, requestUpdateAlbum } from '../../utils/request'
 import type { Album } from '../../utils/types'
@@ -28,6 +29,9 @@ const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const currentAlbum = ref<Partial<Album>>({})
 const formLoading = ref(false)
+
+const shareDialogVisible = ref(false)
+const shareTargetAlbum = ref<Album>()
 
 const loadAlbums = async (keyword?: string) => {
     loading.value = true
@@ -115,6 +119,11 @@ const handleDelete = async (album: Album) => {
     }
 }
 
+const handleShare = (album: Album) => {
+    shareTargetAlbum.value = album
+    shareDialogVisible.value = true
+}
+
 const goToAlbum = (id: number) => {
     router.push(`/albums/${id}`)
 }
@@ -133,6 +142,10 @@ onMounted(() => {
                 <SearchInput v-model="searchQuery" :placeholder="$t('common.search')" @search="handleSearch"
                     @clear="handleSearch" class="flex-1 sm:flex-initial" />
 
+                <BaseButton @click="loadAlbums()" class="flex-shrink-0 !p-2 w-10 h-10 flex items-center justify-center">
+                    <font-awesome-icon :icon="faRedo" :class="{ 'animate-spin': loading }" />
+                </BaseButton>
+
                 <BaseButton type="indigo" @click="handleCreate" class="flex-shrink-0">
                     <font-awesome-icon :icon="faPlus" />
                     <span class="hidden sm:inline ml-1">{{ $t('album.create') }}</span>
@@ -148,6 +161,13 @@ onMounted(() => {
                     @click="goToAlbum(album.id)">
                     <!-- Cover Image -->
                     <div class="aspect-[4/3] bg-gray-100 dark:bg-gray-900 relative">
+                        <!-- Share Badge -->
+                        <div v-if="album.shareInfo && album.shareInfo.id"
+                            class="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-lg text-white text-xs font-bold z-10 flex items-center gap-1">
+                            <font-awesome-icon :icon="faShareNodes" class="text-[10px]" />
+                            <span>{{ $t('album.shared') }}</span>
+                        </div>
+
                         <img v-if="album.cover_image" :src="album.cover_image" class="w-full h-full object-cover" />
                         <div v-else
                             class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
@@ -164,6 +184,10 @@ onMounted(() => {
                                 </div>
                                 <template #dropdown>
                                     <el-dropdown-menu>
+                                        <el-dropdown-item @click="handleShare(album)">
+                                            <font-awesome-icon :icon="faShareNodes" class="mr-2" />{{ album.shareInfo ?
+                                                $t('album.shareTitle') : $t('album.share') }}
+                                        </el-dropdown-item>
                                         <el-dropdown-item @click="handleEdit(album)">
                                             <font-awesome-icon :icon="faPen" class="mr-2" />{{ $t('common.edit') }}
                                         </el-dropdown-item>
@@ -197,5 +221,10 @@ onMounted(() => {
                 :placeholder="$t('album.descPlaceholder')" />
         </div>
     </BaseDialog>
+
+    <!-- Share Dialog -->
+    <ShareDialog v-if="shareTargetAlbum" v-model="shareDialogVisible" type="album" :album-id="shareTargetAlbum.id"
+        :album-name="shareTargetAlbum.name" :cover-image="shareTargetAlbum.cover_image || undefined"
+        :share-info="shareTargetAlbum.shareInfo" />
 
 </template>

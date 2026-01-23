@@ -85,6 +85,7 @@ import { faShare, faSpinner, faRedo, faTimes } from '@fortawesome/free-solid-svg
 import formatBytes from '../utils/format-bytes'
 import copy from 'copy-to-clipboard'
 import { requestCreateShare, requestShareAlbum } from '../utils/request'
+import type { AlbumShareInfo } from '../utils/types'
 import BaseDialog from './common/BaseDialog.vue'
 import BaseButton from './common/BaseButton.vue'
 import BaseInput from './common/BaseInput.vue'
@@ -106,6 +107,7 @@ interface Props {
     albumId?: number
     albumName?: string
     coverImage?: string
+    shareInfo?: AlbumShareInfo
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -144,16 +146,37 @@ const displaySubtext = computed(() => {
 
 watch(() => props.modelValue, (val) => {
     if (val) {
-        // Reset state when dialog opens
+        // Reset state or fill from existing
         shareUrl.value = ''
-        enablePassword.value = false
-        password.value = ''
-        enableExpiry.value = false
-        expireTime.value = undefined
-        enableMaxViews.value = false
-        maxViews.value = 10
+        console.log(props.shareInfo)
+        if (props.shareInfo) {
+            // Edit mode
+            const share = props.shareInfo
+            enablePassword.value = share.hasPassword
+            // Don't pre-fill password for security/logic reasons, user sets new one if they want to change it
+            // or we keep it empty. If logic requires sending undefined to keep old:
+            password.value = ''
+
+            enableExpiry.value = !!share.expireAt
+            expireTime.value = share.expireAt ? new Date(share.expireAt) : undefined
+
+            enableMaxViews.value = !!share.maxViews
+            maxViews.value = share.maxViews || 10
+
+            // If we want to show current share link immediately:
+            // shareUrl.value = share.url 
+            // User request implies "modify info", so maybe we start in edit mode not result mode.
+        } else {
+            // Create mode defaults
+            enablePassword.value = false
+            password.value = ''
+            enableExpiry.value = false
+            expireTime.value = undefined
+            enableMaxViews.value = false
+            maxViews.value = 10
+        }
     }
-})
+}, { immediate: true })
 
 const disabledDate = (time: Date) => {
     return time.getTime() < Date.now()
