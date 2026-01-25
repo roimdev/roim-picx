@@ -4,7 +4,7 @@ import {
     ElDropdown, ElDropdownMenu, ElDropdownItem, ElImage
 } from 'element-plus'
 import {
-    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye
+    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye, faTag
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import formatBytes from '../utils/format-bytes'
@@ -22,6 +22,7 @@ const emit = defineEmits<{
     (e: 'delete'): void
     (e: 'copy'): void
     (e: 'addToAlbum'): void
+    (e: 'editTags'): void
 }>()
 
 const { t } = useI18n()
@@ -80,6 +81,9 @@ const displayGetName = (key: string) => {
                         <el-dropdown-item @click="$emit('rename')">
                             <font-awesome-icon :icon="faPen" class="mr-2" />{{ $t('manage.rename') }}
                         </el-dropdown-item>
+                        <el-dropdown-item @click="$emit('editTags')">
+                            <font-awesome-icon :icon="faTag" class="mr-2" />{{ $t('tags.editTags') }}
+                        </el-dropdown-item>
                         <el-dropdown-item class="text-red-500" @click="$emit('delete')">
                             <font-awesome-icon :icon="faTrash" class="mr-2" />{{ $t('common.delete') }}
                         </el-dropdown-item>
@@ -97,6 +101,13 @@ const displayGetName = (key: string) => {
                 :title="item.originalName">
                 {{ $t('manage.originalName') }}: {{ item.originalName }}
             </p>
+            <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1 mt-1">
+                <span v-for="tag in item.tags.slice(0, 3)" :key="tag"
+                    class="inline-block px-1.5 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full">
+                    {{ tag }}
+                </span>
+                <span v-if="item.tags.length > 3" class="text-[10px] text-gray-400">+{{ item.tags.length - 3 }}</span>
+            </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
                 <span>{{ formatBytes(item.size) }}</span>
                 <span>{{ item.uploadedAt ? new Date(item.uploadedAt).toLocaleDateString() : '-' }}</span>

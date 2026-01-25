@@ -392,4 +392,14 @@ export default {
         zhCN: '简体中文',
         enUS: 'English',
     },
+    tags: {
+        title: 'Tags',
+        editTags: 'Edit Tags',
+        addTags: 'Add Tags',
+        inputPlaceholder: 'Enter tag and press Enter',
+        inputHint: 'Press Enter or comma to add a tag, Backspace to remove',
+        updateSuccess: 'Tags updated successfully',
+        updateFailed: 'Failed to update tags',
+        noTags: 'No tags',
+    },
 }

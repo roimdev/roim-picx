@@ -15,6 +15,8 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
     let customPath = files.get("path")
     const keepName = files.get("keepName") === 'true'
     const expireAt = files.get("expireAt")
+    const tagsRaw = files.get("tags")?.toString()
+    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
 
     const requestedStorageType = files.get("storageType")?.toString() as 'R2' | 'HF' | undefined
     const storageType: 'R2' | 'HF' = (requestedStorageType === 'R2' || requestedStorageType === 'HF')
@@ -119,10 +121,11 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
             // 同步图片信息到 D1 数据库
             if (user) {
                 console.log(`[Upload] Syncing to DB - key: ${object.key}, user_login: ${user.login}`)
+                const tagsJson = tags.length > 0 ? JSON.stringify(tags) : null
                 c.executionCtx.waitUntil(
                     c.env.DB.prepare(
-                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, storage_type) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, storage_type, tags) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
                     ).bind(
                         object.key,
                         null,  // user_id 设为 null，避免外键约束失败（JWT 中的 id 是 GitHub ID）
@@ -132,7 +135,8 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                         fileType,
                         customPath || '',
                         expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null,
-                        storageType
+                        storageType,
+                        tagsJson
                     ).run().then((result) => {
                         console.log(`[Upload] Image inserted to DB successfully - key: ${object.key}, meta: ${JSON.stringify(result.meta)}`)
                         // 更新用户统计

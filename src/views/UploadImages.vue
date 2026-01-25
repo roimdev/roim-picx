@@ -126,6 +126,12 @@
                     </CustomSelect>
                 </div>
 
+                <!-- Tags Input -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('tags.title') }}</label>
+                    <TagsInput v-model="uploadTags" :placeholder="$t('tags.inputPlaceholder')" :hint="$t('tags.inputHint')" />
+                </div>
+
                 <!-- 存储平台选择 -->
                 <div v-if="storageProviders.length > 1">
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
@@ -348,6 +354,7 @@ import BaseButton from '../components/common/BaseButton.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import BaseSwitch from '../components/common/BaseSwitch.vue'
 import CustomSelect from '../components/common/CustomSelect.vue'
+import TagsInput from '../components/common/TagsInput.vue'
 import formatBytes from '../utils/format-bytes'
 import { ElNotification as elNotify } from 'element-plus'
 import { requestUploadImages, requestListImages, requestAuthConfig, requestListAlbums, type StorageProvider } from '../utils/request'
@@ -380,6 +387,7 @@ const directorySuggestions = ref<string[]>([])
 const compressionLevel = ref('none')
 const originalTotalSize = ref(0)
 const watermarkConfig = ref<WatermarkConfig>({ ...defaultWatermarkConfig })
+const uploadTags = ref<string[]>([])
 
 // Storage provider selection
 // Storage provider selection
@@ -671,6 +679,9 @@ const uploadImages = () => {
     formData.append('storageType', selectedStorageType.value)
     if (selectedAlbumId.value) {
         formData.append('albumId', selectedAlbumId.value.toString())
+    }
+    if (uploadTags.value.length > 0) {
+        formData.append('tags', uploadTags.value.join(','))
     }
     for (let item of convertedImages.value) {
         formData.append('files', item.file)

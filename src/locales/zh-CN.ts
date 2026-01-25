@@ -393,4 +393,14 @@ export default {
         zhCN: '简体中文',
         enUS: 'English',
     },
+    tags: {
+        title: '标签',
+        editTags: '编辑标签',
+        addTags: '添加标签',
+        inputPlaceholder: '输入标签后按回车添加',
+        inputHint: '按回车或逗号添加标签，按退格键删除',
+        updateSuccess: '标签更新成功',
+        updateFailed: '标签更新失败',
+        noTags: '无标签',
+    },
 }

@@ -110,7 +110,7 @@
                         <ManageImageCard :item="item" @delete="deleteImage(item.key)" @rename="renameImage(item)"
                             @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
                             @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)"
-                            class="w-full h-full" />
+                            @editTags="showEditTagsDialog(item)" class="w-full h-full" />
                     </div>
                 </transition-group>
             </div>
@@ -120,9 +120,10 @@
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
-                        :uploader-name="item.uploaderName" @delete="deleteImage(item.key)" @rename="renameImage(item)"
-                        @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
-                        @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)" />
+                        :uploader-name="item.uploaderName" :tags="item.tags" @delete="deleteImage(item.key)"
+                        @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
+                        @preview="showPreview(item.url)" @share="showShareDialog(item)"
+                        @addToAlbum="showAddToAlbumDialog(item)" @editTags="showEditTagsDialog(item)" />
                 </transition-group>
             </div>
 
@@ -172,6 +173,10 @@
         <AddToAlbumDialog v-model="addToAlbumDialogVisible" :image-keys="currentAddToAlbumImages.keys"
             :image-urls="currentAddToAlbumImages.urls" />
 
+        <!-- Edit Tags Dialog -->
+        <EditTagsDialog v-model="editTagsDialogVisible" :image-key="currentEditTagsImage.key"
+            :image-url="currentEditTagsImage.url" :tags="currentEditTagsImage.tags" @updated="handleTagsUpdated" />
+
         <!-- Rename Dialog -->
         <BaseDialog v-model="renameDialogVisible" :title="$t('manage.renameImage')" width="400px"
             @confirm="handleRenameConfirm" :loading="loading">
@@ -211,6 +216,7 @@ import ImageListRow from '../components/ImageListRow.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
 import LinkFormatDialog from '../components/LinkFormatDialog.vue'
+import EditTagsDialog from '../components/EditTagsDialog.vue'
 import BaseDialog from '../components/common/BaseDialog.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
@@ -282,6 +288,26 @@ const oldFileName = ref('')
 // Add Folder state
 const folderDialogVisible = ref(false)
 const folderNameValue = ref('')
+
+// Edit Tags state
+const editTagsDialogVisible = ref(false)
+const currentEditTagsImage = ref<{ key: string, url: string, tags: string[] }>({ key: '', url: '', tags: [] })
+
+const showEditTagsDialog = (item: ImgItem) => {
+    currentEditTagsImage.value = {
+        key: item.key,
+        url: item.url,
+        tags: item.tags || []
+    }
+    editTagsDialogVisible.value = true
+}
+
+const handleTagsUpdated = (data: { key: string, tags: string[] }) => {
+    const index = uploadedImages.value.findIndex(img => img.key === data.key)
+    if (index !== -1) {
+        uploadedImages.value[index] = { ...uploadedImages.value[index], tags: data.tags }
+    }
+}
 
 // Preview state
 const previewVisible = ref(false)

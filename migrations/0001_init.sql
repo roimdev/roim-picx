@@ -77,30 +77,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
--- 相册表
-CREATE TABLE IF NOT EXISTS albums (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    user_login TEXT NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    cover_image_key TEXT,
-    is_public INTEGER DEFAULT 0 CHECK (is_public IN (0, 1)),
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- 相册-图片关联表
-CREATE TABLE IF NOT EXISTS album_images (
-    album_id INTEGER NOT NULL,
-    image_key TEXT NOT NULL,
-    sort_order INTEGER DEFAULT 0,
-    added_at TEXT DEFAULT (datetime('now')),
-    PRIMARY KEY (album_id, image_key),
-    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
-);
-
 -- =============================================
 -- 索引
 -- =============================================
@@ -128,7 +104,3 @@ CREATE INDEX IF NOT EXISTS idx_shares_user_login ON shares(user_login);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_login ON audit_logs(user_login);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
-
--- 相册索引
-CREATE INDEX IF NOT EXISTS idx_albums_user_id ON albums(user_id);
-CREATE INDEX IF NOT EXISTS idx_albums_user_login ON albums(user_login);

@@ -32,6 +32,13 @@
           <span class="max-w-[100px] truncate">{{ uploaderName }}</span>
         </span>
       </div>
+      <div v-if="tags && tags.length > 0" class="flex flex-wrap gap-1 mt-1">
+        <span v-for="tag in tags.slice(0, 5)" :key="tag"
+          class="inline-block px-1.5 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full">
+          {{ tag }}
+        </span>
+        <span v-if="tags.length > 5" class="text-[10px] text-gray-400">+{{ tags.length - 5 }}</span>
+      </div>
     </div>
 
     <!-- Actions -->
@@ -76,6 +83,14 @@
         </button>
       </el-tooltip>
 
+      <el-tooltip :content="$t('tags.editTags')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('editTags')">
+          <font-awesome-icon :icon="faTag" class="text-sm" />
+        </button>
+      </el-tooltip>
+
       <el-popconfirm :title="$t('manage.confirmDeleteTitle')" :confirm-button-type="'danger'"
         :confirm-button-text="$t('manage.deleteShort')" :cancel-button-text="$t('manage.cancelShort')" width="160"
         @confirm="handleDelete">
@@ -92,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
@@ -106,9 +121,10 @@ const props = defineProps<{
   uploadedAt?: number
   originalName?: string
   uploaderName?: string
+  tags?: string[]
 }>()
 
-const emit = defineEmits(['delete', 'copy', 'rename', 'preview', 'share', 'addToAlbum'])
+const emit = defineEmits(['delete', 'copy', 'rename', 'preview', 'share', 'addToAlbum', 'editTags'])
 const imageError = ref(false)
 
 const handleDelete = () => {
