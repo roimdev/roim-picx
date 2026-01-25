@@ -6,22 +6,15 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('manage.title') }}</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ $t('manage.uploadedCount', { count: uploadedImages.length, size: formatBytes(imagesTotalSize) }) }}
+                    {{ $t('manage.uploadedCount', { count: uploadedImages.length, size: formatBytes(imagesTotalSize) })
+                    }}
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <!-- Search Input -->
-                <div class="relative w-full sm:w-auto">
-                    <font-awesome-icon :icon="faSearch"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input v-model="searchKeyword" type="text" :placeholder="$t('manage.searchPlaceholder')"
-                        class="pl-9 pr-8 py-2 w-full sm:w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:outline-none transition-all" />
-                    <button v-if="searchKeyword" @click="searchKeyword = ''"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                        :title="$t('manage.clearSearch')">
-                        <font-awesome-icon :icon="faTimes" class="text-sm" />
-                    </button>
-                </div>
+                <!-- Search Input -->
+                <SearchInput v-model="searchKeyword" :placeholder="$t('manage.searchPlaceholder')" />
+
 
                 <!-- View Toggle -->
                 <div class="hidden sm:flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mr-2">
@@ -39,19 +32,20 @@
                     </button>
                 </div>
 
-                <button
-                    class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors shadow-sm flex items-center gap-2"
-                    @click="addFolder">
-                    <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
-                    <span class="hidden sm:inline">{{ $t('manage.newFolder') }}</span>
-                    <span class="sm:hidden">{{ $t('manage.new') }}</span>
-                </button>
-                <button
-                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm flex items-center gap-2"
-                    @click="listImages">
-                    <font-awesome-icon :icon="faRedoAlt" :spin="loading" />
-                    <span class="hidden sm:inline">{{ $t('common.refresh') }}</span>
-                </button>
+                <BaseButton @click="addFolder">
+                    <div class="flex items-center gap-2">
+                        <font-awesome-icon :icon="faFolderPlus" class="text-amber-500" />
+                        <span class="hidden sm:inline">{{ $t('manage.newFolder') }}</span>
+                        <span class="sm:hidden">{{ $t('manage.new') }}</span>
+                    </div>
+                </BaseButton>
+                <BaseButton type="indigo" @click="listImages" :loading="loading">
+                    <div class="flex items-center gap-2">
+                        <font-awesome-icon v-if="!loading" :icon="faRedoAlt" />
+                        <span class="hidden sm:inline">{{ $t('common.refresh') }}</span>
+                    </div>
+                </BaseButton>
+
             </div>
         </div>
 
@@ -78,7 +72,8 @@
 
         <!-- Folder Navigation -->
         <div class="mb-8" v-if="prefixes.length > 0">
-            <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{{ $t('manage.folderNav') }}</h3>
+            <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{{
+                $t('manage.folderNav') }}</h3>
             <div class="flex items-center gap-3 flex-wrap">
                 <div v-for="it in prefixes" :key="String(it)"
                     class="group px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md cursor-pointer transition-all duration-200 flex items-center gap-3 min-w-[120px]"
@@ -112,11 +107,10 @@
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <transition-group name="el-fade-in-linear">
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
-                        <image-box :src="item.url" :name="item.key" :size="item.size" @delete="deleteImage(item.key)"
-                            @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
-                            @preview="showPreview(item.url)" @share="showShareDialog(item)" mode="uploaded"
-                            :uploaded-at="item.uploadedAt" :original-name="item.originalName"
-                            :uploader-name="item.uploaderName" class="w-full h-full" />
+                        <ManageImageCard :item="item" @delete="deleteImage(item.key)" @rename="renameImage(item)"
+                            @detail="showDetailsDialog(item)" @preview="showPreview(item.url)"
+                            @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)"
+                            @editTags="showEditTagsDialog(item)" class="w-full h-full" />
                     </div>
                 </transition-group>
             </div>
@@ -126,9 +120,10 @@
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
-                        :uploader-name="item.uploaderName" @delete="deleteImage(item.key)" @rename="renameImage(item)"
-                        @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
-                        @share="showShareDialog(item)" />
+                        :uploader-name="item.uploaderName" :tags="item.tags" @delete="deleteImage(item.key)"
+                        @rename="renameImage(item)" @detail="showDetailsDialog(item)"
+                        @preview="showPreview(item.url)" @share="showShareDialog(item)"
+                        @addToAlbum="showAddToAlbumDialog(item)" @editTags="showEditTagsDialog(item)" />
                 </transition-group>
             </div>
 
@@ -156,20 +151,49 @@
                 <font-awesome-icon :icon="searchKeyword ? faSearch : faFolderOpen"
                     class="text-2xl text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ searchKeyword ? $t('manage.noSearchResult') : $t('manage.noImages') }}
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ searchKeyword ?
+                $t('manage.noSearchResult') :
+                $t('manage.noImages') }}
             </h3>
-            <p class="mt-1 text-gray-500 dark:text-gray-400">{{ searchKeyword ? $t('manage.tryOtherKeyword') : $t('manage.emptyFolder') }}</p>
+            <p class="mt-1 text-gray-500 dark:text-gray-400">{{ searchKeyword ? $t('manage.tryOtherKeyword') :
+                $t('manage.emptyFolder') }}</p>
             <button v-if="searchKeyword" @click="searchKeyword = ''"
                 class="mt-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors">
                 {{ $t('manage.clearSearch') }}
             </button>
         </div>
 
-        <link-format-dialog v-model="linkDialogVisible" :url="currentLinkImage.url" :name="currentLinkImage.name" />
+        <ImageDetailsDialog v-model="detailsDialogVisible" :item="currentDetailsImage" />
 
         <!-- Share Dialog -->
-        <share-dialog v-model="shareDialogVisible" :image-key="currentShareImage.key" :image-url="currentShareImage.url"
-            :image-name="currentShareImage.name" :image-size="currentShareImage.size" />
+        <share-dialog v-model="shareDialogVisible" type="image" :image-key="currentShareImage.key"
+            :image-url="currentShareImage.url" :image-name="currentShareImage.name"
+            :image-size="currentShareImage.size" />
+
+        <AddToAlbumDialog v-model="addToAlbumDialogVisible" :image-keys="currentAddToAlbumImages.keys"
+            :image-urls="currentAddToAlbumImages.urls" />
+
+        <!-- Edit Tags Dialog -->
+        <EditTagsDialog v-model="editTagsDialogVisible" :image-key="currentEditTagsImage.key"
+            :image-url="currentEditTagsImage.url" :tags="currentEditTagsImage.tags" @updated="handleTagsUpdated" />
+
+        <!-- Rename Dialog -->
+        <BaseDialog v-model="renameDialogVisible" :title="$t('manage.renameImage')" width="400px"
+            @confirm="handleRenameConfirm" :loading="loading">
+            <div class="py-2">
+                <BaseInput v-model="renameValue" :label="$t('manage.renamePrompt')"
+                    :placeholder="$t('manage.renamePrompt')" @keyup.enter="handleRenameConfirm" autofocus />
+            </div>
+        </BaseDialog>
+
+        <!-- New Folder Dialog -->
+        <BaseDialog v-model="folderDialogVisible" :title="$t('manage.newFolder')" width="400px"
+            @confirm="handleAddFolderConfirm" :loading="loading">
+            <div class="py-2">
+                <BaseInput v-model="folderNameValue" :label="$t('manage.folderNamePrompt')"
+                    :placeholder="$t('manage.folderNamePrompt')" @keyup.enter="handleAddFolderConfirm" autofocus />
+            </div>
+        </BaseDialog>
 
         <!-- Image Preview -->
         <el-image-viewer v-if="previewVisible" :url-list="[previewUrl]" @close="closePreview" hide-on-click-modal />
@@ -178,17 +202,30 @@
 
 <script setup lang="ts">
 import { requestListImages, requestDeleteImage, createFolder, requestRenameImage } from '../utils/request'
-import LoadingOverlay from '../components/LoadingOverlay.vue'
 import formatBytes from '../utils/format-bytes'
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { ImgItem, ImgReq, Folder } from '../utils/types'
-import ImageBox from '../components/ImageBox.vue'
+import { ElImageViewer } from 'element-plus'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+    ElMessage, ElDialog, ElButton, ElInput, ElDropdown, ElDropdownMenu, ElDropdownItem,
+    ElBreadcrumb, ElBreadcrumbItem, ElMessageBox
+} from 'element-plus'
+import ManageImageCard from '../components/ManageImageCard.vue'
 import ImageListRow from '../components/ImageListRow.vue'
-import LinkFormatDialog from '../components/LinkFormatDialog.vue'
 import ShareDialog from '../components/ShareDialog.vue'
-import { ElMessageBox, ElMessage, ElImageViewer } from 'element-plus'
-import { faRedoAlt, faFolder, faFolderPlus, faFolderOpen, faThLarge, faList, faSpinner, faHome, faChevronRight, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
+import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
+import ImageDetailsDialog from '../components/ImageDetailsDialog.vue'
+import EditTagsDialog from '../components/EditTagsDialog.vue'
+import BaseDialog from '../components/common/BaseDialog.vue'
+import BaseInput from '../components/common/BaseInput.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
+import SearchInput from '../components/common/SearchInput.vue'
+import BaseButton from '../components/common/BaseButton.vue' // Import BaseButton
+import {
+    faSearch, faThLarge, faList, faFolderPlus, faRedoAlt, faHome, faChevronRight,
+    faFolder, faCloudUploadAlt, faTimes, faSpinner, faFolderOpen
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const { t } = useI18n()
 
@@ -205,14 +242,12 @@ const loadMoreSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 const PAGE_SIZE = 20
 
-const linkDialogVisible = ref(false)
-const currentLinkImage = ref<{ url: string, name: string }>({ url: '', name: '' })
+const detailsDialogVisible = ref(false)
+const currentDetailsImage = ref<ImgItem>({} as ImgItem)
 
-const showLinkDialog = (image: { url: string, name: string }) => {
-    currentLinkImage.value = image
-    linkDialogVisible.value = true
-    currentLinkImage.value = image
-    linkDialogVisible.value = true
+const showDetailsDialog = (image: ImgItem) => {
+    currentDetailsImage.value = image
+    detailsDialogVisible.value = true
 }
 
 // Share dialog state
@@ -227,6 +262,49 @@ const showShareDialog = (item: ImgItem) => {
         size: item.size
     }
     shareDialogVisible.value = true
+}
+
+// Add to Album dialog state
+const addToAlbumDialogVisible = ref(false)
+const currentAddToAlbumImages = ref<{ keys: string[], urls: string[] }>({ keys: [], urls: [] })
+
+const showAddToAlbumDialog = (item: ImgItem) => {
+    currentAddToAlbumImages.value = {
+        keys: [item.key],
+        urls: [item.url]
+    }
+    addToAlbumDialogVisible.value = true
+}
+
+// Rename state
+const renameDialogVisible = ref(false)
+const renameValue = ref('')
+const currentRenameItem = ref<ImgItem | null>(null)
+const renamePathPrefix = ref('')
+const oldFileName = ref('')
+
+// Add Folder state
+const folderDialogVisible = ref(false)
+const folderNameValue = ref('')
+
+// Edit Tags state
+const editTagsDialogVisible = ref(false)
+const currentEditTagsImage = ref<{ key: string, url: string, tags: string[] }>({ key: '', url: '', tags: [] })
+
+const showEditTagsDialog = (item: ImgItem) => {
+    currentEditTagsImage.value = {
+        key: item.key,
+        url: item.url,
+        tags: item.tags || []
+    }
+    editTagsDialogVisible.value = true
+}
+
+const handleTagsUpdated = (data: { key: string, tags: string[] }) => {
+    const index = uploadedImages.value.findIndex(img => img.key === data.key)
+    if (index !== -1) {
+        uploadedImages.value[index] = { ...uploadedImages.value[index], tags: data.tags }
+    }
 }
 
 // Preview state
@@ -283,25 +361,35 @@ const changeFolder = (path: string) => {
     listImages()
 }
 const addFolder = () => {
-    ElMessageBox.prompt(t('manage.folderNamePrompt'), t('manage.newFolder'), {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputPattern: /^[A-Za-z0-9_-\u4e00-\u9fa5]+$/,
-        inputErrorMessage: t('manage.invalidFolderName'),
-    }).then(({ value }) => {
-        loading.value = true
-        createFolder(<Folder>{
-            name: value
-        }).then((res) => {
-            console.log(res)
-            ElMessage.success(t('manage.folderCreated'))
-            listImages()
-        }).catch(() => {
-            ElMessage.error(t('manage.folderCreateFailed'))
-        }).finally(() => {
-            loading.value = false
+    folderNameValue.value = ''
+    folderDialogVisible.value = true
+}
+
+const handleAddFolderConfirm = async () => {
+    if (!folderNameValue.value) {
+        folderDialogVisible.value = false
+        return
+    }
+
+    // Basic validation
+    if (!/^[A-Za-z0-9_-\u4e00-\u9fa5]+$/.test(folderNameValue.value)) {
+        ElMessage.error(t('manage.invalidFolderName'))
+        return
+    }
+
+    loading.value = true
+    try {
+        await createFolder(<Folder>{
+            name: folderNameValue.value
         })
-    }).catch(() => { })
+        ElMessage.success(t('manage.folderCreated'))
+        folderDialogVisible.value = false
+        listImages()
+    } catch (err) {
+        console.error(err)
+    } finally {
+        loading.value = false
+    }
 }
 // Initial load - reset state and load first page
 const listImages = () => {
@@ -316,7 +404,7 @@ const listImages = () => {
         delimiter: delimiter.value,
         keyword: keyword || undefined
     }).then((data) => {
-        uploadedImages.value = data.list
+        uploadedImages.value = data.list.filter((item) => item.size !== 0)
         cursor.value = data.cursor
         hasMore.value = data.next
         if (data.prefixes && data.prefixes.length) {
@@ -410,45 +498,56 @@ const renameImage = (item: ImgItem) => {
     const pathParts = oldKey.split('/')
     const fileName = pathParts.pop() || ''
     const path = pathParts.join('/')
-    const pathPrefix = path ? path + '/' : ''
 
-    ElMessageBox.prompt(t('manage.renamePrompt'), t('manage.renameImage'), {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: fileName,
-        inputPattern: /^[^/\\:*?"<>|]+$/,
-        inputErrorMessage: t('manage.invalidFileName')
-    }).then(({ value }) => {
-        if (value === fileName) return
+    currentRenameItem.value = item
+    renameValue.value = fileName
+    oldFileName.value = fileName
+    renamePathPrefix.value = path ? path + '/' : ''
+    renameDialogVisible.value = true
+}
 
-        loading.value = true
-        const newKey = pathPrefix + value
+const handleRenameConfirm = async () => {
+    if (!currentRenameItem.value || !renameValue.value || renameValue.value === oldFileName.value) {
+        renameDialogVisible.value = false
+        return
+    }
 
-        requestRenameImage({
+    // Basic validation
+    if (/[/\\:*?"<>|]/.test(renameValue.value)) {
+        ElMessage.error(t('manage.invalidFileName'))
+        return
+    }
+
+    loading.value = true
+    const oldKey = currentRenameItem.value.key
+    const newKey = renamePathPrefix.value + renameValue.value
+
+    try {
+        const res = await requestRenameImage({
             oldKey: oldKey,
             newKey: newKey
-        }).then((res: any) => {
-            if (res.code === 200 || res.newKey) {
-                ElMessage.success(t('manage.renameSuccess'))
-                // Update local list
-                const index = uploadedImages.value.findIndex(img => img.key === oldKey)
-                if (index !== -1) {
-                    const updatedItem = { ...uploadedImages.value[index] }
-                    updatedItem.key = res.data?.newKey || newKey
-                    updatedItem.url = updatedItem.url.replace(encodeURIComponent(oldKey), encodeURIComponent(updatedItem.key))
-                        .replace(oldKey, updatedItem.key) // Fallback for simple replace
-                    uploadedImages.value[index] = updatedItem
-                }
-                listImages() // Refresh list to be sure
-            } else {
-                ElMessage.error(res.msg || t('manage.renameFailed'))
+        }) as any
+
+        if (res.code === 200 || res.newKey) {
+            ElMessage.success(t('manage.renameSuccess'))
+            // Update local list
+            const index = uploadedImages.value.findIndex(img => img.key === oldKey)
+            if (index !== -1) {
+                const updatedItem = { ...uploadedImages.value[index] }
+                updatedItem.key = res.data?.newKey || res.newKey || newKey
+                updatedItem.url = updatedItem.url.replace(encodeURIComponent(oldKey), encodeURIComponent(updatedItem.key))
+                    .replace(oldKey, updatedItem.key)
+                uploadedImages.value[index] = updatedItem
             }
-        }).catch((err) => {
-            console.error(err)
-            // ElMessage.error('重命名失败')
-        }).finally(() => {
-            loading.value = false
-        })
-    }).catch(() => { })
+            renameDialogVisible.value = false
+            listImages() // Refresh list to be sure
+        } else {
+            ElMessage.error(res.msg || t('manage.renameFailed'))
+        }
+    } catch (err) {
+        console.error(err)
+    } finally {
+        loading.value = false
+    }
 }
 </script>

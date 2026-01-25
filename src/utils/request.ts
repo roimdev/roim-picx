@@ -3,7 +3,7 @@ import { ElNotification as elNotify } from 'element-plus'
 import {
 	ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken,
 	AdminUser, UserStats, SystemStats, AuditLog,
-	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo
+	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo, UploadConfigItem
 } from "./types"
 import storage from "./storage"
 const request = axios.create({
@@ -83,6 +83,7 @@ export interface TokenLoginResult {
 export const checkToken = (data: AuthToken): Promise<boolean | TokenLoginResult> => request.post('/rest/checkToken', data)
 export const requestDeleteImage = (data: ImgDel): Promise<string> => request.delete('/rest', { data })
 export const requestRenameImage = (data: { oldKey: string, newKey: string }): Promise<string> => request.post('/rest/rename', data)
+export const requestUpdateImageTags = (data: { key: string, tags: string[] }): Promise<{ key: string, tags: string[] }> => request.post('/rest/updateTags', data)
 export const requestDelInfo = (token: string): Promise<ImgItem> => request.get(`/rest/delInfo/${token}`)
 export const requestPublicDeleteImage = (token: string): Promise<any> => request.post(`/rest/delImage/${token}`)
 export const requestGithubLogin = (code: string): Promise<string> => request.post('/rest/github/login', { code })
@@ -169,7 +170,24 @@ export const requestCurrentUserStats = (): Promise<UserStats> => request.get('/r
 // ============================================
 // 管理员 API - 用户管理
 // ============================================
-export const requestAdminUsers = (): Promise<AdminUser[]> => request.get('/rest/admin/users')
+export interface AdminUserQuery {
+	page?: number
+	limit?: number
+	keyword?: string
+}
+export interface PaginatedResponse<T> {
+	list: T[]
+	total: number
+	hasMore?: boolean // For compatibility if needed
+}
+
+export const requestAdminUsers = (params?: AdminUserQuery): Promise<PaginatedResponse<AdminUser>> => {
+	const query = new URLSearchParams()
+	if (params?.page) query.set('page', String(params.page))
+	if (params?.limit) query.set('limit', String(params.limit))
+	if (params?.keyword) query.set('q', params.keyword)
+	return request.get(`/rest/admin/users?${query.toString()}`)
+}
 export const requestAdminUser = (login: string): Promise<AdminUser> => request.get(`/rest/admin/users/${login}`)
 export const requestAdminUserStats = (login: string): Promise<UserStats> => request.get(`/rest/admin/users/${login}/stats`)
 export const requestSetUserViewAll = (login: string, grant: boolean): Promise<{ login: string; canViewAll: boolean }> =>
@@ -193,7 +211,7 @@ export interface AuditLogQuery {
 	action?: string
 	user?: string
 }
-export const requestAuditLogs = (params?: AuditLogQuery): Promise<{ logs: AuditLog[]; hasMore: boolean }> => {
+export const requestAuditLogs = (params?: AuditLogQuery): Promise<{ logs: AuditLog[]; total: number; hasMore?: boolean }> => {
 	const query = new URLSearchParams()
 	if (params?.limit) query.set('limit', String(params.limit))
 	if (params?.offset) query.set('offset', String(params.offset))
@@ -217,4 +235,41 @@ export const requestImageAnalytics = (key: string): Promise<ImageAnalytics> =>
 	request.get(`/rest/admin/analytics/image/${key}`)
 export const requestUserAnalytics = (login: string): Promise<UserAnalytics> =>
 	request.get(`/rest/admin/analytics/user/${login}`)
+
+
+// ============================================
+// 管理员 API - 系统设置
+// ============================================
+
+export const requestGetUploadConfig = (): Promise<UploadConfigItem[]> => request.get('/rest/settings/upload')
+export const requestUpdateUploadConfig = (config: UploadConfigItem[]): Promise<UploadConfigItem[]> => request.post('/rest/settings/upload', config)
+
+// ============================================
+// 相册 API
+// ============================================
+import { Album, AlbumImage, AlbumShareInfo } from './types'
+
+export const requestListAlbums = (keyword?: string): Promise<Album[]> => {
+	const query = new URLSearchParams()
+	if (keyword) query.set('keyword', keyword)
+	return request.get(`/rest/albums?${query.toString()}`)
+}
+export const requestCreateAlbum = (data: { name: string, description?: string, coverImage?: string }): Promise<Album> => request.post('/rest/albums', data)
+export const requestUpdateAlbum = (id: number, data: { name: string, description?: string, coverImage?: string }): Promise<Album> => request.put(`/rest/albums/${id}`, data)
+export const requestDeleteAlbum = (id: number): Promise<any> => request.delete(`/rest/albums/${id}`)
+export const requestGetAlbum = (id: number, params?: { page?: number, limit?: number }): Promise<{ album: Album, images: AlbumImage[], total: number }> => {
+	const query = new URLSearchParams()
+	if (params?.page) query.set('page', String(params.page))
+	if (params?.limit) query.set('limit', String(params.limit))
+	return request.get(`/rest/albums/${id}?${query.toString()}`)
+}
+export const requestAddImagesToAlbum = (id: number, images: { key: string, url: string }[]): Promise<any> => request.post(`/rest/albums/${id}/add`, { images })
+export const requestRemoveImagesFromAlbum = (id: number, keys: string[]): Promise<any> => request.post(`/rest/albums/${id}/remove`, { keys })
+export const requestSetAlbumCover = (id: number, coverImage: string): Promise<any> => request.post(`/rest/albums/${id}/cover`, { coverImage })
+
+// 相册分享
+export const requestShareAlbum = (id: number, data: { password?: string, expireAt?: number, maxViews?: number }): Promise<AlbumShareInfo> => request.post(`/rest/albums/${id}/share`, data)
+export const requestGetAlbumShareInfo = (token: string): Promise<AlbumShareInfo> => request.get(`/rest/share/album/${token}`)
+export const requestVerifyAlbumShare = (token: string, password?: string): Promise<{ images: AlbumImage[] }> => request.post(`/rest/share/album/${token}/verify`, { password })
+
 

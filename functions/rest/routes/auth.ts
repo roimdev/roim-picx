@@ -261,6 +261,20 @@ authRoutes.post('/checkToken', async (c) => {
             // 签发 JWT Token（使用系统 Token 作为密钥）
             const jwtToken = await sign(userPayload as any, authKey, 'HS256')
 
+            // 记录登录日志
+            try {
+                await c.env.DB.prepare(
+                    `INSERT INTO audit_logs (user_id, user_login, action, details) 
+                     VALUES (?, ?, 'login', ?)`
+                ).bind(
+                    systemUser.id,
+                    systemUser.login,
+                    JSON.stringify({ type: 'token_login' })
+                ).run()
+            } catch (e) {
+                console.error('Failed to log token login:', e)
+            }
+
             // 返回 token 和用户信息（与 GitHub 登录格式一致）
             return c.json(Ok({
                 token: jwtToken,
@@ -520,6 +534,7 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
                 `INSERT INTO users (github_id, google_id, login, name, email, avatar_url, role, can_view_all, last_login_at) 
                  VALUES (0, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
+                0, // github_id
                 googleUser.id,
                 login,
                 googleUser.name,

@@ -206,12 +206,12 @@ shareRoutes.get('/share/:id', async (c) => {
     // Check expiration
     if (record.expireAt && Date.now() > record.expireAt) {
         await c.env.XK.delete(`share:${shareId}`)
-        return c.json(Fail('分享链接已过期'), 410)
+        return c.json(Fail('分享链接已过期'), 200)
     }
 
     // Check view limit
     if (record.maxViews && record.views >= record.maxViews) {
-        return c.json(Fail('分享链接已达到最大查看次数'), 410)
+        return c.json(Fail('分享链接已达到最大查看次数'), 200)
     }
 
     return c.json(Ok({
@@ -239,22 +239,22 @@ shareRoutes.post('/share/:id/verify', async (c) => {
     // Check expiration
     if (record.expireAt && Date.now() > record.expireAt) {
         await c.env.XK.delete(`share:${shareId}`)
-        return c.json(Fail('分享链接已过期'), 410)
+        return c.json(Fail('分享链接已过期'), 200)
     }
 
     // Check view limit
     if (record.maxViews && record.views >= record.maxViews) {
-        return c.json(Fail('分享链接已达到最大查看次数'), 410)
+        return c.json(Fail('分享链接已达到最大查看次数'), 200)
     }
 
     // Verify password if required
     if (record.password) {
         if (!password) {
-            return c.json(Fail('需要输入密码'), 401)
+            return c.json(Fail('需要输入密码'), 200)
         }
         const hashedInput = await hashPassword(password)
         if (hashedInput !== record.password) {
-            return c.json(Fail('密码错误'), 401)
+            return c.json(Fail('密码错误'), 200)
         }
     }
 
@@ -276,7 +276,7 @@ shareRoutes.delete('/share/:id', auth, async (c) => {
 
     const recordStr = await c.env.XK.get(`share:${shareId}`)
     if (!recordStr) {
-        return c.json(Fail('分享链接不存在'), 404)
+        return c.json(Fail('分享链接不存在'), 200)
     }
 
     await c.env.XK.delete(`share:${shareId}`)

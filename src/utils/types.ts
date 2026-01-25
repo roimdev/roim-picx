@@ -26,6 +26,11 @@ export interface ImgItem {
 	uploaderName?: string
 	uploadedBy?: string
 	storageType?: 'R2' | 'HF'
+	tags?: string[]
+
+	// Folder support
+	isFolder?: boolean
+	name?: string
 }
 
 export interface ImgList {
@@ -33,7 +38,7 @@ export interface ImgList {
 	cursor?: string
 	list: Array<ImgItem>
 
-	prefixes?: Array<String>
+	prefixes?: string[]
 	canViewAll?: boolean
 	total?: number
 }
@@ -156,4 +161,45 @@ export interface CurrentUserInfo {
 	storageQuota?: number
 	storageUsed?: number
 	uploadCount?: number
+}
+
+
+export interface UploadConfigItem {
+	type: string;
+	ext: string;
+}
+
+// ============================================
+// 相册相关类型
+// ============================================
+export interface Album {
+	id: number
+	user_id: number
+	name: string
+	description: string | null
+	cover_image: string | null
+	created_at: number
+	updated_at: number
+	imageCount?: number
+	shareInfo?: AlbumShareInfo
+}
+
+export interface AlbumImage {
+	album_id: number
+	image_url: string
+	image_key: string
+	added_at: number
+}
+
+export interface AlbumShareInfo {
+	id: string
+	url: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	albumName?: string
+	description?: string | null
+	coverImage?: string | null
+	ownerName?: string
+	createdAt?: number
 }

@@ -15,6 +15,7 @@ export interface ImgItem {
     uploadedBy?: string
     uploadedAt?: number
     storageType?: 'R2' | 'HF'
+    tags?: string[]
 }
 
 export interface ImgList {

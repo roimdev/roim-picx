@@ -1,126 +1,123 @@
 <template>
-    <el-dialog v-model="visible" :title="$t('share.title')" :width="dialogWidth" :fullscreen="isMobile" @close="handleClose">
+    <BaseDialog :model-value="modelValue" :title="type === 'image' ? $t('share.title') : $t('album.shareTitle')"
+        width="480px" @close="handleClose" :show-footer="true">
         <div class="space-y-6">
-            <!-- Image Preview -->
+            <!-- Preview Area -->
             <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                <img :src="imageUrl" class="w-20 h-20 object-cover rounded-lg shadow-sm" />
+                <img :src="displayCover" class="w-20 h-20 object-cover rounded-lg shadow-sm" />
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ imageName }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatBytes(imageSize) }}</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ displayName }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ displaySubtext }}</p>
                 </div>
             </div>
 
-            <!-- Password Option -->
-            <div>
-                <label class="flex items-center gap-3 cursor-pointer group mb-3">
-                    <div class="relative">
-                        <input type="checkbox" v-model="enablePassword" class="sr-only peer" />
-                        <div
-                            class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+            <!-- Options (Standard for both) -->
+            <div v-if="!shareUrl" class="space-y-6">
+                <!-- Password Option -->
+                <div>
+                    <BaseSwitch v-model="enablePassword" :label="$t('share.setPassword')" class="mb-3" />
+                    <transition name="el-fade-in">
+                        <div v-if="enablePassword">
+                            <BaseInput v-model="password" :placeholder="$t('share.passwordPlaceholder')" />
                         </div>
-                    </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.setPassword') }}</span>
-                </label>
-                <transition name="el-fade-in">
-                    <div v-if="enablePassword" class="relative">
-                        <input v-model="password" type="text" :placeholder="$t('share.passwordPlaceholder')"
-                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
-                    </div>
-                </transition>
-            </div>
+                    </transition>
+                </div>
 
-            <!-- Expiration Option -->
-            <div>
-                <label class="flex items-center gap-3 cursor-pointer group mb-3">
-                    <div class="relative">
-                        <input type="checkbox" v-model="enableExpiry" class="sr-only peer" />
-                        <div
-                            class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                <!-- Expiration Option -->
+                <div>
+                    <BaseSwitch v-model="enableExpiry" :label="$t('share.setExpiry')" class="mb-3" />
+                    <transition name="el-fade-in">
+                        <div v-if="enableExpiry">
+                            <BaseDatePicker v-model="expireTime" :placeholder="$t('share.expirePlaceholder')"
+                                :disabled-date="disabledDate" class="!w-full" />
                         </div>
-                    </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.setExpiry') }}</span>
-                </label>
-                <transition name="el-fade-in">
-                    <div v-if="enableExpiry">
-                        <el-date-picker v-model="expireTime" type="datetime" :placeholder="$t('share.expirePlaceholder')"
-                            format="YYYY-MM-DD HH:mm" :disabled-date="disabledDate" class="!w-full" />
-                    </div>
-                </transition>
-            </div>
+                    </transition>
+                </div>
 
-            <!-- Max Views Option -->
-            <div>
-                <label class="flex items-center gap-3 cursor-pointer group mb-3">
-                    <div class="relative">
-                        <input type="checkbox" v-model="enableMaxViews" class="sr-only peer" />
-                        <div
-                            class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                <!-- Max Views Option -->
+                <div>
+                    <BaseSwitch v-model="enableMaxViews" :label="$t('share.limitViews')" class="mb-3" />
+                    <transition name="el-fade-in">
+                        <div v-if="enableMaxViews">
+                            <BaseInput v-model.number="maxViews" type="number"
+                                :placeholder="$t('share.maxViewsPlaceholder')" />
                         </div>
-                    </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('share.limitViews') }}</span>
-                </label>
-                <transition name="el-fade-in">
-                    <div v-if="enableMaxViews">
-                        <input v-model.number="maxViews" type="number" min="1" max="1000" :placeholder="$t('share.maxViewsPlaceholder')"
-                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
-                    </div>
-                </transition>
+                    </transition>
+                </div>
             </div>
 
             <!-- Result -->
-            <div v-if="shareUrl"
+            <div v-else
                 class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">{{ $t('share.shareUrlGenerated') }}</p>
-                <div class="flex items-center gap-2">
-                    <input :value="shareUrl" readonly
-                        class="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-green-300 dark:border-green-700 rounded-lg text-sm text-gray-900 dark:text-gray-100" />
-                    <button @click="copyLink"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
+                <p class="text-xs text-green-600 dark:text-green-400 mb-2 font-medium">{{ $t('share.shareUrlGenerated')
+                    }}</p>
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <BaseInput :model-value="shareUrl" readonly class="flex-1 min-w-0" />
+                    <BaseButton type="indigo" size="sm" @click="copyLink" class="whitespace-nowrap flex-shrink-0">
                         {{ $t('share.copy') }}
-                    </button>
+                    </BaseButton>
                 </div>
             </div>
         </div>
 
         <template #footer>
-            <div class="flex gap-3">
-                <button @click="handleClose"
-                    class="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors">
-                    {{ $t('common.cancel') }}
-                </button>
-                <button @click="createShare" :disabled="loading"
-                    class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors disabled:opacity-50">
-                    <font-awesome-icon :icon="loading ? faSpinner : faShare" :spin="loading" class="mr-2" />
-                    {{ shareUrl ? $t('share.regenerate') : $t('share.generate') }}
-                </button>
+            <div class="flex gap-3 w-full">
+                <BaseButton @click="handleClose" class="flex-1 !rounded-xl !py-3">
+                    <font-awesome-icon :icon="faTimes" class="sm:mr-2" />
+                    <span class="hidden sm:inline">{{ shareUrl ? $t('common.close') : $t('common.cancel') }}</span>
+                </BaseButton>
+                <BaseButton type="indigo" @click="handleAction" :loading="loading"
+                    class="flex-1 !rounded-xl !py-3 font-bold">
+                    <font-awesome-icon :icon="loading ? faSpinner : (shareUrl ? faRedo : faShare)" :spin="loading"
+                        class="sm:mr-2" />
+                    <span class="hidden sm:inline">{{ shareUrl ? $t('share.regenerate') : $t('share.generate') }}</span>
+                </BaseButton>
             </div>
         </template>
-    </el-dialog>
+    </BaseDialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElDialog, ElDatePicker, ElMessage } from 'element-plus'
-import { faShare, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { ElMessage } from 'element-plus'
+import { faShare, faSpinner, faRedo, faTimes } from '@fortawesome/free-solid-svg-icons'
 import formatBytes from '../utils/format-bytes'
 import copy from 'copy-to-clipboard'
-import { requestCreateShare } from '../utils/request'
+import { requestCreateShare, requestShareAlbum } from '../utils/request'
+import type { AlbumShareInfo } from '../utils/types'
+import BaseDialog from './common/BaseDialog.vue'
+import BaseButton from './common/BaseButton.vue'
+import BaseInput from './common/BaseInput.vue'
+import BaseSwitch from './common/BaseSwitch.vue'
+import BaseDatePicker from './common/BaseDatePicker.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const { t } = useI18n()
 
-const props = defineProps<{
+interface Props {
     modelValue: boolean
-    imageKey: string
-    imageUrl: string
-    imageName: string
-    imageSize: number
-}>()
+    type: 'image' | 'album'
+    // Image specific
+    imageKey?: string
+    imageUrl?: string
+    imageName?: string
+    imageSize?: number
+    // Album specific
+    albumId?: number
+    albumName?: string
+    coverImage?: string
+    shareInfo?: AlbumShareInfo
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    type: 'image'
+})
 
 const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
 }>()
 
-const visible = ref(props.modelValue)
 const loading = ref(false)
 const shareUrl = ref('')
 
@@ -131,59 +128,94 @@ const expireTime = ref<Date>()
 const enableMaxViews = ref(false)
 const maxViews = ref(10)
 
-// Responsive dialog
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-const isMobile = computed(() => windowWidth.value < 640)
-const dialogWidth = computed(() => isMobile.value ? '100%' : '480px')
-
-const handleResize = () => {
-    windowWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-    window.addEventListener('resize', handleResize)
+// Computed helpers for preview
+const displayName = computed(() => {
+    return props.type === 'image' ? props.imageName : props.albumName
 })
 
-onUnmounted(() => {
-    window.removeEventListener('resize', handleResize)
+const displayCover = computed(() => {
+    return props.type === 'image' ? props.imageUrl : props.coverImage // Album cover could be added if available, for now empty or default
+})
+
+const displaySubtext = computed(() => {
+    if (props.type === 'image') {
+        return props.imageSize ? formatBytes(props.imageSize) : ''
+    }
+    return t('album.shareTitle')
 })
 
 watch(() => props.modelValue, (val) => {
-    visible.value = val
     if (val) {
-        // Reset state when dialog opens
+        // Reset state or fill from existing
         shareUrl.value = ''
-        enablePassword.value = false
-        password.value = ''
-        enableExpiry.value = false
-        expireTime.value = undefined
-        enableMaxViews.value = false
-        maxViews.value = 10
-    }
-})
+        console.log(props.shareInfo)
+        if (props.shareInfo) {
+            // Edit mode
+            const share = props.shareInfo
+            enablePassword.value = share.hasPassword
+            // Don't pre-fill password for security/logic reasons, user sets new one if they want to change it
+            // or we keep it empty. If logic requires sending undefined to keep old:
+            password.value = ''
 
-watch(visible, (val) => {
-    emit('update:modelValue', val)
-})
+            enableExpiry.value = !!share.expireAt
+            expireTime.value = share.expireAt ? new Date(share.expireAt) : undefined
+
+            enableMaxViews.value = !!share.maxViews
+            maxViews.value = share.maxViews || 10
+
+            // If we want to show current share link immediately:
+            // shareUrl.value = share.url 
+            // User request implies "modify info", so maybe we start in edit mode not result mode.
+        } else {
+            // Create mode defaults
+            enablePassword.value = false
+            password.value = ''
+            enableExpiry.value = false
+            expireTime.value = undefined
+            enableMaxViews.value = false
+            maxViews.value = 10
+        }
+    }
+}, { immediate: true })
 
 const disabledDate = (time: Date) => {
     return time.getTime() < Date.now()
 }
 
 const handleClose = () => {
-    visible.value = false
+    emit('update:modelValue', false)
+}
+
+const handleAction = () => {
+    if (shareUrl.value) {
+        shareUrl.value = ''
+    } else {
+        createShare()
+    }
 }
 
 const createShare = async () => {
     loading.value = true
     try {
-        const result = await requestCreateShare({
-            imageKey: props.imageKey,
-            imageUrl: props.imageUrl,
-            password: enablePassword.value ? password.value : undefined,
-            expireAt: enableExpiry.value && expireTime.value ? expireTime.value.getTime() : undefined,
-            maxViews: enableMaxViews.value ? maxViews.value : undefined
-        })
+        let result
+        if (props.type === 'image') {
+            if (!props.imageKey || !props.imageUrl) throw new Error('Missing image details')
+            result = await requestCreateShare({
+                imageKey: props.imageKey,
+                imageUrl: props.imageUrl,
+                password: enablePassword.value ? password.value : undefined,
+                expireAt: enableExpiry.value && expireTime.value ? expireTime.value.getTime() : undefined,
+                maxViews: enableMaxViews.value ? maxViews.value : undefined
+            })
+        } else {
+            if (!props.albumId) throw new Error('Missing album id')
+            result = await requestShareAlbum(props.albumId, {
+                password: enablePassword.value ? password.value : undefined,
+                expireAt: enableExpiry.value && expireTime.value ? expireTime.value.getTime() : undefined,
+                maxViews: enableMaxViews.value ? maxViews.value : undefined
+            })
+        }
+
         shareUrl.value = result.url
         ElMessage.success(t('share.shareUrlGenerated'))
     } catch (e: any) {

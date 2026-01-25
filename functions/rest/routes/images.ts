@@ -112,6 +112,15 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
         // 转换为 ImgItem 格式
         const urls: ImgItem[] = limitedImages.map((img: DbImage) => {
             const provider = getProviderByType(c, img.storage_type || 'R2')
+            // 解析标签 JSON
+            let tags: string[] | undefined
+            if (img.tags) {
+                try {
+                    tags = JSON.parse(img.tags)
+                } catch (e) {
+                    tags = undefined
+                }
+            }
             return {
                 url: provider.getPublicUrl(img.key),
                 key: img.key,
@@ -119,7 +128,8 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
                 originalName: img.original_name || undefined,
                 uploadedBy: img.user_login,
                 uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined,
-                storageType: img.storage_type
+                storageType: img.storage_type,
+                tags: tags
             }
         })
 
@@ -167,6 +177,50 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
     } catch (e) {
         console.error('Failed to list images from DB:', e)
         return c.json(Fail(`查询失败: ${(e as Error).message}`))
+    }
+})
+
+// 更新图片标签
+imageRoutes.post('/updateTags', auth, async (c) => {
+    const user = c.get('user') as User | undefined
+    const isAdminToken = c.get('isAdminToken') || false
+
+    if (!user && !isAdminToken) {
+        return c.json(Fail("未授权"))
+    }
+
+    try {
+        const data = await c.req.json<{ key: string, tags: string[] }>()
+        if (!data.key) {
+            return c.json(Fail("缺少图片 key"))
+        }
+
+        // 验证标签格式
+        const tags = Array.isArray(data.tags) ? data.tags.filter(t => typeof t === 'string' && t.trim().length > 0) : []
+
+        // 检查图片是否存在，以及用户是否有权限修改
+        const image = await c.env.DB.prepare('SELECT user_login FROM images WHERE key = ?')
+            .bind(data.key).first<{ user_login: string }>()
+
+        if (!image) {
+            return c.json(Fail("图片不存在"))
+        }
+
+        // 检查权限：只有图片所有者或管理员可以修改标签
+        const canModify = isAdminToken || (user && (user.role === 'admin' || user.login === image.user_login))
+        if (!canModify) {
+            return c.json(Fail("无权限修改此图片"))
+        }
+
+        // 更新标签
+        const tagsJson = tags.length > 0 ? JSON.stringify(tags) : null
+        await c.env.DB.prepare('UPDATE images SET tags = ? WHERE key = ?')
+            .bind(tagsJson, data.key).run()
+
+        return c.json(Ok({ key: data.key, tags: tags }))
+    } catch (e) {
+        console.error('Failed to update image tags:', e)
+        return c.json(Fail(`更新标签失败: ${(e as Error).message}`))
     }
 })
 

@@ -226,3 +226,31 @@ export const auth = async (c: Context<AppEnv>, next: Next) => {
         return c.json(FailCode(`auth fail: ${(e as Error).message}`, StatusCode.NotAuth))
     }
 }
+
+/**
+ * 管理员权限中间件
+ */
+export const adminAuth = async (c: any, next: any) => {
+    const user = c.get('user') as User | undefined
+    const isAdminToken = c.get('isAdminToken') || false
+
+    // 使用管理员 Token 直接通过
+    if (isAdminToken) {
+        await next()
+        return
+    }
+
+    // 检查用户角色
+    if (!user) {
+        return c.json(FailCode('需要登录', StatusCode.NotAuth))
+    }
+
+    // 检查是否是管理员
+    // 注意：这里需要传入 ADMIN_USERS 环境变量
+    const isAdmin = user.role === 'admin' || isAdminUser(user.login, c.env.ADMIN_USERS)
+    if (!isAdmin) {
+        return c.json(FailCode('需要管理员权限', StatusCode.NotAuth))
+    }
+
+    await next()
+}

@@ -29,6 +29,14 @@
                             </button>
                         </el-tooltip>
 
+                        <el-tooltip :content="$t('album.uploadTo')" placement="top" :show-after="500">
+                            <button
+                                class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
+                                @click.stop="emit('addToAlbum')">
+                                <font-awesome-icon :icon="faFolderPlus" class="text-sm" />
+                            </button>
+                        </el-tooltip>
+
                         <el-tooltip :content="$t('manage.copyLink')" placement="top" :show-after="500">
                             <button
                                 class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
@@ -56,8 +64,9 @@
                             </button>
                         </el-tooltip>
 
-                        <el-popconfirm :title="$t('manage.deleteConfirm')" :confirm-button-type="'danger'" :confirm-button-text="$t('common.delete')"
-                            :cancel-button-text="$t('common.cancel')" width="200" @confirm="handleDelete">
+                        <el-popconfirm :title="$t('manage.deleteConfirm')" :confirm-button-type="'danger'"
+                            :confirm-button-text="$t('common.delete')" :cancel-button-text="$t('common.cancel')"
+                            width="200" @confirm="handleDelete">
                             <template #reference>
                                 <button
                                     class="w-9 h-9 rounded-full bg-white/95 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-red-500 dark:hover:text-red-400 hover:scale-110 transition-all flex items-center justify-center shadow-lg"
@@ -98,12 +107,19 @@
                 </button>
 
                 <button
+                    class="w-7 h-7 rounded-full bg-white/90 dark:bg-gray-700/90 text-gray-700 dark:text-gray-200 active:bg-amber-50 dark:active:bg-amber-900/30 active:text-amber-600 dark:active:text-amber-400 transition-all flex items-center justify-center shadow-lg backdrop-blur-sm"
+                    @click.stop="emit('addToAlbum')">
+                    <font-awesome-icon :icon="faFolderPlus" class="text-[10px]" />
+                </button>
+
+                <button
                     class="w-7 h-7 rounded-full bg-white/90 dark:bg-gray-700/90 text-gray-700 dark:text-gray-200 active:bg-blue-50 dark:active:bg-blue-900/30 active:text-blue-600 dark:active:text-blue-400 transition-all flex items-center justify-center shadow-lg backdrop-blur-sm"
                     @click.stop="emit('rename')">
                     <font-awesome-icon :icon="faEdit" class="text-[10px]" />
                 </button>
 
-                <el-popconfirm :title="$t('manage.confirmDeleteTitle')" :confirm-button-type="'danger'" :confirm-button-text="$t('manage.deleteShort')" :cancel-button-text="$t('manage.cancelShort')"
+                <el-popconfirm :title="$t('manage.confirmDeleteTitle')" :confirm-button-type="'danger'"
+                    :confirm-button-text="$t('manage.deleteShort')" :cancel-button-text="$t('manage.cancelShort')"
                     width="140" @confirm="handleDelete">
                     <template #reference>
                         <button
@@ -138,7 +154,8 @@
                             class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-300">{{
                                 formatBytes(size) }}</span>
                         <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
-                        <span v-if="uploaderName" class="flex items-center gap-1" :title="$t('manage.uploaderLabel') + ': ' + uploaderName">
+                        <span v-if="uploaderName" class="flex items-center gap-1"
+                            :title="$t('manage.uploaderLabel') + ': ' + uploaderName">
                             <font-awesome-icon :icon="faUser" class="text-[10px]" />
                             <span class="max-w-[80px] truncate">{{ uploaderName }}</span>
                         </span>
@@ -150,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faTimes, faImage, faEdit, faEye, faUser, faShareAlt } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faTimes, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
@@ -168,7 +185,7 @@ const props = defineProps<{
     originalName?: string
     uploaderName?: string
 }>()
-const emit = defineEmits(['delete', 'copy', 'rename', 'preview', 'share'])
+const emit = defineEmits(['delete', 'copy', 'rename', 'preview', 'share', 'addToAlbum'])
 
 const imageError = ref(false)
 const loading = ref(true)

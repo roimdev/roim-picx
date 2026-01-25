@@ -18,19 +18,15 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
                         $t('upload.storageDir') }}</label>
-                    <div class="relative group">
+                    <div class="relative group dark:border-gray-600">
                         <font-awesome-icon :icon="faFolder"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                        <el-autocomplete v-model="customPath" :fetch-suggestions="querySearch" size="large"
-                            :placeholder="$t('upload.storageDirPlaceholder')" class="!w-full custom-autocomplete"
-                            :trigger-on-focus="true" clearable>
-                            <template #default="{ item }">
-                                <div class="flex items-center gap-2">
-                                    <font-awesome-icon :icon="faFolder" class="text-amber-500" />
-                                    <span>{{ item.value }}</span>
-                                </div>
+                        <BaseAutocomplete v-model="customPath" :suggestions="directorySuggestions"
+                            :placeholder="$t('upload.storageDirPlaceholder')">
+                            <template #prefix>
+                                <font-awesome-icon :icon="faFolder" class="text-sm" />
                             </template>
-                        </el-autocomplete>
+                        </BaseAutocomplete>
                     </div>
                     <p class="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
                         {{ $t('upload.storageDirHint') }}<code
@@ -39,102 +35,101 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
-                        $t('upload.fileName') }}</label>
-                    <div class="flex items-center h-[46px]">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative">
-                                <input type="checkbox" v-model="keepName" class="sr-only peer" />
-                                <div
-                                    class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                                </div>
-                            </div>
-                            <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
-                                    $t('upload.useOriginalName') }}</span>
-                        </label>
-                    </div>
+                    <BaseSwitch v-model="keepName" :label="$t('upload.fileName')" />
+                    <p class="text-sm text-gray-500 dark:text-gray-400 h-[46px] flex items-center">
+                        {{ $t('upload.useOriginalName') }}
+                    </p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
-                        $t('upload.expiry') }}</label>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative">
-                                <input type="checkbox" v-model="enableExpiry" class="sr-only peer" />
-                                <div
-                                    class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                                </div>
-                            </div>
-                            <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
-                                $t('upload.enableExpiry') }}</span>
-                        </label>
-                        <transition name="el-fade-in">
-                            <div v-if="enableExpiry" class="relative group">
-                                <font-awesome-icon :icon="faClock"
-                                    class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-indigo-500 transition-colors" />
-                                <el-date-picker v-model="expireTime" type="datetime"
-                                    :placeholder="$t('upload.selectExpireTime')" format="YYYY-MM-DD HH:mm:ss"
-                                    :disabled-date="disabledDate" class="!w-full custom-date-picker" />
-                            </div>
-                        </transition>
-                    </div>
+                    <BaseSwitch v-model="enableExpiry" :label="$t('upload.expiry')" />
+                    <p class="text-sm text-gray-500 dark:text-gray-400 h-[46px] flex items-center">
+                        {{ $t('upload.enableExpiry') }}
+                    </p>
+                    <transition name="el-fade-in">
+                        <div v-if="enableExpiry" class="relative group mt-2">
+                            <BaseDatePicker v-model="expireTime" type="datetime"
+                                :placeholder="$t('upload.selectExpireTime')" format="YYYY-MM-DD HH:mm:ss"
+                                :disabled-date="disabledDate" class="!w-full custom-date-picker" />
+                        </div>
+                    </transition>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
                         $t('upload.compression')
                         }}</label>
-                    <div class="relative" ref="compressionDropdownRef">
-                        <button type="button" @click="compressionDropdownOpen = !compressionDropdownOpen"
-                            class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
-                            <font-awesome-icon :icon="faCompress"
-                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
-                            <span class="flex-1">
-                                <span class="font-medium">{{ $t(currentCompressionLevel.label) }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 ml-2">{{
-                                    $t(currentCompressionLevel.description) }}</span>
-                            </span>
-                            <font-awesome-icon :icon="faChevronDown"
-                                class="text-gray-400 text-xs transition-transform duration-200"
-                                :class="{ 'rotate-180': compressionDropdownOpen }" />
-                        </button>
-                        <transition name="el-zoom-in-top">
-                            <div v-if="compressionDropdownOpen"
-                                class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
-                                <div v-for="level in compressionLevels" :key="level.value"
-                                    @click="selectCompressionLevel(level.value)"
-                                    class="px-4 py-3 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3"
-                                    :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': compressionLevel === level.value }">
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-                                        :class="{
-                                            'bg-gray-100 dark:bg-gray-700 text-gray-500': level.value === 'none',
-                                            'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400': level.value === 'high',
-                                            'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400': level.value === 'balanced',
-                                            'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400': level.value === 'small'
-                                        }">
-                                        {{ level.value === 'none' ? '0' : level.value === 'high' ? 'H' : level.value ===
-                                            'balanced' ?
-                                            'M' : 'S' }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{
-                                            $t(level.label)
-                                            }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t(level.description) }}
-                                            · {{
-                                            $t('upload.maxSize') }}
-                                            {{
-                                                level.maxSizeMB }}MB</p>
-                                    </div>
-                                    <font-awesome-icon v-if="compressionLevel === level.value" :icon="faCheck"
-                                        class="text-indigo-600 dark:text-indigo-400" />
-                                </div>
+                    <CustomSelect v-model="compressionLevel" :options="compressionOptions"
+                        @change="selectCompressionLevel">
+                        <template #trigger="{ option }">
+                            <div class="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                                <font-awesome-icon :icon="faCompress" class="text-gray-400 dark:text-gray-500" />
+                                <span class="font-medium">{{ option?.label }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 ml-2" v-if="option?.description">{{
+                                    option.description }}</span>
                             </div>
-                        </transition>
-                    </div>
+                        </template>
+                        <template #option="{ option, selected }">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+                                    :class="{
+                                        'bg-gray-100 dark:bg-gray-700 text-gray-500': option.value === 'none',
+                                        'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400': option.value === 'high',
+                                        'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400': option.value === 'balanced',
+                                        'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400': option.value === 'small'
+                                    }">
+                                    {{ option.value === 'none' ? '0' : option.value === 'high' ? 'H' : option.value ===
+                                        'balanced' ? 'M' : 'S' }}
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ option.label }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ option.description }}
+                                        · {{ $t('upload.maxSize') }} {{ option.maxSizeMB }}MB</p>
+                                </div>
+                                <font-awesome-icon v-if="selected" :icon="faCheck"
+                                    class="text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                        </template>
+                    </CustomSelect>
+
+                </div>
+
+                <!-- Album Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
+                        $t('album.uploadTo') }}</label>
+                    <CustomSelect v-model="currentAlbumId" :options="albumOptions">
+                        <template #trigger="{ option }">
+                            <div class="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                <font-awesome-icon :icon="faImages" class="text-gray-400 dark:text-gray-500 text-sm" />
+                                <span class="font-medium truncate">{{ option?.label }}</span>
+                            </div>
+                        </template>
+                        <template #option="{ option, selected }">
+                            <div class="flex items-center gap-3 w-full">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">
+                                    <img v-if="option.cover_image" :src="option.cover_image"
+                                        class="w-full h-full object-cover" />
+                                    <font-awesome-icon v-else :icon="option.icon || faImages"
+                                        :class="{ 'text-gray-400': !option.icon }" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{
+                                        option.label }}</p>
+                                </div>
+                                <font-awesome-icon v-if="selected" :icon="faCheck"
+                                    class="text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                        </template>
+                    </CustomSelect>
+                </div>
+
+                <!-- Tags Input -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ $t('tags.title') }}</label>
+                    <TagsInput v-model="uploadTags" :placeholder="$t('tags.inputPlaceholder')" :hint="$t('tags.inputHint')" />
                 </div>
 
                 <!-- 存储平台选择 -->
@@ -142,138 +137,99 @@
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
                         $t('upload.storageProvider') ||
                         '存储平台' }}</label>
-                    <div class="relative" ref="storageDropdownRef">
-                        <button type="button" @click="storageDropdownOpen = !storageDropdownOpen"
-                            class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-left flex items-center justify-between">
-                            <font-awesome-icon :icon="faDatabase"
-                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
-                            <span class="flex-1">
-                                <span class="font-medium">{{ currentStorageProvider?.name || selectedStorageType
-                                    }}</span>
-                            </span>
-                            <font-awesome-icon :icon="faChevronDown"
-                                class="text-gray-400 text-xs transition-transform duration-200"
-                                :class="{ 'rotate-180': storageDropdownOpen }" />
-                        </button>
-                        <transition name="el-zoom-in-top">
-                            <div v-if="storageDropdownOpen"
-                                class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
-                                <div v-for="provider in storageProviders" :key="provider.type"
-                                    @click="selectStorageProvider(provider.type)"
-                                    class="px-4 py-3 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3"
-                                    :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': selectedStorageType === provider.type }">
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-                                        :class="{
-                                            'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400': provider.type === 'R2',
-                                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400': provider.type === 'HF'
-                                        }">
-                                        {{ provider.type }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ provider.name
-                                            }}</p>
-                                    </div>
-                                    <font-awesome-icon v-if="selectedStorageType === provider.type" :icon="faCheck"
-                                        class="text-indigo-600 dark:text-indigo-400" />
-                                </div>
+                    <CustomSelect v-model="selectedStorageType" :options="storageProviderOptions">
+                        <template #trigger="{ option }">
+                            <div class="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                <font-awesome-icon :icon="faDatabase"
+                                    class="text-gray-400 dark:text-gray-500 text-sm" />
+                                <span class="font-medium">{{ option?.label || selectedStorageType }}</span>
                             </div>
-                        </transition>
-                    </div>
+                        </template>
+                        <template #option="{ option, selected }">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                                    :class="{
+                                        'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400': option.value === 'R2',
+                                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400': option.value === 'HF'
+                                    }">
+                                    {{ option.value }}
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ option.label }}
+                                    </p>
+                                </div>
+                                <font-awesome-icon v-if="selected" :icon="faCheck"
+                                    class="text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                        </template>
+                    </CustomSelect>
                 </div>
 
-                <!-- 水印设置 -->
                 <div class="lg:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{
-                        $t('upload.watermark')
-                        }}</label>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <div class="relative">
-                                <input type="checkbox" v-model="watermarkConfig.enabled" class="sr-only peer" />
-                                <div
-                                    class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                                </div>
-                            </div>
-                            <span
-                                class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{{
-                                    $t('upload.enableWatermark') }}</span>
-                        </label>
-                        <transition name="el-fade-in">
-                            <div v-if="watermarkConfig.enabled" class="space-y-3 pl-1">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
-                                            $t('upload.watermarkText')
-                                            }}</label>
-                                        <input type="text" v-model="watermarkConfig.text"
-                                            :placeholder="$t('upload.watermarkTextPlaceholder')"
-                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
-                                            $t('upload.watermarkPosition') }}</label>
-                                        <div class="relative" ref="positionDropdownRef">
-                                            <button type="button" @click="positionDropdownOpen = !positionDropdownOpen"
-                                                class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-left flex items-center justify-between">
+                    <BaseSwitch v-model="watermarkConfig.enabled" :label="$t('upload.watermark')" />
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                        {{ $t('upload.enableWatermark') }}
+                    </p>
+                    <transition name="el-fade-in">
+                        <div v-if="watermarkConfig.enabled" class="space-y-4 pl-1">
+                            <div class="grid grid-cols-2 gap-4">
+                                <BaseInput v-model="watermarkConfig.text" :label="$t('upload.watermarkText')"
+                                    :placeholder="$t('upload.watermarkTextPlaceholder')" />
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                        $t('upload.watermarkPosition') }}</label>
+                                    <div class="relative">
+                                        <CustomSelect v-model="watermarkConfig.position" :options="watermarkPositions"
+                                            :placeholder="$t('upload.selectPosition')">
+                                            <template #trigger="{ option }">
                                                 <span class="flex items-center gap-2">
                                                     <span
                                                         class="w-5 h-5 bg-indigo-100 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px]">
-                                                        {{ getPositionIcon(watermarkConfig.position) }}
+                                                        {{ option?.icon || '↘' }}
                                                     </span>
-                                                    <span>{{
-                                                        $t(`upload.position${getPositionKey(watermarkConfig.position)}`)
-                                                        }}</span>
+                                                    <span>{{ $t(`upload.position${option?.label}`) }}</span>
                                                 </span>
-                                                <font-awesome-icon :icon="faChevronDown"
-                                                    class="text-gray-400 text-xs transition-transform duration-200"
-                                                    :class="{ 'rotate-180': positionDropdownOpen }" />
-                                            </button>
-                                            <transition name="el-zoom-in-top">
-                                                <div v-if="positionDropdownOpen"
-                                                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
-                                                    <div v-for="pos in watermarkPositions" :key="pos.value"
-                                                        @click="selectWatermarkPosition(pos.value)"
-                                                        class="px-3 py-2 cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
-                                                        :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': watermarkConfig.position === pos.value }">
-                                                        <span
-                                                            class="w-5 h-5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center justify-center text-[10px]"
-                                                            :class="{ 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400': watermarkConfig.position === pos.value }">
-                                                            {{ pos.icon }}
-                                                        </span>
-                                                        <span class="text-sm text-gray-700 dark:text-gray-300">{{
-                                                            $t(`upload.position${pos.label}`) }}</span>
-                                                        <font-awesome-icon v-if="watermarkConfig.position === pos.value"
-                                                            :icon="faCheck"
-                                                            class="ml-auto text-indigo-600 dark:text-indigo-400 text-xs" />
-                                                    </div>
+                                            </template>
+                                            <template #option="{ option, selected }">
+                                                <div class="flex items-center gap-2 w-full">
+                                                    <span
+                                                        class="w-5 h-5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center justify-center text-[10px]"
+                                                        :class="{ 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400': selected }">
+                                                        {{ option.icon }}
+                                                    </span>
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{
+                                                        $t(`upload.position${option.label}`) }}</span>
+                                                    <font-awesome-icon v-if="selected" :icon="faCheck"
+                                                        class="ml-auto text-indigo-600 dark:text-indigo-400 text-xs" />
                                                 </div>
-                                            </transition>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
-                                            $t('upload.watermarkOpacity') }} ({{ watermarkConfig.opacity }}%)</label>
-                                        <input type="range" v-model.number="watermarkConfig.opacity" min="10" max="100"
-                                            step="5"
-                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
-                                            $t('upload.watermarkSize')
-                                            }} ({{ watermarkConfig.fontSize }}%)</label>
-                                        <input type="range" v-model.number="watermarkConfig.fontSize" min="1" max="10"
-                                            step="1"
-                                            class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                            </template>
+                                        </CustomSelect>
                                     </div>
                                 </div>
                             </div>
-                        </transition>
-                    </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                        $t('upload.watermarkOpacity') }} ({{ watermarkConfig.opacity }}%)</label>
+                                    <input type="range" v-model.number="watermarkConfig.opacity" min="10" max="100"
+                                        step="5"
+                                        class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{
+                                        $t('upload.watermarkSize')
+                                    }} ({{ watermarkConfig.fontSize }}%)</label>
+                                    <input type="range" v-model.number="watermarkConfig.fontSize" min="1" max="10"
+                                        step="1"
+                                        class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
                 </div>
             </div>
         </div>
+
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-3 space-y-6">
@@ -293,7 +249,7 @@
                                 <font-awesome-icon :icon="faCloudUploadAlt" class="text-4xl" />
                             </div>
                             <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ $t('upload.dropzone')
-                                }}</h2>
+                            }}</h2>
                             <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">
                                 {{ $t('upload.dropzoneHint') }}
                             </p>
@@ -361,19 +317,16 @@
                                     compressionRatio) * 100) }}%</span>
                             </div>
                         </div>
+
                         <div class="flex flex-col gap-3">
-                            <button
-                                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50"
-                                :disabled="loading" @click="uploadImages">
-                                <font-awesome-icon :icon="faUpload" v-if="!loading" />
-                                <font-awesome-icon :icon="faSpinner" spin v-else />
+                            <BaseButton type="indigo" block @click="uploadImages" :loading="loading"
+                                :disabled="loading">
+                                <font-awesome-icon v-if="!loading" :icon="faUpload" />
                                 {{ $t('upload.uploadNow') }}
-                            </button>
-                            <button
-                                class="w-full py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl font-medium transition-all"
-                                @click="clearInput">
+                            </BaseButton>
+                            <BaseButton block @click="clearInput">
                                 {{ $t('upload.clearSelection') }}
-                            </button>
+                            </BaseButton>
                         </div>
                     </div>
 
@@ -386,6 +339,7 @@
             </div>
         </div>
     </div>
+
 </template>
 
 <script setup lang="ts">
@@ -394,17 +348,24 @@ import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, f
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import BaseAutocomplete from '../components/common/BaseAutocomplete.vue'
+import BaseDatePicker from '../components/common/BaseDatePicker.vue'
+import BaseButton from '../components/common/BaseButton.vue'
+import BaseInput from '../components/common/BaseInput.vue'
+import BaseSwitch from '../components/common/BaseSwitch.vue'
+import CustomSelect from '../components/common/CustomSelect.vue'
+import TagsInput from '../components/common/TagsInput.vue'
 import formatBytes from '../utils/format-bytes'
 import { ElNotification as elNotify } from 'element-plus'
-import { requestUploadImages, requestListImages, requestAuthConfig, type StorageProvider } from '../utils/request'
+import { requestUploadImages, requestListImages, requestAuthConfig, requestListAlbums, type StorageProvider } from '../utils/request'
 import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
-import type { ConvertedImage, ImgItem, ImgReq } from '../utils/types'
+import type { ConvertedImage, ImgItem, ImgReq, Album } from '../utils/types'
 import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
 import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
-const { t } = useI18n()
+const { t, tm } = useI18n()
 
 const isDragging = ref(false)
 const convertedImages = ref<ConvertedImage[]>([])
@@ -422,25 +383,59 @@ const customPath = ref('')
 const keepName = ref(false)
 const enableExpiry = ref(false)
 const expireTime = ref<Date>()
-const directorySuggestions = ref<{ value: string }[]>([])
+const directorySuggestions = ref<string[]>([])
 const compressionLevel = ref('none')
 const originalTotalSize = ref(0)
-const compressionDropdownOpen = ref(false)
-const compressionDropdownRef = ref<HTMLElement | null>(null)
 const watermarkConfig = ref<WatermarkConfig>({ ...defaultWatermarkConfig })
-const positionDropdownOpen = ref(false)
-const positionDropdownRef = ref<HTMLElement | null>(null)
+const uploadTags = ref<string[]>([])
 
+// Storage provider selection
 // Storage provider selection
 const storageProviders = ref<StorageProvider[]>([])
 const selectedStorageType = ref<'R2' | 'HF'>('R2')
-const storageDropdownOpen = ref(false)
-const storageDropdownRef = ref<HTMLElement | null>(null)
 const currentStorageProvider = computed(() => storageProviders.value.find(p => p.type === selectedStorageType.value))
 
-const selectStorageProvider = (type: 'R2' | 'HF') => {
-    selectedStorageType.value = type
-    storageDropdownOpen.value = false
+// Album selection
+const albums = ref<Album[]>([])
+const selectedAlbumId = ref<number | undefined>(undefined)
+
+// Computed options for CustomSelect
+const albumOptions = computed(() => {
+    const opts = albums.value.map(a => ({
+        label: a.name,
+        value: a.id,
+        cover_image: a.cover_image
+    }))
+    return [
+        { label: t('common.none'), value: 'default', icon: faCloudUploadAlt }, // Special value for default
+        ...opts
+    ]
+})
+
+// Handle album selection logic
+const currentAlbumId = computed({
+    get: () => selectedAlbumId.value === undefined ? 'default' : selectedAlbumId.value,
+    set: (val) => {
+        selectedAlbumId.value = val === 'default' ? undefined : Number(val)
+    }
+})
+
+const storageProviderOptions = computed(() => storageProviders.value.map(p => ({
+    label: p.name,
+    value: p.type
+})))
+
+const compressionOptions = computed(() => compressionLevels.map(l => ({
+    label: t(l.label),
+    value: l.value,
+    description: t(l.description),
+    maxSizeMB: l.maxSizeMB
+})))
+
+const currentAlbum = computed(() => albums.value.find(a => a.id === selectedAlbumId.value))
+
+const selectStorageProvider = (type: string | number) => {
+    selectedStorageType.value = type as 'R2' | 'HF'
 }
 
 // Watermark position options
@@ -463,18 +458,13 @@ const getPositionKey = (position: string) => {
     return pos?.label || 'BottomRight'
 }
 
-const selectWatermarkPosition = (value: string) => {
-    watermarkConfig.value.position = value as any
-    positionDropdownOpen.value = false
-}
+// Removed manual position selection logic as it is handled by v-model
 
 const selectCompressionLevel = async (value: string) => {
     if (value === compressionLevel.value) {
-        compressionDropdownOpen.value = false
         return
     }
     compressionLevel.value = value
-    compressionDropdownOpen.value = false
 
     // Re-compress existing images with new level
     if (originalFiles.value.length > 0) {
@@ -483,17 +473,7 @@ const selectCompressionLevel = async (value: string) => {
 }
 
 // Close dropdown when clicking outside
-const handleClickOutside = (event: MouseEvent) => {
-    if (compressionDropdownRef.value && !compressionDropdownRef.value.contains(event.target as Node)) {
-        compressionDropdownOpen.value = false
-    }
-    if (positionDropdownRef.value && !positionDropdownRef.value.contains(event.target as Node)) {
-        positionDropdownOpen.value = false
-    }
-    if (storageDropdownRef.value && !storageDropdownRef.value.contains(event.target as Node)) {
-        storageDropdownOpen.value = false
-    }
-}
+
 
 const currentCompressionLevel = computed(() =>
     compressionLevels.find(l => l.value === compressionLevel.value) || compressionLevels[0]
@@ -549,28 +529,13 @@ const disabledDate = (time: Date) => {
     return time.getTime() < Date.now()
 }
 
-const querySearch = (queryString: string, cb: any) => {
-    const results = queryString
-        ? directorySuggestions.value.filter(createFilter(queryString))
-        : directorySuggestions.value
-    cb(results)
-}
-
-const createFilter = (queryString: string) => {
-    return (restaurant: { value: string }) => {
-        return (restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
-    }
-}
-
 const fetchDirectories = () => {
     requestListImages(<ImgReq>{
         limit: 100,
         delimiter: '/'
     }).then((data) => {
         if (data.prefixes && data.prefixes.length) {
-            directorySuggestions.value = data.prefixes.map(prefix => ({
-                value: String(prefix).replace(/\/$/, '') // Remove trailing slash for display
-            }))
+            directorySuggestions.value = data.prefixes.map(prefix => String(prefix).replace(/\/$/, ''))
         }
     }).catch(err => {
         console.error('Failed to fetch directories:', err)
@@ -589,7 +554,7 @@ const onPaste = (e: ClipboardEvent) => {
 
 onMounted(() => {
     document.onpaste = onPaste
-    document.addEventListener('click', handleClickOutside)
+
     fetchDirectories()
     // Fetch storage config
     requestAuthConfig().then(config => {
@@ -598,11 +563,16 @@ onMounted(() => {
             selectedStorageType.value = config.defaultStorage || 'R2'
         }
     }).catch(e => console.error('Failed to fetch auth config:', e))
+
+    // Fetch albums
+    requestListAlbums().then(res => {
+        albums.value = res
+    }).catch(e => { })
 })
 
 onUnmounted(() => {
     document.onpaste = null
-    document.removeEventListener('click', handleClickOutside)
+
     convertedImages.value.forEach((item) => URL.revokeObjectURL(item.tmpSrc))
 })
 
@@ -707,6 +677,12 @@ const uploadImages = () => {
     }
     // 添加存储类型
     formData.append('storageType', selectedStorageType.value)
+    if (selectedAlbumId.value) {
+        formData.append('albumId', selectedAlbumId.value.toString())
+    }
+    if (uploadTags.value.length > 0) {
+        formData.append('tags', uploadTags.value.join(','))
+    }
     for (let item of convertedImages.value) {
         formData.append('files', item.file)
     }
