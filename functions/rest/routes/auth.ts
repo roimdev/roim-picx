@@ -532,7 +532,7 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
             // 创建新用户
             await db.prepare(
                 `INSERT INTO users (github_id, google_id, login, name, email, avatar_url, role, can_view_all, last_login_at) 
-                 VALUES (0, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 0, // github_id
                 googleUser.id,
