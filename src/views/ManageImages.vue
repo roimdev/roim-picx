@@ -108,7 +108,7 @@
                 <transition-group name="el-fade-in-linear">
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
                         <ManageImageCard :item="item" @delete="deleteImage(item.key)" @rename="renameImage(item)"
-                            @copy="showLinkDialog({ url: item.url, name: item.key })" @preview="showPreview(item.url)"
+                            @detail="showDetailsDialog(item)" @preview="showPreview(item.url)"
                             @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)"
                             @editTags="showEditTagsDialog(item)" class="w-full h-full" />
                     </div>
@@ -121,7 +121,7 @@
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
                         :uploader-name="item.uploaderName" :tags="item.tags" @delete="deleteImage(item.key)"
-                        @rename="renameImage(item)" @copy="showLinkDialog({ url: item.url, name: item.key })"
+                        @rename="renameImage(item)" @detail="showDetailsDialog(item)"
                         @preview="showPreview(item.url)" @share="showShareDialog(item)"
                         @addToAlbum="showAddToAlbumDialog(item)" @editTags="showEditTagsDialog(item)" />
                 </transition-group>
@@ -163,7 +163,7 @@
             </button>
         </div>
 
-        <link-format-dialog v-model="linkDialogVisible" :url="currentLinkImage.url" :name="currentLinkImage.name" />
+        <ImageDetailsDialog v-model="detailsDialogVisible" :item="currentDetailsImage" />
 
         <!-- Share Dialog -->
         <share-dialog v-model="shareDialogVisible" type="image" :image-key="currentShareImage.key"
@@ -215,7 +215,7 @@ import ManageImageCard from '../components/ManageImageCard.vue'
 import ImageListRow from '../components/ImageListRow.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import AddToAlbumDialog from '../components/album/AddToAlbumDialog.vue'
-import LinkFormatDialog from '../components/LinkFormatDialog.vue'
+import ImageDetailsDialog from '../components/ImageDetailsDialog.vue'
 import EditTagsDialog from '../components/EditTagsDialog.vue'
 import BaseDialog from '../components/common/BaseDialog.vue'
 import BaseInput from '../components/common/BaseInput.vue'
@@ -242,14 +242,12 @@ const loadMoreSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 const PAGE_SIZE = 20
 
-const linkDialogVisible = ref(false)
-const currentLinkImage = ref<{ url: string, name: string }>({ url: '', name: '' })
+const detailsDialogVisible = ref(false)
+const currentDetailsImage = ref<ImgItem>({} as ImgItem)
 
-const showLinkDialog = (image: { url: string, name: string }) => {
-    currentLinkImage.value = image
-    linkDialogVisible.value = true
-    currentLinkImage.value = image
-    linkDialogVisible.value = true
+const showDetailsDialog = (image: ImgItem) => {
+    currentDetailsImage.value = image
+    detailsDialogVisible.value = true
 }
 
 // Share dialog state

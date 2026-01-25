@@ -201,6 +201,8 @@ export default {
         originalName: 'Original Name',
         uploaderLabel: 'Uploader',
         items: '{count} items',
+        imageDetails: 'Image Details',
+        fileName: 'File Name',
     },
     share: {
         title: 'Share Image',

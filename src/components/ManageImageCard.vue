@@ -20,7 +20,7 @@ const emit = defineEmits<{
     (e: 'share'): void
     (e: 'rename'): void
     (e: 'delete'): void
-    (e: 'copy'): void
+    (e: 'detail'): void
     (e: 'addToAlbum'): void
     (e: 'editTags'): void
 }>()
@@ -69,8 +69,8 @@ const displayGetName = (key: string) => {
                 </div>
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-dropdown-item @click="$emit('copy')">
-                            <font-awesome-icon :icon="faLink" class="mr-2" />{{ $t('manage.copyLink') }}
+                        <el-dropdown-item @click="$emit('detail')">
+                            <font-awesome-icon :icon="faLink" class="mr-2" />{{ $t('manage.details') }}
                         </el-dropdown-item>
                         <el-dropdown-item @click="$emit('share')">
                             <font-awesome-icon :icon="faShareAlt" class="mr-2" />{{ $t('share.title') }}
@@ -97,10 +97,6 @@ const displayGetName = (key: string) => {
             class="absolute bottom-0 left-0 right-0 p-4 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border-t border-white/20 dark:border-white/5 transition-all">
             <h3 class="font-bold text-gray-900 dark:text-gray-100 truncate mb-0.5" :title="displayGetName(item.key)">{{
                 displayGetName(item.key) }}</h3>
-            <p v-if="item.originalName" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"
-                :title="item.originalName">
-                {{ $t('manage.originalName') }}: {{ item.originalName }}
-            </p>
             <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1 mt-1">
                 <span v-for="tag in item.tags.slice(0, 3)" :key="tag"
                     class="inline-block px-1.5 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full">
@@ -108,10 +104,6 @@ const displayGetName = (key: string) => {
                 </span>
                 <span v-if="item.tags.length > 3" class="text-[10px] text-gray-400">+{{ item.tags.length - 3 }}</span>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
-                <span>{{ formatBytes(item.size) }}</span>
-                <span>{{ item.uploadedAt ? new Date(item.uploadedAt).toLocaleDateString() : '-' }}</span>
-            </p>
         </div>
     </div>
 </template>

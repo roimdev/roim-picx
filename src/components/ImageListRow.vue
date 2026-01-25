@@ -59,10 +59,10 @@
         </button>
       </el-tooltip>
 
-      <el-tooltip :content="$t('manage.copyLink')" placement="top" :show-after="500">
+      <el-tooltip :content="$t('manage.details')" placement="top" :show-after="500">
         <button
           class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center"
-          @click.stop="emit('copy')">
+          @click.stop="emit('detail')">
           <font-awesome-icon :icon="faLink" class="text-sm" />
         </button>
       </el-tooltip>
@@ -124,7 +124,7 @@ const props = defineProps<{
   tags?: string[]
 }>()
 
-const emit = defineEmits(['delete', 'copy', 'rename', 'preview', 'share', 'addToAlbum', 'editTags'])
+const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags'])
 const imageError = ref(false)
 
 const handleDelete = () => {

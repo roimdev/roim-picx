@@ -202,6 +202,8 @@ export default {
         originalName: '原名',
         uploaderLabel: '上传者',
         items: '{count} 项',
+        imageDetails: '图片详情',
+        fileName: '文件名',
     },
     share: {
         title: '分享图片',
