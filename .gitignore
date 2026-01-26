@@ -6,3 +6,4 @@ dist
 .wrangler
 .env
 .env.development
+backup

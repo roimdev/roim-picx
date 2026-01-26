@@ -52,7 +52,7 @@
 - [√] 📂 上传图片时支持选择目录
 - [√] 📄 管理页面支持分页加载
 - [√] ✏️ 图片重命名
-- [√] 🔑 GitHub 登录
+- [√] 🔑 多平台登录授权[Github/Google/Steam]
 - [√] ⏰ 文件过期自动删除
 - [√] 🔎 文件前缀搜索
 - [√] 👤 上传图片关联登录用户信息
@@ -60,6 +60,9 @@
 - [√] 💾 D1 数据库持久化存储元数据
 - [√] 🔄 历史 R2 数据一键同步到 D1
 - [√] 📱 移动端自适应优化
+- [√] 🖼️ 相册管理 (创建、编辑、公开/加密分享)
+- [√] 📤 进阶上传 (保留原名、自定义过期时间)
+- [√] 👀 我的分享管理 (查看状态、复制链接、删除)
 
 ---
 
@@ -280,6 +283,8 @@ npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_i
       <sub><b>系统管理</b></sub>
     </td>
     <td align="center">
+    <img src="docs/albums.png" alt="相册管理" width="400"><br>
+      <sub><b>相册管理</b></sub>
     </td>
   </tr>
 </table>
@@ -315,15 +320,29 @@ npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_i
 <table>
   <tr>
     <td align="center">
-      <img src="docs/create.png" alt="创建应用" width="280"><br>
+      <img src="docs/create.png" alt="找到设置" width="280"><br>
+      <sub><b>找到设置</b></sub>
+    </td>
+    <td align="center">
+      <img src="docs/create_2.png" alt="进入开发者设置" width="280"><br>
+      <sub><b>进入开发者设置</b></sub>
+    </td>
+    <td align="center">
+      <img src="docs/create_3.png" alt="创建应用" width="280"><br>
       <sub><b>创建应用</b></sub>
     </td>
+  </tr>
+  <tr>
     <td align="center">
-      <img src="docs/create_2.png" alt="应用设置" width="280"><br>
-      <sub><b>应用设置</b></sub>
+      <img src="docs/create_4.png" alt="填写应用信息" width="280"><br>
+      <sub><b>填写应用信息</b></sub>
     </td>
     <td align="center">
-      <img src="docs/secret.png" alt="获取密钥" width="280"><br>
+      <img src="docs/create_5.png" alt="设置密钥" width="280"><br>
+      <sub><b>设置密钥</b></sub>
+    </td>
+    <td align="center">
+      <img src="docs/create_6.png" alt="获取密钥" width="280"><br>
       <sub><b>获取密钥</b></sub>
     </td>
   </tr>
