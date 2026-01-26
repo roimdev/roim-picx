@@ -344,6 +344,9 @@ export default {
         mimeType: 'MIME Type',
         extension: 'Extension',
         uploadConfigHint: 'Configure allowed file types for upload. MIME types and extensions must match for the file to be accepted.',
+        securitySettings: 'Security Settings',
+        tokenExpireDays: 'Token Expiration (Days)',
+        tokenExpireHint: 'Default is 7 days.'
     },
     album: {
         title: 'Albums',

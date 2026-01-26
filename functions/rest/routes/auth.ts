@@ -5,6 +5,7 @@ import StatusCode from '../type'
 import type { AuthToken, User, DbUser } from '../type'
 import type { AppEnv } from '../middleware/auth'
 import { isAdminUser, getOrCreateSystemUser } from '../middleware/auth'
+import { ConfigService } from '../services/ConfigService'
 
 const authRoutes = new Hono<AppEnv>()
 
@@ -195,17 +196,22 @@ authRoutes.post('/github/login', async (c) => {
             return c.json(FailCode("Unauthorized GitHub User", StatusCode.NotAuth))
         }
 
-        // 同步用户到 D1 数据库并获取权限
         const permissions = await syncUserToDb(c.env.DB, userData, c.env.ADMIN_USERS)
 
+        // Get token expiration from config
+        const configService = new ConfigService(c.env.DB)
+        const expireDays = await configService.getTokenExpireDays()
+        const exp = Math.floor(Date.now() / 1000) + expireDays * 24 * 60 * 60
+
         // Create JWT Payload with User Info (with gh_ prefix for login)
-        const userPayload: User = {
+        const userPayload = {
             id: userData.id,
             name: userData.name || userData.login,
             login: `gh_${userData.login}`,
             avatar_url: userData.avatar_url,
             role: permissions.role,
-            canViewAll: permissions.canViewAll
+            canViewAll: permissions.canViewAll,
+            exp: exp
         }
 
         // Sign Token using System Auth Token as secret
@@ -248,14 +254,20 @@ authRoutes.post('/checkToken', async (c) => {
             // 获取或创建系统用户
             const systemUser = await getOrCreateSystemUser(c.env.DB)
 
+            // Get token expiration from config
+            const configService = new ConfigService(c.env.DB)
+            const expireDays = await configService.getTokenExpireDays()
+            const exp = Math.floor(Date.now() / 1000) + expireDays * 24 * 60 * 60
+
             // 创建用户 payload
-            const userPayload: User = {
+            const userPayload = {
                 id: systemUser.id,
                 name: systemUser.name,
                 login: systemUser.login,
                 avatar_url: systemUser.avatar_url,
                 role: systemUser.role,
-                canViewAll: systemUser.canViewAll
+                canViewAll: systemUser.canViewAll,
+                exp: exp
             }
 
             // 签发 JWT Token（使用系统 Token 作为密钥）
@@ -287,10 +299,18 @@ authRoutes.post('/checkToken', async (c) => {
     }
 
     // 2. Check JWT - 已登录用户验证
+    // 2. Check JWT - 已登录用户验证
     try {
         const payload = await verify(token, authKey, 'HS256')
-        // JWT 有效，返回 true（前端已有 token）
-        return c.json(Ok(true))
+        // JWT 有效，返回详细信息（包含过期时间）
+        const exp = (payload as any).exp
+        console.log(`Check Token User: ${payload.login}, Exp: ${exp}, Date: ${new Date(exp * 1000).toLocaleString()}`)
+
+        return c.json(Ok({
+            token: token,
+            user: payload,
+            exp: exp
+        }))
     } catch (e) {
         return c.json(Ok(false))
     }
@@ -375,14 +395,20 @@ authRoutes.get('/steam/callback', async (c) => {
         // 同步用户到 D1 数据库
         const permissions = await syncSteamUserToDb(c.env.DB, player, c.env.ADMIN_USERS)
 
+        // Get token expiration from config
+        const configService = new ConfigService(c.env.DB)
+        const expireDays = await configService.getTokenExpireDays()
+        const exp = Math.floor(Date.now() / 1000) + expireDays * 24 * 60 * 60
+
         // 创建 JWT Payload
-        const userPayload: User = {
+        const userPayload = {
             id: parseInt(steamId.slice(-8), 10), // 取 SteamID 后 8 位作为数字 ID
             name: player.personaname,
             login: `steam_${steamId}`,
             avatar_url: player.avatarfull || player.avatar,
             role: permissions.role,
-            canViewAll: permissions.canViewAll
+            canViewAll: permissions.canViewAll,
+            exp: exp
         }
 
         // 签发 JWT Token
@@ -682,9 +708,13 @@ authRoutes.get('/google/callback', async (c) => {
             uploadCount: dbUserData.uploadCount
         }
 
+        // Get token expiration from config
+        const configService = new ConfigService(c.env.DB)
+        const expireDays = await configService.getTokenExpireDays()
+
         const jwtPayload = {
             ...user,
-            exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+            exp: Math.floor(Date.now() / 1000) + expireDays * 24 * 60 * 60
         }
 
         const token = await sign(jwtPayload, c.env.PICX_AUTH_TOKEN)

@@ -39,11 +39,11 @@ request.interceptors.response.use(
 				type: 'error'
 			})
 			// Delay redirect to allow user to see message
-			// setTimeout(() => {
-			// 	storage.local.remove('auth-token')
-			// 	window.location.href = '/auth'
-			// }, 1500)
-			return Promise.reject(data.msg)
+			setTimeout(() => {
+				storage.local.remove('auth-token')
+				window.location.href = '/auth'
+			}, 1500)
+			// return Promise.reject(data.msg)
 		}
 		if (data.code !== 200) {
 			elNotify({
@@ -243,6 +243,8 @@ export const requestUserAnalytics = (login: string): Promise<UserAnalytics> =>
 
 export const requestGetUploadConfig = (): Promise<UploadConfigItem[]> => request.get('/rest/settings/upload')
 export const requestUpdateUploadConfig = (config: UploadConfigItem[]): Promise<UploadConfigItem[]> => request.post('/rest/settings/upload', config)
+export const requestGetTokenExpire = (): Promise<{ days: number }> => request.get('/rest/settings/token-expire')
+export const requestUpdateTokenExpire = (days: number): Promise<{ days: number }> => request.post('/rest/settings/token-expire', { days })
 
 // ============================================
 // 相册 API

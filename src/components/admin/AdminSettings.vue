@@ -8,7 +8,8 @@ import {
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 import {
-    requestGetUploadConfig, requestUpdateUploadConfig
+    requestGetUploadConfig, requestUpdateUploadConfig,
+    requestGetTokenExpire, requestUpdateTokenExpire
 } from '../../utils/request'
 import type { UploadConfigItem } from '../../utils/types'
 
@@ -49,11 +50,41 @@ const removeConfigItem = (index: number) => {
     uploadConfig.value.splice(index, 1)
 }
 
+// Token Expiration
+const tokenExpireDays = ref(7)
+const tokenLoading = ref(false)
+
+const loadTokenExpire = async () => {
+    tokenLoading.value = true
+    try {
+        const res = await requestGetTokenExpire()
+        tokenExpireDays.value = res.days
+    } catch (e) {
+        console.error('Failed to load token expire:', e)
+    } finally {
+        tokenLoading.value = false
+    }
+}
+
+const saveTokenExpire = async () => {
+    tokenLoading.value = true
+    try {
+        await requestUpdateTokenExpire(Number(tokenExpireDays.value))
+        ElMessage.success(t('common.saveSuccess'))
+    } catch (e) {
+        console.error('Failed to save token expire:', e)
+        ElMessage.error(t('common.saveFailed') || 'Save failed')
+    } finally {
+        tokenLoading.value = false
+    }
+}
+
 defineExpose({
     loadSettings,
     init: () => {
         if (uploadConfig.value.length === 0) {
             loadSettings()
+            loadTokenExpire()
         }
     }
 })
@@ -101,6 +132,23 @@ defineExpose({
                 <font-awesome-icon :icon="faQuestionCircle" class="mr-1" />
                 {{ $t('admin.uploadConfigHint') }}
             </div>
+        </div>
+    </el-card>
+
+    <el-card shadow="never" class="mt-4">
+        <template #header>
+            <div class="flex items-center justify-between">
+                <span>{{ $t('admin.securitySettings') }}</span>
+                <BaseButton type="indigo" @click="saveTokenExpire" size="sm" :loading="tokenLoading">
+                    <font-awesome-icon :icon="faSave" class="mr-1" />
+                    {{ $t('common.save') }}
+                </BaseButton>
+            </div>
+        </template>
+        <div v-loading="tokenLoading" class="flex items-center gap-4">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('admin.tokenExpireDays') }}</span>
+            <BaseInput type="number" v-model="tokenExpireDays" placeholder="7" class="!w-32" />
+            <span class="text-xs text-gray-500">{{ $t('admin.tokenExpireHint') }}</span>
         </div>
     </el-card>
 </template>
