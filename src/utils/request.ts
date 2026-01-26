@@ -39,11 +39,11 @@ request.interceptors.response.use(
 				type: 'error'
 			})
 			// Delay redirect to allow user to see message
-			// setTimeout(() => {
-			// 	storage.local.remove('auth-token')
-			// 	window.location.href = '/auth'
-			// }, 1500)
-			return Promise.reject(data.msg)
+			setTimeout(() => {
+				storage.local.remove('auth-token')
+				window.location.href = '/auth'
+			}, 1500)
+			// return Promise.reject(data.msg)
 		}
 		if (data.code !== 200) {
 			elNotify({
