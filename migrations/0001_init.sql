@@ -8,7 +8,7 @@
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    github_id INTEGER UNIQUE NOT NULL,
+    github_id INTEGER UNIQUE,
     login TEXT UNIQUE NOT NULL,
     name TEXT,
     avatar_url TEXT,

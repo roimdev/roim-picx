@@ -445,7 +445,7 @@ async function syncSteamUserToDb(db: D1Database, player: any, adminUsers?: strin
             // 创建新用户
             await db.prepare(
                 `INSERT INTO users (github_id, steam_id, login, name, avatar_url, role, can_view_all, last_login_at) 
-                 VALUES (0, ?, ?, ?, ?, ?, ?, datetime('now'))`
+                 VALUES (NULL, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
                 steamId,
                 login,
@@ -493,7 +493,7 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
         // 检查用户是否存在
         const existing = await db.prepare(
             'SELECT id, role, can_view_all, storage_quota, storage_used, upload_count FROM users WHERE google_id = ?'
-        ).bind(googleUser.id).first<DbUser>()
+        ).bind(googleUser.id).first()
 
         if (existing) {
             // 更新最后登录时间和邮箱
@@ -534,7 +534,7 @@ async function syncGoogleUserToDb(db: any, googleUser: any, adminUsers?: string)
                 `INSERT INTO users (github_id, google_id, login, name, email, avatar_url, role, can_view_all, last_login_at) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
-                0, // github_id
+                null, // github_id
                 googleUser.id,
                 login,
                 googleUser.name,
