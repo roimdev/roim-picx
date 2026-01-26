@@ -7,13 +7,7 @@ export interface UploadConfigItem {
 
 // In-memory cache for upload config
 let uploadConfigCache: UploadConfigItem[] | null = null;
-let lastCacheUpdate = 0;
-const CACHE_TTL = 60 * 1000; // 1 minute local cache TTL to ensure somewhat fresh data if multiple isolates
-// However, the requirement says "update automatically loads into worker memory", 
-// which implies we might want to refresh it immediately on update or have a long TTL and manual refresh.
-// For now, simple caching strategy:
-// 1. Read from DB if cache is null.
-// 2. On update, update DB and cache.
+let tokenExpireCache: number | null = null;
 
 export class ConfigService {
     private db: D1Database;
@@ -38,14 +32,9 @@ export class ConfigService {
                 uploadConfigCache = JSON.parse(result);
             } catch (e) {
                 console.error('Failed to parse upload_config:', e);
-                // Fallback to empty or default? Let's return empty to be safe or maybe the caller handles it.
-                // But better to have a fallback if DB is corrupted.
                 uploadConfigCache = [];
             }
         } else {
-            // If not in DB, return empty or default?
-            // Maybe we should insert default if missing? 
-            // For now, return empty array if not found (migration should have inserted it)
             uploadConfigCache = [];
         }
 
@@ -64,6 +53,44 @@ export class ConfigService {
         if (result.success) {
             // Update cache
             uploadConfigCache = config;
+            return true;
+        }
+        return false;
+    }
+
+    async getTokenExpireDays(): Promise<number> {
+        if (tokenExpireCache !== null) {
+            return tokenExpireCache;
+        }
+
+        const result = await this.db.prepare(
+            `SELECT value FROM system_settings WHERE key = 'token_expire_days'`
+        ).first<string>('value');
+
+        if (result) {
+            const days = parseInt(result, 10);
+            if (!isNaN(days) && days > 0) {
+                tokenExpireCache = days;
+                return days;
+            }
+        }
+
+        // Default to 7 days
+        tokenExpireCache = 7;
+        return 7;
+    }
+
+    async updateTokenExpireDays(days: number): Promise<boolean> {
+        if (days <= 0) return false;
+
+        const result = await this.db.prepare(
+            `INSERT INTO system_settings (key, value, description) 
+             VALUES ('token_expire_days', ?, 'Token expiration in days')
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+        ).bind(String(days)).run();
+
+        if (result.success) {
+            tokenExpireCache = days;
             return true;
         }
         return false;

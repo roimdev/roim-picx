@@ -362,7 +362,6 @@ import { useRouter } from 'vue-router'
 import ImageBox from '../components/ImageBox.vue'
 import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq, Album } from '../utils/types'
-import { ElAutocomplete, ElCheckbox, ElDatePicker } from 'element-plus'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
 import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
 const { t, tm } = useI18n()

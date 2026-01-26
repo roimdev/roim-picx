@@ -344,7 +344,10 @@ export default {
         uploadConfig: '上传配置',
         mimeType: 'MIME类型',
         extension: '扩展名',
-        uploadConfigHint: '配置允许上传的文件类型和扩展名。修改后立即生效，但在分布式环境中可能有一分钟延迟。'
+        uploadConfigHint: '配置允许上传的文件类型和扩展名。修改后立即生效，但在分布式环境中可能有一分钟延迟。',
+        securitySettings: '安全设置',
+        tokenExpireDays: 'Token 过期时间 (天)',
+        tokenExpireHint: '默认值为 7 天。'
     },
     album: {
         title: '相册列表',
