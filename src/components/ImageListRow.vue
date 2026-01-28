@@ -5,6 +5,7 @@
     <div
       class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
       <el-image class="w-full h-full object-cover" :src="src" fit="cover" hide-on-click-modal lazy
+        :class="{ 'blur-md': isNsfw && !showNsfw }"
         @error="imageError = true" :preview-src-list="[src]">
         <template #placeholder>
           <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
@@ -12,6 +13,9 @@
           </div>
         </template>
       </el-image>
+      <div v-if="isNsfw && !showNsfw" class="absolute inset-0 flex items-center justify-center bg-black/10 cursor-pointer" @click="toggleNsfw">
+         <font-awesome-icon :icon="faEyeSlash" class="text-red-500 text-lg drop-shadow-md" />
+      </div>
     </div>
 
     <!-- Info -->
@@ -107,11 +111,11 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag, faEyeSlash } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
@@ -122,10 +126,19 @@ const props = defineProps<{
   originalName?: string
   uploaderName?: string
   tags?: string[]
+  nsfw?: boolean
 }>()
 
 const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags'])
 const imageError = ref(false)
+
+const isNsfw = computed(() => props.nsfw)
+const showNsfw = ref(false)
+
+const toggleNsfw = (e: Event) => {
+    e.stopPropagation()
+    showNsfw.value = !showNsfw.value
+}
 
 const handleDelete = () => {
   emit('delete')

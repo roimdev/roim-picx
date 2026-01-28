@@ -16,6 +16,8 @@ export interface ImgItem {
     uploadedAt?: number
     storageType?: 'R2' | 'HF'
     tags?: string[]
+    nsfw?: boolean
+    nsfwScore?: number
 }
 
 export interface ImgList {

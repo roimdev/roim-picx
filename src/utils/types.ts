@@ -1,6 +1,8 @@
 export type ConvertedImage = {
 	file: File
 	tmpSrc: string
+	nsfw?: boolean
+	nsfwScore?: number
 }
 
 export type UploadedImage = {
@@ -27,6 +29,8 @@ export interface ImgItem {
 	uploadedBy?: string
 	storageType?: 'R2' | 'HF'
 	tags?: string[]
+	nsfw?: boolean
+	nsfwScore?: number
 
 	// Folder support
 	isFolder?: boolean

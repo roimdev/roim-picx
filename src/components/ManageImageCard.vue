@@ -4,8 +4,9 @@ import {
     ElDropdown, ElDropdownMenu, ElDropdownItem, ElImage
 } from 'element-plus'
 import {
-    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye, faTag
+    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye, faTag, faEyeSlash
 } from '@fortawesome/free-solid-svg-icons'
+import { computed, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import formatBytes from '../utils/format-bytes'
 import type { ImgItem } from '../utils/types'
@@ -13,6 +14,14 @@ import type { ImgItem } from '../utils/types'
 const props = defineProps<{
     item: ImgItem
 }>()
+
+const isNsfw = computed(() => props.item.nsfw)
+const showNsfw = ref(false)
+
+const toggleNsfw = (e: Event) => {
+    e.stopPropagation()
+    showNsfw.value = !showNsfw.value
+}
 
 const emit = defineEmits<{
     (e: 'click'): void
@@ -41,7 +50,9 @@ const displayGetName = (key: string) => {
         <!-- Full Background Image -->
         <div class="absolute inset-0">
             <el-image :src="item.url" fit="cover"
-                class="w-full h-full transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                class="w-full h-full transition-transform duration-700 group-hover:scale-105" 
+                :class="{ 'blur-xl': isNsfw && !showNsfw }"
+                loading="lazy">
                 <template #placeholder>
                     <div class="w-full h-full bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
                 </template>
@@ -52,6 +63,16 @@ const displayGetName = (key: string) => {
                     </div>
                 </template>
             </el-image>
+             <!-- NSFW Overlay -->
+             <div v-if="isNsfw && !showNsfw" class="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm z-10">
+                <div class="p-3 rounded-full bg-red-500/80 text-white mb-2">
+                    <font-awesome-icon :icon="faEyeSlash" class="text-xl" />
+                </div>
+                <span class="text-white font-bold text-sm tracking-wide">NSFW</span>
+                <button @click="toggleNsfw" class="mt-3 px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded-full backdrop-blur-md transition-colors border border-white/30">
+                    Show Content
+                </button>
+            </div>
         </div>
 
         <!-- Overlay Gradient -->
