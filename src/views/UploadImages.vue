@@ -345,7 +345,7 @@
 <script setup lang="ts">
 import { faImages, faTrashAlt, faCopy, faCheckSquare } from '@fortawesome/free-regular-svg-icons'
 import { faUpload, faCloudUploadAlt, faFolder, faSpinner, faClock, faCompress, faChevronDown, faCheck, faDatabase } from '@fortawesome/free-solid-svg-icons'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, markRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import BaseAutocomplete from '../components/common/BaseAutocomplete.vue'
@@ -364,7 +364,13 @@ import ResultList from '../components/ResultList.vue'
 import type { ConvertedImage, ImgItem, ImgReq, Album } from '../utils/types'
 import { compressionLevels, compressImage, type CompressionLevel } from '../utils/compress'
 import { applyWatermark, defaultWatermarkConfig, type WatermarkConfig } from '../utils/watermark'
+import * as tf from '@tensorflow/tfjs'
+import '@tensorflow/tfjs-backend-webgl'
+import '@tensorflow/tfjs-backend-cpu'
+import * as nsfwjs from 'nsfwjs'
 const { t, tm } = useI18n()
+
+const nsfwModel = shallowRef<nsfwjs.NSFWJS | null>(null)
 
 const isDragging = ref(false)
 const convertedImages = ref<ConvertedImage[]>([])
@@ -551,7 +557,7 @@ const onPaste = (e: ClipboardEvent) => {
     appendConvertedImages(e.clipboardData?.files)
 }
 
-onMounted(() => {
+onMounted(async () => {
     document.onpaste = onPaste
 
     fetchDirectories()
@@ -567,6 +573,20 @@ onMounted(() => {
     requestListAlbums().then(res => {
         albums.value = res
     }).catch(e => { })
+
+    // Load NSFW model with explicit backend initialization
+    try {
+        await tf.ready()
+        // Try setting WebGL backend, fallback to CPU handled by TFJS
+        await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'))
+        console.log('Current TF Backend:', tf.getBackend())
+        
+        const model = await nsfwjs.load()
+        nsfwModel.value = markRaw(model)
+        console.log('NSFW Model loaded')
+    } catch (err) {
+        console.error('Failed to load NSFW model:', err)
+    }
 })
 
 onUnmounted(() => {
@@ -622,15 +642,41 @@ const appendConvertedImages = async (files: FileList | null | undefined) => {
             // Step 2: Apply watermark
             const watermarkResult = await applyWatermark(compressResult.file, watermarkConfig.value)
 
+            // Step 3: Check NSFW
+            let nsfw = false
+            let nsfwScore = 0
+            if (nsfwModel.value) {
+                const img = new Image()
+                img.src = URL.createObjectURL(watermarkResult.file)
+                await new Promise((resolve) => { img.onload = resolve })
+                const predictions = await nsfwModel.value.classify(img)
+                URL.revokeObjectURL(img.src)
+                
+                // Check if Porn or Hentai probability is high
+                const highestProb = Math.max(...predictions.filter(p => p.className === 'Porn' || p.className === 'Hentai').map(p => p.probability))
+                // console.log('NSFW Prediction:', predictions)
+                if (highestProb > 0.6) {
+                    nsfw = true
+                    nsfwScore = highestProb
+                    elNotify({
+                        message: t('upload.nsfwDetected', { name: file.name }),
+                        type: 'warning',
+                        duration: 5000
+                    })
+                }
+            }
+
             convertedImages.value = [
                 ...convertedImages.value,
                 {
                     file: watermarkResult.file,
-                    tmpSrc: URL.createObjectURL(watermarkResult.file)
+                    tmpSrc: URL.createObjectURL(watermarkResult.file),
+                    nsfw,
+                    nsfwScore
                 }
             ]
         } catch (e) {
-            console.error('Compression/watermark error:', e)
+            console.error('Compression/watermark/NSFW error:', e)
             convertedImages.value = [
                 ...convertedImages.value,
                 {
@@ -684,6 +730,10 @@ const uploadImages = () => {
     }
     for (let item of convertedImages.value) {
         formData.append('files', item.file)
+        formData.append('nsfw', item.nsfw ? 'true' : 'false')
+        if (item.nsfwScore) {
+            formData.append('nsfwScore', item.nsfwScore.toString())
+        }
     }
 
     requestUploadImages(formData)

@@ -17,6 +17,9 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
     const expireAt = files.get("expireAt")
     const tagsRaw = files.get("tags")?.toString()
     const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
+    const nsfw = files.get("nsfw") === 'true' ? 1 : 0
+    const nsfwScoreRaw = files.get("nsfwScore")
+    const nsfwScore = nsfwScoreRaw ? parseFloat(nsfwScoreRaw.toString()) : 0
 
     const requestedStorageType = files.get("storageType")?.toString() as 'R2' | 'HF' | undefined
     const storageType: 'R2' | 'HF' = (requestedStorageType === 'R2' || requestedStorageType === 'HF')
@@ -124,8 +127,8 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                 const tagsJson = tags.length > 0 ? JSON.stringify(tags) : null
                 c.executionCtx.waitUntil(
                     c.env.DB.prepare(
-                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, storage_type, tags) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                        `INSERT INTO images (key, user_id, user_login, original_name, size, mime_type, folder, expires_at, storage_type, tags, nsfw, nsfw_score) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
                     ).bind(
                         object.key,
                         null,  // user_id 设为 null，避免外键约束失败（JWT 中的 id 是 GitHub ID）
@@ -136,7 +139,9 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                         customPath || '',
                         expireAt ? new Date(parseInt(expireAt.toString())).toISOString() : null,
                         storageType,
-                        tagsJson
+                        tagsJson,
+                        nsfw,
+                        nsfwScore
                     ).run().then((result) => {
                         console.log(`[Upload] Image inserted to DB successfully - key: ${object.key}, meta: ${JSON.stringify(result.meta)}`)
                         // 更新用户统计
@@ -192,7 +197,9 @@ uploadRoutes.post('/upload', uploadRateLimit, auth, async (c) => {
                 url: storage.getPublicUrl(object.key),
                 filename: file.name,
                 delToken: delToken,
-                storageType: storageType as 'R2' | 'HF'
+                storageType: storageType as 'R2' | 'HF',
+                nsfw: nsfw === 1,
+                nsfwScore: nsfwScore
             })
         }
     }

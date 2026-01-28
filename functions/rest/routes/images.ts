@@ -129,6 +129,8 @@ imageRoutes.post('/list', listRateLimit, auth, async (c) => {
                 uploadedBy: img.user_login,
                 uploadedAt: img.created_at ? new Date(img.created_at).getTime() : undefined,
                 storageType: img.storage_type,
+                nsfw: img.nsfw === 1,
+                nsfwScore: img.nsfw_score,
                 tags: tags
             }
         })

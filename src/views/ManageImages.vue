@@ -46,6 +46,25 @@
                     </div>
                 </BaseButton>
 
+                <div v-if="uploadedImages.length > 0" class="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                    <button 
+                        @click="toggleSelectAll"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200"
+                        :class="isAllSelected ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'">
+                        <font-awesome-icon :icon="isAllSelected ? faCheckSquare : faSquareRegular" />
+                        <span class="hidden md:inline">{{ isAllSelected ? $t('common.clearAll') : $t('common.selectAll') }}</span>
+                    </button>
+                    
+                    <transition name="el-fade-in-linear">
+                        <BaseButton v-if="hasSelection" type="danger" @click="confirmBatchDelete">
+                            <div class="flex items-center gap-2">
+                                <font-awesome-icon :icon="faTrashAltRegular" />
+                                <span>{{ $t('manage.deleteSelected', { count: selectedKeys.size }) }}</span>
+                            </div>
+                        </BaseButton>
+                    </transition>
+                </div>
+
             </div>
         </div>
 
@@ -107,7 +126,10 @@
                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <transition-group name="el-fade-in-linear">
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
-                        <ManageImageCard :item="item" @delete="deleteImage(item.key)" @rename="renameImage(item)"
+                        <ManageImageCard :item="item" 
+                            :selected="selectedKeys.has(item.key)"
+                            @toggleSelect="toggleSelect(item.key)"
+                            @delete="deleteImage(item.key)" @rename="renameImage(item)"
                             @detail="showDetailsDialog(item)" @preview="showPreview(item.url)"
                             @share="showShareDialog(item)" @addToAlbum="showAddToAlbumDialog(item)"
                             @editTags="showEditTagsDialog(item)" class="w-full h-full" />
@@ -120,7 +142,10 @@
                 <transition-group name="el-fade-in-linear">
                     <image-list-row v-for="item in uploadedImages" :key="item.url" :src="item.url" :name="item.key"
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
-                        :uploader-name="item.uploaderName" :tags="item.tags" @delete="deleteImage(item.key)"
+                        :uploader-name="item.uploaderName" :tags="item.tags" :nsfw="item.nsfw"
+                        :selected="selectedKeys.has(item.key)"
+                        @toggleSelect="toggleSelect(item.key)"
+                        @delete="deleteImage(item.key)"
                         @rename="renameImage(item)" @detail="showDetailsDialog(item)"
                         @preview="showPreview(item.url)" @share="showShareDialog(item)"
                         @addToAlbum="showAddToAlbumDialog(item)" @editTags="showEditTagsDialog(item)" />
@@ -186,6 +211,24 @@
             </div>
         </BaseDialog>
 
+        <!-- Batch Delete Confirmation -->
+        <BaseDialog v-model="batchDeleteVisible" :title="$t('manage.confirmDeleteTitle')" width="400px"
+            confirm-type="danger" :confirm-text="$t('common.delete')" @confirm="handleBatchDeleteConfirm" :loading="loading">
+            <div class="py-4 text-center">
+                <div class="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <font-awesome-icon :icon="faTrashAltRegular" class="text-2xl" />
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {{ $t('manage.deleteConfirm') }}
+                </p>
+                <p class="mt-2 text-sm font-medium text-red-500">
+                    {{ $t('manage.selected', { count: selectedKeys.size }) }}
+                </p>
+            </div>
+        </BaseDialog>
+
+        <!-- New Folder Dialog -->
+
         <!-- New Folder Dialog -->
         <BaseDialog v-model="folderDialogVisible" :title="$t('manage.newFolder')" width="400px"
             @confirm="handleAddFolderConfirm" :loading="loading">
@@ -224,8 +267,9 @@ import SearchInput from '../components/common/SearchInput.vue'
 import BaseButton from '../components/common/BaseButton.vue' // Import BaseButton
 import {
     faSearch, faThLarge, faList, faFolderPlus, faRedoAlt, faHome, faChevronRight,
-    faFolder, faCloudUploadAlt, faTimes, faSpinner, faFolderOpen
+    faFolder, faCloudUploadAlt, faTimes, faSpinner, faFolderOpen, faCheck, faCheckSquare, faTrashAlt, faSquare
 } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt as faTrashAltRegular, faSquare as faSquareRegular } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const { t } = useI18n()
 
@@ -239,6 +283,8 @@ const prefixes = ref<String[]>([])
 const cursor = ref<string | undefined>(undefined)
 const hasMore = ref(true)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
+const selectedKeys = ref<Set<string>>(new Set())
+const batchDeleteVisible = ref(false)
 let observer: IntersectionObserver | null = null
 const PAGE_SIZE = 20
 
@@ -324,6 +370,58 @@ const closePreview = () => {
 const imagesTotalSize = computed(() =>
     uploadedImages.value.reduce((total, item) => total + item.size, 0)
 )
+
+const isAllSelected = computed(() => {
+    if (uploadedImages.value.length === 0) return false
+    return uploadedImages.value.every(img => selectedKeys.value.has(img.key))
+})
+
+const hasSelection = computed(() => selectedKeys.value.size > 0)
+
+const toggleSelect = (key: string) => {
+    if (selectedKeys.value.has(key)) {
+        selectedKeys.value.delete(key)
+    } else {
+        selectedKeys.value.add(key)
+    }
+}
+
+const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+        uploadedImages.value.forEach(img => selectedKeys.value.delete(img.key))
+    } else {
+        uploadedImages.value.forEach(img => selectedKeys.value.add(img.key))
+    }
+}
+
+const clearSelection = () => {
+    selectedKeys.value.clear()
+}
+
+const confirmBatchDelete = () => {
+    batchDeleteVisible.value = true
+}
+
+const handleBatchDeleteConfirm = async () => {
+    if (selectedKeys.value.size === 0) return
+
+    loading.value = true
+    try {
+        const keysArray = Array.from(selectedKeys.value)
+        const keysStr = keysArray.join(',')
+        await requestDeleteImage({ keys: keysStr })
+        
+        ElMessage.success(t('manage.deleteSuccess'))
+        // Update local list
+        uploadedImages.value = uploadedImages.value.filter(img => !selectedKeys.value.has(img.key))
+        selectedKeys.value.clear()
+        batchDeleteVisible.value = false
+    } catch (err) {
+        console.error('Batch delete failed:', err)
+    } finally {
+        loading.value = false
+    }
+}
 
 // Debounced search handler
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
