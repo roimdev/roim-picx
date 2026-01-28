@@ -1,9 +1,19 @@
 <template>
   <div
-    class="group flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-all duration-200">
+    class="group flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border hover:shadow-sm transition-all duration-200"
+    :class="selected ? 'border-indigo-500 ring-1 ring-indigo-500/30' : 'border-gray-100 dark:border-gray-700'">
+    
+    <!-- Selection Checkbox -->
+    <div class="flex-shrink-0" @click.stop>
+        <div @click="$emit('toggleSelect')" 
+            class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 cursor-pointer"
+            :class="selected ? 'bg-indigo-500 border-indigo-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-indigo-300'">
+            <font-awesome-icon v-if="selected" :icon="faCheck" class="text-white text-[10px]" />
+        </div>
+    </div>
     <!-- Thumbnail -->
     <div
-      class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+      class="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
       <el-image class="w-full h-full object-cover" :src="src" fit="cover" hide-on-click-modal lazy
         :class="{ 'blur-md': isNsfw && !showNsfw }"
         @error="imageError = true" :preview-src-list="[src]">
@@ -111,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag, faEyeSlash } from '@fortawesome/free-solid-svg-icons'
+import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag, faEyeSlash, faCheck } from '@fortawesome/free-solid-svg-icons'
 import copy from 'copy-to-clipboard'
 import formatBytes from '../utils/format-bytes'
 import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
@@ -127,9 +137,10 @@ const props = defineProps<{
   uploaderName?: string
   tags?: string[]
   nsfw?: boolean
+  selected?: boolean
 }>()
 
-const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags'])
+const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags', 'toggleSelect'])
 const imageError = ref(false)
 
 const isNsfw = computed(() => props.nsfw)

@@ -142,6 +142,7 @@ export default {
         positionTopLeft: '左上角',
         positionCenter: '居中',
         storageProvider: '存储平台',
+        nsfwDetected: '检测到图片 {name} 可能包含不合规内容',
     },
     manage: {
         title: '图片管理',

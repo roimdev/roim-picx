@@ -4,7 +4,7 @@ import {
     ElDropdown, ElDropdownMenu, ElDropdownItem, ElImage
 } from 'element-plus'
 import {
-    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye, faTag, faEyeSlash
+    faEllipsisVertical, faPen, faTrash, faShareAlt, faLink, faFolderPlus, faEye, faTag, faEyeSlash, faCheck
 } from '@fortawesome/free-solid-svg-icons'
 import { computed, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -13,6 +13,7 @@ import type { ImgItem } from '../utils/types'
 
 const props = defineProps<{
     item: ImgItem
+    selected?: boolean
 }>()
 
 const isNsfw = computed(() => props.item.nsfw)
@@ -32,6 +33,7 @@ const emit = defineEmits<{
     (e: 'detail'): void
     (e: 'addToAlbum'): void
     (e: 'editTags'): void
+    (e: 'toggleSelect'): void
 }>()
 
 const { t } = useI18n()
@@ -44,8 +46,18 @@ const displayGetName = (key: string) => {
 </script>
 
 <template>
-    <div class="group relative bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer border border-gray-200 dark:border-gray-700 aspect-[4/3] md:aspect-[3/4]"
+    <div class="group relative bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer border aspect-[4/3] md:aspect-[3/4]"
+        :class="selected ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-gray-200 dark:border-gray-700'"
         @click="$emit('preview')">
+
+        <!-- Selection Checkbox -->
+        <div class="absolute top-3 left-3 z-30" @click.stop>
+            <div @click="$emit('toggleSelect')" 
+                class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
+                :class="selected ? 'bg-indigo-500 border-indigo-500 shadow-sm' : 'bg-black/20 backdrop-blur-sm border-white/30 hover:border-white/60'">
+                <font-awesome-icon v-if="selected" :icon="faCheck" class="text-white text-xs" />
+            </div>
+        </div>
 
         <!-- Full Background Image -->
         <div class="absolute inset-0">
