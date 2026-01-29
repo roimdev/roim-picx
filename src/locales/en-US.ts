@@ -142,6 +142,8 @@ export default {
         positionCenter: 'Center',
         storageProvider: 'Storage',
         nsfwDetected: 'NSFW content detected in {name}',
+        showSettings: 'Show Settings',
+        hideSettings: 'Hide Settings',
     },
     manage: {
         title: 'Image Management',
