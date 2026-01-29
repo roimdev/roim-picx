@@ -1,0 +1,39 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "roim-picx"
+account_id = "xxx"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+[vars]
+BASE_URL = "http://localhost:3000"
+PICX_AUTH_TOKEN = "4xVSYkCKw2ExbPNEaMPjCnaaOowU9sTf"
+GITHUB_CLIENT_ID = "xx"
+VITE_GITHUB_CLIENT_ID = "xx"
+GITHUB_CLIENT_SECRET = "xx"
+GITHUB_OWNER = "*"
+ADMIN_USERS = "xx"
+ALLOW_TOKEN_LOGIN = "true"
+STEAM_LOGIN_ENABLED = "true"
+STEAM_API_KEY = "xxx"
+GOOGLE_LOGIN_ENABLED = "true"
+GOOGLE_CLIENT_ID = "xx"
+GOOGLE_CLIENT_SECRET = "xxx"
+HF_TOKEN = "xxx"
+HF_REPO = "roimdev/picx"
+STORAGE_TYPE = "R2"
+GITLAB_CLIENT_ID = "xxx"
+GITLAB_CLIENT_SECRET = "gloas-xx"
+VITE_GITLAB_CLIENT_ID = "xx"
+
+[[kv_namespaces]]
+binding = "XK"
+id = "xxx"
+
+[[r2_buckets]]
+binding = "PICX"
+bucket_name = "imgs"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "picx-db"
+database_id = "xxx"

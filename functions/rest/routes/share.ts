@@ -1,19 +1,21 @@
 import { Hono } from 'hono'
-import { Ok, Fail } from '../type'
+import { Ok, Fail, type DbShare } from '../type'
 import { auth, type AppEnv } from '../middleware/auth'
 import { getProviderByType } from '../storage'
 
-// Share record stored in KV
-interface ShareRecord {
+// Sync the response format with previous KV implementation for compatibility
+interface ShareResponse {
     id: string
     imageKey: string
     imageUrl: string
-    password?: string  // MD5 hashed
+    hasPassword: boolean
     expireAt?: number
     maxViews?: number
     views: number
     createdAt: number
-    createdBy?: string
+    isExpired: boolean
+    isMaxedOut: boolean
+    url: string
 }
 
 interface CreateShareRequest {
@@ -79,51 +81,31 @@ shareRoutes.post('/share', auth, async (c) => {
 
         const shareId = generateShareId()
         const user = c.get('user')
+        const passwordHash = data.password ? await hashPassword(data.password) : null
 
-        const record: ShareRecord = {
-            id: shareId,
-            imageKey: img.key,
-            imageUrl: provider.getPublicUrl(img.key),
-            password: data.password ? await hashPassword(data.password) : undefined,
-            expireAt: data.expireAt,
-            maxViews: data.maxViews,
-            views: 0,
-            createdAt: Date.now(),
-            createdBy: user?.login
-        }
+        // Store in D1
+        await c.env.DB.prepare(
+            `INSERT INTO shares (id, image_key, user_id, user_login, password_hash, max_views, current_views, expires_at, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`
+        ).bind(
+            shareId,
+            data.imageKey,
+            user?.id || null,
+            user?.login || null,
+            passwordHash,
+            data.maxViews || null,
+            data.expireAt ? new Date(data.expireAt).toISOString() : null,
+            new Date().toISOString()
+        ).run()
 
-        // Store in KV with optional TTL
-        const kvOptions: { expirationTtl?: number } = {}
-        if (data.expireAt) {
-            const ttl = Math.floor((data.expireAt - Date.now()) / 1000)
-            if (ttl > 0) {
-                kvOptions.expirationTtl = ttl
-            }
-        }
-
-        await c.env.XK.put(`share:${shareId}`, JSON.stringify(record), kvOptions)
-
-        // 同步分享记录到 D1 数据库
+        // 记录分享审计日志
         if (user) {
             c.executionCtx.waitUntil(
                 c.env.DB.prepare(
-                    `INSERT INTO shares (id, image_key, user_id, user_login, password_hash, max_views, current_views, expires_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, 0, ?)`
-                ).bind(
-                    shareId,
-                    data.imageKey,
-                    user.id,
-                    user.login,
-                    record.password || null,
-                    data.maxViews || null,
-                    data.expireAt ? new Date(data.expireAt).toISOString() : null
-                ).run().then(() => {
-                    // 记录分享审计日志
-                    return c.env.DB.prepare(
-                        `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
-                         VALUES (?, ?, 'share', ?, ?)`
-                    ).bind(user.id, user.login, data.imageKey, JSON.stringify({ shareId, hasPassword: !!data.password, maxViews: data.maxViews })).run()
-                }).catch(e => console.error('Failed to sync share to DB:', e))
+                    `INSERT INTO audit_logs (user_id, user_login, action, target_key, details) 
+                     VALUES (?, ?, 'share', ?, ?)`
+                ).bind(user.id, user.login, data.imageKey, JSON.stringify({ shareId, hasPassword: !!data.password, maxViews: data.maxViews })).run()
+                    .catch(e => console.error('Failed to log share audit:', e))
             )
         }
 
@@ -150,40 +132,37 @@ shareRoutes.get('/share/my', auth, async (c) => {
     }
 
     try {
-        // List all share keys from KV
-        const shareList = await c.env.XK.list({ prefix: 'share:' })
+        const results = await c.env.DB.prepare(
+            'SELECT * FROM shares WHERE user_login = ? ORDER BY created_at DESC'
+        ).bind(user.login).all<DbShare>()
 
-        const myShares: any[] = []
+        const myShares = await Promise.all((results.results || []).map(async (record) => {
+            // Get image info to generate public URL
+            // Optimization: could join, but following original logic for now
+            const img = await c.env.DB.prepare('SELECT storage_type FROM images WHERE key = ?')
+                .bind(record.image_key).first<{ storage_type?: 'R2' | 'HF' }>()
 
-        // Fetch each share and filter by createdBy
-        for (const key of shareList.keys) {
-            const recordStr = await c.env.XK.get(key.name)
-            if (recordStr) {
-                const record: ShareRecord = JSON.parse(recordStr)
-                if (record.createdBy === user.login) {
-                    // Check if expired
-                    const isExpired = record.expireAt && Date.now() > record.expireAt
-                    const isMaxedOut = record.maxViews && record.views >= record.maxViews
+            const provider = getProviderByType(c, img?.storage_type || 'R2')
+            const createdAt = new Date(record.created_at).getTime()
+            const expireAt = record.expires_at ? new Date(record.expires_at).getTime() : undefined
 
-                    myShares.push({
-                        id: record.id,
-                        imageKey: record.imageKey,
-                        imageUrl: record.imageUrl,
-                        hasPassword: !!record.password,
-                        expireAt: record.expireAt,
-                        maxViews: record.maxViews,
-                        views: record.views,
-                        createdAt: record.createdAt,
-                        isExpired,
-                        isMaxedOut,
-                        url: `${c.env.BASE_URL}/s/${record.id}`
-                    })
-                }
+            const isExpired = !!expireAt && Date.now() > expireAt
+            const isMaxedOut = !!record.max_views && record.current_views >= record.max_views
+
+            return <ShareResponse>{
+                id: record.id,
+                imageKey: record.image_key,
+                imageUrl: provider.getPublicUrl(record.image_key),
+                hasPassword: !!record.password_hash,
+                expireAt: expireAt,
+                maxViews: record.max_views || undefined,
+                views: record.current_views,
+                createdAt: createdAt,
+                isExpired,
+                isMaxedOut,
+                url: `${c.env.BASE_URL}/s/${record.id}`
             }
-        }
-
-        // Sort by createdAt desc
-        myShares.sort((a, b) => b.createdAt - a.createdAt)
+        }))
 
         return c.json(Ok(myShares))
     } catch (e) {
@@ -196,31 +175,34 @@ shareRoutes.get('/share/my', auth, async (c) => {
 shareRoutes.get('/share/:id', async (c) => {
     const shareId = c.req.param('id')
 
-    const recordStr = await c.env.XK.get(`share:${shareId}`)
-    if (!recordStr) {
+    const record = await c.env.DB.prepare(
+        'SELECT * FROM shares WHERE id = ?'
+    ).bind(shareId).first<DbShare>()
+
+    if (!record) {
         return c.json(Fail('分享链接不存在或已过期'), 404)
     }
 
-    const record: ShareRecord = JSON.parse(recordStr)
+    const expireAt = record.expires_at ? new Date(record.expires_at).getTime() : undefined
 
     // Check expiration
-    if (record.expireAt && Date.now() > record.expireAt) {
-        await c.env.XK.delete(`share:${shareId}`)
+    if (expireAt && Date.now() > expireAt) {
+        await c.env.DB.prepare('DELETE FROM shares WHERE id = ?').bind(shareId).run()
         return c.json(Fail('分享链接已过期'), 200)
     }
 
     // Check view limit
-    if (record.maxViews && record.views >= record.maxViews) {
+    if (record.max_views && record.current_views >= record.max_views) {
         return c.json(Fail('分享链接已达到最大查看次数'), 200)
     }
 
     return c.json(Ok({
         id: record.id,
-        hasPassword: !!record.password,
-        expireAt: record.expireAt,
-        maxViews: record.maxViews,
-        views: record.views,
-        createdAt: record.createdAt
+        hasPassword: !!record.password_hash,
+        expireAt: expireAt,
+        maxViews: record.max_views,
+        views: record.current_views,
+        createdAt: new Date(record.created_at).getTime()
     }))
 })
 
@@ -229,44 +211,53 @@ shareRoutes.post('/share/:id/verify', async (c) => {
     const shareId = c.req.param('id')
     const { password } = await c.req.json<{ password?: string }>()
 
-    const recordStr = await c.env.XK.get(`share:${shareId}`)
-    if (!recordStr) {
+    const record = await c.env.DB.prepare(
+        'SELECT * FROM shares WHERE id = ?'
+    ).bind(shareId).first<DbShare>()
+
+    if (!record) {
         return c.json(Fail('分享链接不存在或已过期'), 404)
     }
 
-    const record: ShareRecord = JSON.parse(recordStr)
+    const expireAt = record.expires_at ? new Date(record.expires_at).getTime() : undefined
 
     // Check expiration
-    if (record.expireAt && Date.now() > record.expireAt) {
-        await c.env.XK.delete(`share:${shareId}`)
+    if (expireAt && Date.now() > expireAt) {
+        await c.env.DB.prepare('DELETE FROM shares WHERE id = ?').bind(shareId).run()
         return c.json(Fail('分享链接已过期'), 200)
     }
 
     // Check view limit
-    if (record.maxViews && record.views >= record.maxViews) {
+    if (record.max_views && record.current_views >= record.max_views) {
         return c.json(Fail('分享链接已达到最大查看次数'), 200)
     }
 
     // Verify password if required
-    if (record.password) {
+    if (record.password_hash) {
         if (!password) {
             return c.json(Fail('需要输入密码'), 200)
         }
         const hashedInput = await hashPassword(password)
-        if (hashedInput !== record.password) {
+        if (hashedInput !== record.password_hash) {
             return c.json(Fail('密码错误'), 200)
         }
     }
 
-    // Increment view count
-    record.views += 1
-    await c.env.XK.put(`share:${shareId}`, JSON.stringify(record))
+    // Increment view count in D1
+    await c.env.DB.prepare(
+        'UPDATE shares SET current_views = current_views + 1 WHERE id = ?'
+    ).bind(shareId).run()
+
+    // Get image storage type for URL
+    const img = await c.env.DB.prepare('SELECT storage_type FROM images WHERE key = ?')
+        .bind(record.image_key).first<{ storage_type?: 'R2' | 'HF' }>()
+    const provider = getProviderByType(c, img?.storage_type || 'R2')
 
     return c.json(Ok({
-        imageUrl: record.imageUrl,
-        imageKey: record.imageKey,
-        views: record.views,
-        maxViews: record.maxViews
+        imageUrl: provider.getPublicUrl(record.image_key),
+        imageKey: record.image_key,
+        views: record.current_views + 1,
+        maxViews: record.max_views
     }))
 })
 
@@ -274,12 +265,13 @@ shareRoutes.post('/share/:id/verify', async (c) => {
 shareRoutes.delete('/share/:id', auth, async (c) => {
     const shareId = c.req.param('id')
 
-    const recordStr = await c.env.XK.get(`share:${shareId}`)
-    if (!recordStr) {
+    const result = await c.env.DB.prepare(
+        'DELETE FROM shares WHERE id = ?'
+    ).bind(shareId).run()
+
+    if (result.meta.changes === 0) {
         return c.json(Fail('分享链接不存在'), 200)
     }
-
-    await c.env.XK.delete(`share:${shareId}`)
 
     // 记录删除分享审计日志
     const user = c.get('user')

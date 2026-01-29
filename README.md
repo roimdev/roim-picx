@@ -208,7 +208,50 @@ sequenceDiagram
 
 ```bash
 npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_init.sql
+
+首次升级可以使用命令进行数据库初始化
+
+```bash
+wrangler d1 migrations apply <YOUR_DATABASE_NAME> --remote
 ```
+
+在部署 Cloudflare Pages 时，需要在 **Settings -> Variables and Secrets** 中配置以下环境变量：
+
+### 核心配置
+
+| 变量名 | 必填 | 示例值 | 说明 |
+|:---|:---:|:---|:---|
+| `BASE_URL` | 是 | `https://picx.your-domain.com` | 应用的根域名地址，用于生成完整链接 |
+| `PICX_AUTH_TOKEN` | 是 | `your-secret-token` | 管理员 Token，用于管理接口认证 |
+| `ALLOW_TOKEN_LOGIN` | 否 | `true` | 是否允许使用管理 Token 直接登录后台 |
+| `STORAGE_TYPE` | 否 | `R2` | 默认存储类型，可选 `R2` 或 `HF` (Hugging Face) |
+
+### GitHub OAuth 登录(可选)
+
+| 变量名 | 必填 | 说明 |
+|:---|:---:|:---|
+| `GITHUB_CLIENT_ID` | 是 | GitHub OAuth App 的 Client ID |
+| `GITHUB_CLIENT_SECRET` | 是 | GitHub OAuth App 的 Client Secret |
+| `VITE_GITHUB_CLIENT_ID` | 是 | 同 `GITHUB_CLIENT_ID`，用于前端调用 |
+| `GITHUB_OWNER` | 是 | 允许登录的 GitHub 用户名，`*` 表示允许所有人 |
+| `ADMIN_USERS` | 否 | 超级管理员用户名列表，逗号分隔 (例: `user1,user2`) |
+
+### Google & Steam 登录(可选)
+
+| 变量名 | 必填 | 说明 |
+|:---|:---:|:---|
+| `STEAM_LOGIN_ENABLED` | 否 | 是否启用 Steam 登录 (`true`/`false`) |
+| `STEAM_API_KEY` | 否 | Steam Web API Key |
+| `GOOGLE_LOGIN_ENABLED` | 否 | 是否启用 Google 登录 (`true`/`false`) |
+| `GOOGLE_CLIENT_ID` | 否 | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | 否 | Google OAuth Client Secret |
+
+### Hugging Face 存储 (可选)
+
+| 变量名 | 必填 | 说明 |
+|:---|:---:|:---|
+| `HF_TOKEN` | 否 | Hugging Face Access Token (需要有写权限) |
+| `HF_REPO` | 否 | Hugging Face 数据集仓库名 (例: `username/dataset`) |
 
 ---
 
@@ -301,7 +344,7 @@ npx wrangler d1 execute <YOUR_DATABASE_NAME> --remote --file=./migrations/0001_i
 
 2. **设置回调地址**  
    ```
-   https://your-domain.com/auth/github/callback
+   https://your-domain.com/auth
    ```
 
 3. **获取客户端凭证**  
