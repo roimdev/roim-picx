@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-7xl my-8 px-4 sm:px-6 relative min-h-[60vh]">
         <loading-overlay :loading="loading" />
 
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('upload.title') }}</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -10,7 +10,7 @@
                 </p>
             </div>
             <button @click="isConfigCollapsed = !isConfigCollapsed"
-                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-sm font-medium text-gray-600 dark:text-gray-300">
+                class="flex items-center shrink-0 gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-sm font-medium text-gray-600 dark:text-gray-300">
                 <font-awesome-icon :icon="faCompress" :class="{ 'rotate-180': isConfigCollapsed }"
                     class="transition-transform duration-300" />
                 {{ isConfigCollapsed ? $t('upload.showSettings') : $t('upload.hideSettings') }}
