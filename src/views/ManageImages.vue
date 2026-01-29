@@ -46,22 +46,31 @@
                     </div>
                 </BaseButton>
 
-                <div v-if="uploadedImages.length > 0" class="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
-                    <button 
-                        @click="toggleSelectAll"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200"
-                        :class="isAllSelected ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'">
-                        <font-awesome-icon :icon="isAllSelected ? faCheckSquare : faSquareRegular" />
-                        <span class="hidden md:inline">{{ isAllSelected ? $t('common.clearAll') : $t('common.selectAll') }}</span>
-                    </button>
-                    
+                <div class="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                    <BaseButton :type="isSelectMode ? 'white' : 'indigo'" @click="toggleSelectMode">
+                        <div class="flex items-center gap-2">
+                            <font-awesome-icon :icon="isSelectMode ? faTimes : faCheckSquare" />
+                            <span class="hidden sm:inline">{{ isSelectMode ? $t('common.exit') : $t('manage.batchDelete') }}</span>
+                        </div>
+                    </BaseButton>
+
                     <transition name="el-fade-in-linear">
-                        <BaseButton v-if="hasSelection" type="danger" @click="confirmBatchDelete">
-                            <div class="flex items-center gap-2">
-                                <font-awesome-icon :icon="faTrashAltRegular" />
-                                <span>{{ $t('manage.deleteSelected', { count: selectedKeys.size }) }}</span>
-                            </div>
-                        </BaseButton>
+                        <div v-if="isSelectMode" class="flex items-center gap-2">
+                            <button 
+                                @click="toggleSelectAll"
+                                class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200"
+                                :class="isAllSelected ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'">
+                                <font-awesome-icon :icon="isAllSelected ? faCheckSquare : faSquareRegular" />
+                                <span class="hidden md:inline">{{ isAllSelected ? $t('common.clearAll') : $t('common.selectAll') }}</span>
+                            </button>
+                            
+                            <BaseButton v-if="hasSelection" type="danger" @click="confirmBatchDelete">
+                                <div class="flex items-center gap-2">
+                                    <font-awesome-icon :icon="faTrashAltRegular" />
+                                    <span>{{ $t('manage.deleteSelected', { count: selectedKeys.size }) }}</span>
+                                </div>
+                            </BaseButton>
+                        </div>
                     </transition>
                 </div>
 
@@ -128,6 +137,7 @@
                     <div class="relative" v-for="item in uploadedImages" :key="item.url">
                         <ManageImageCard :item="item" 
                             :selected="selectedKeys.has(item.key)"
+                            :is-select-mode="isSelectMode"
                             @toggleSelect="toggleSelect(item.key)"
                             @delete="deleteImage(item.key)" @rename="renameImage(item)"
                             @detail="showDetailsDialog(item)" @preview="showPreview(item.url)"
@@ -144,6 +154,7 @@
                         :size="item.size" :uploaded-at="item.uploadedAt" :original-name="item.originalName"
                         :uploader-name="item.uploaderName" :tags="item.tags" :nsfw="item.nsfw"
                         :selected="selectedKeys.has(item.key)"
+                        :is-select-mode="isSelectMode"
                         @toggleSelect="toggleSelect(item.key)"
                         @delete="deleteImage(item.key)"
                         @rename="renameImage(item)" @detail="showDetailsDialog(item)"
@@ -284,6 +295,7 @@ const cursor = ref<string | undefined>(undefined)
 const hasMore = ref(true)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 const selectedKeys = ref<Set<string>>(new Set())
+const isSelectMode = ref(false)
 const batchDeleteVisible = ref(false)
 let observer: IntersectionObserver | null = null
 const PAGE_SIZE = 20
@@ -379,10 +391,20 @@ const isAllSelected = computed(() => {
 const hasSelection = computed(() => selectedKeys.value.size > 0)
 
 const toggleSelect = (key: string) => {
+    if (!isSelectMode.value) {
+        isSelectMode.value = true
+    }
     if (selectedKeys.value.has(key)) {
         selectedKeys.value.delete(key)
     } else {
         selectedKeys.value.add(key)
+    }
+}
+
+const toggleSelectMode = () => {
+    isSelectMode.value = !isSelectMode.value
+    if (!isSelectMode.value) {
+        selectedKeys.value.clear()
     }
 }
 

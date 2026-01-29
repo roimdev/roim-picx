@@ -137,6 +137,19 @@ export interface DbImage {
     storage_type: 'R2' | 'HF'
 }
 
+// D1 分享记录
+export interface DbShare {
+    id: string
+    image_key: string
+    user_id: number | null
+    user_login: string | null
+    password_hash: string | null
+    max_views: number | null
+    current_views: number
+    expires_at: string | null
+    created_at: string
+}
+
 // 用户统计信息
 export interface UserStats {
     totalImages: number

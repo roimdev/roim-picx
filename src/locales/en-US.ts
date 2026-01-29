@@ -29,6 +29,7 @@ export default {
         saveSuccess: 'Save successful',
         default: 'Default',
         none: 'None',
+        exit: 'Exit',
     },
     nav: {
         upload: 'Upload',
@@ -142,6 +143,8 @@ export default {
         positionCenter: 'Center',
         storageProvider: 'Storage',
         nsfwDetected: 'NSFW content detected in {name}',
+        showSettings: 'Show Settings',
+        hideSettings: 'Hide Settings',
     },
     manage: {
         title: 'Image Management',
@@ -178,6 +181,7 @@ export default {
         sortByName: 'Name',
         sortBySize: 'Size',
         selected: '{count} selected',
+        batchDelete: 'Batch Delete',
         deleteSelected: 'Delete Selected',
         copyLinks: 'Copy Links',
         loadMore: 'Load More',

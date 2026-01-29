@@ -29,7 +29,8 @@ export default {
         add: '新增',
         saveSuccess: '保存成功',
         default: '默认',
-        none: '无'
+        none: '无',
+        exit: '退出'
     },
     nav: {
         upload: '上传图片',
@@ -143,6 +144,8 @@ export default {
         positionCenter: '居中',
         storageProvider: '存储平台',
         nsfwDetected: '检测到图片 {name} 可能包含不合规内容',
+        showSettings: '显示配置',
+        hideSettings: '隐藏配置',
     },
     manage: {
         title: '图片管理',
@@ -179,6 +182,7 @@ export default {
         sortByName: '按名称',
         sortBySize: '按大小',
         selected: '已选择 {count} 项',
+        batchDelete: '批量删除',
         deleteSelected: '删除选中',
         copyLinks: '复制链接',
         loadMore: '加载更多',
