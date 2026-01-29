@@ -4,7 +4,7 @@
     :class="selected ? 'border-indigo-500 ring-1 ring-indigo-500/30' : 'border-gray-100 dark:border-gray-700'">
     
     <!-- Selection Checkbox -->
-    <div class="flex-shrink-0" @click.stop>
+    <div v-if="isSelectMode" class="flex-shrink-0" @click.stop>
         <div @click="$emit('toggleSelect')" 
             class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 cursor-pointer"
             :class="selected ? 'bg-indigo-500 border-indigo-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-indigo-300'">
@@ -138,6 +138,7 @@ const props = defineProps<{
   tags?: string[]
   nsfw?: boolean
   selected?: boolean
+  isSelectMode?: boolean
 }>()
 
 const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags', 'toggleSelect'])

@@ -14,6 +14,7 @@ import type { ImgItem } from '../utils/types'
 const props = defineProps<{
     item: ImgItem
     selected?: boolean
+    isSelectMode?: boolean
 }>()
 
 const isNsfw = computed(() => props.item.nsfw)
@@ -51,7 +52,7 @@ const displayGetName = (key: string) => {
         @click="$emit('preview')">
 
         <!-- Selection Checkbox -->
-        <div class="absolute top-3 left-3 z-30" @click.stop>
+        <div v-if="isSelectMode" class="absolute top-3 left-3 z-30" @click.stop>
             <div @click="$emit('toggleSelect')" 
                 class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
                 :class="selected ? 'bg-indigo-500 border-indigo-500 shadow-sm' : 'bg-black/20 backdrop-blur-sm border-white/30 hover:border-white/60'">

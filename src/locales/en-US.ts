@@ -29,6 +29,7 @@ export default {
         saveSuccess: 'Save successful',
         default: 'Default',
         none: 'None',
+        exit: 'Exit',
     },
     nav: {
         upload: 'Upload',
@@ -180,6 +181,7 @@ export default {
         sortByName: 'Name',
         sortBySize: 'Size',
         selected: '{count} selected',
+        batchDelete: 'Batch Delete',
         deleteSelected: 'Delete Selected',
         copyLinks: 'Copy Links',
         loadMore: 'Load More',
