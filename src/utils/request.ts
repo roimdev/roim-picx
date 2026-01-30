@@ -3,7 +3,8 @@ import { ElNotification as elNotify } from 'element-plus'
 import {
 	ImgList, ImgDel, ImgReq, Folder, ImgItem, AuthToken,
 	AdminUser, UserStats, SystemStats, AuditLog,
-	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo, UploadConfigItem
+	AnalyticsOverview, DailyTrend, TopImage, ImageAnalytics, UserAnalytics, CurrentUserInfo, UploadConfigItem,
+	ApiKey
 } from "./types"
 import storage from "./storage"
 const request = axios.create({
@@ -273,5 +274,12 @@ export const requestSetAlbumCover = (id: number, coverImage: string): Promise<an
 export const requestShareAlbum = (id: number, data: { password?: string, expireAt?: number, maxViews?: number }): Promise<AlbumShareInfo> => request.post(`/rest/albums/${id}/share`, data)
 export const requestGetAlbumShareInfo = (token: string): Promise<AlbumShareInfo> => request.get(`/rest/share/album/${token}`)
 export const requestVerifyAlbumShare = (token: string, password?: string): Promise<{ images: AlbumImage[] }> => request.post(`/rest/share/album/${token}/verify`, { password })
+
+// ============================================
+// API Key API
+// ============================================
+export const requestApiKeys = (): Promise<ApiKey[]> => request.get('/rest/api-keys')
+export const requestCreateApiKey = (data: { name: string, expires_at?: string }): Promise<ApiKey> => request.post('/rest/api-keys', data)
+export const requestRevokeApiKey = (id: string): Promise<any> => request.delete(`/rest/api-keys/${id}`)
 
 

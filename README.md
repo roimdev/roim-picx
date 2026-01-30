@@ -64,6 +64,8 @@
 - [√] 📤 进阶上传 (保留原名、自定义过期时间)
 - [√] 👀 我的分享管理 (查看状态、复制链接、删除)
 - [√] 支持NSFW内容检测
+- [√] Hugging Face 存储
+- [√] 支持添加文本水印
 
 ---
 
@@ -349,15 +351,6 @@ wrangler d1 migrations apply <YOUR_DATABASE_NAME> --remote
 
 3. **获取客户端凭证**  
    在应用中获取客户端 ID 和客户端密钥
-
-4. **配置环境变量**  
-   在项目中设置以下环境变量：
-   
-   | 变量名 | 说明 |
-   |:---|:---|
-   | `GITHUB_CLIENT_ID` | 应用的客户端 ID |
-   | `GITHUB_CLIENT_SECRET` | 应用的客户端密钥 |
-   | `GITHUB_REDIRECT_URI` | 应用的回调地址 |
 
 ### 配置截图
 
