@@ -104,12 +104,12 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
       <div class="title-section">
         <h3 class="text-lg font-bold">{{ t('admin.apiKeyManager') }}</h3>
         <p class="text-sm text-gray-500">管理您的个人访问令牌，用于第三方集成。</p>
       </div>
-      <BaseButton type="primary" @click="showCreateDialog = true">
+      <BaseButton type="primary" @click="showCreateDialog = true" class="w-full sm:w-auto">
         <FontAwesomeIcon :icon="faPlus" class="mr-2" />
         {{ t('admin.apiKeyCreate') }}
       </BaseButton>

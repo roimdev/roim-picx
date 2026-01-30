@@ -58,10 +58,12 @@ const handleSearch = () => {
 
 const toggleViewAll = async (user: AdminUser) => {
     try {
-        await requestSetUserViewAll(user.login, !user.canViewAll)
-        user.canViewAll = !user.canViewAll
+        // v-model has already updated user.canViewAll
+        await requestSetUserViewAll(user.login, user.canViewAll)
         ElMessage.success(t(user.canViewAll ? 'admin.grantSuccess' : 'admin.revokeSuccess', { user: user.login }))
     } catch (e) {
+        // Revert on failure
+        user.canViewAll = !user.canViewAll
         console.error('Failed to toggle view all:', e)
     }
 }

@@ -8,11 +8,13 @@ const props = withDefaults(defineProps<{
     disabled: false
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'change'])
 
 const toggle = () => {
     if (props.disabled) return
-    emit('update:modelValue', !props.modelValue)
+    const newValue = !props.modelValue
+    emit('update:modelValue', newValue)
+    emit('change', newValue)
 }
 </script>
 
