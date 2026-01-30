@@ -9,6 +9,7 @@ import type { ApiKey } from '../../utils/types'
 import BaseButton from '../common/BaseButton.vue'
 import BaseDialog from '../common/BaseDialog.vue'
 import BaseInput from '../common/BaseInput.vue'
+import CustomSelect from '../common/CustomSelect.vue'
 
 const { t } = useI18n()
 
@@ -20,6 +21,13 @@ const newKeyName = ref('')
 const createdKey = ref<ApiKey | null>(null)
 const showRevokeDialog = ref(false)
 const keyToRevoke = ref<ApiKey | null>(null)
+const expiryOption = ref(0)
+const expiryOptions = [
+  { label: t('admin.apiKeyExpirationNever'), value: 0 },
+  { label: t('admin.apiKeyExpiration7Days'), value: 7 },
+  { label: t('admin.apiKeyExpiration30Days'), value: 30 },
+  { label: t('admin.apiKeyExpiration90Days'), value: 90 }
+]
 
 const loadApiKeys = async () => {
   loading.value = true
@@ -39,11 +47,18 @@ const handleCreate = async () => {
   }
 
   try {
-    const result = await requestCreateApiKey({ name: newKeyName.value })
+    let expiresAt: string | undefined
+    if (expiryOption.value > 0) {
+      const date = new Date()
+      date.setDate(date.getDate() + expiryOption.value)
+      expiresAt = date.toISOString()
+    }
+    const result = await requestCreateApiKey({ name: newKeyName.value, expires_at: expiresAt })
     createdKey.value = result
     showCreateDialog.value = false
     showSuccessDialog.value = true
     newKeyName.value = ''
+    expiryOption.value = 0
     loadApiKeys()
   } catch (e) {
     console.error(e)
@@ -157,6 +172,13 @@ onMounted(() => {
           v-model="newKeyName"
           :placeholder="t('admin.apiKeyNamePlaceholder')"
           @keyup.enter="handleCreate"
+        />
+      </div>
+      <div class="py-4">
+        <label class="block text-sm font-medium mb-2">{{ t('admin.apiKeyExpirationSelect') }}</label>
+        <CustomSelect
+          v-model="expiryOption"
+          :options="expiryOptions"
         />
       </div>
     </BaseDialog>

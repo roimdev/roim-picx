@@ -371,6 +371,11 @@ export default {
         apiKeyActive: '正常',
         apiKeyExpired: '已过期',
         apiKeyInactive: '已禁用',
+        apiKeyExpirationNever: '永不过期',
+        apiKeyExpiration7Days: '7 天',
+        apiKeyExpiration30Days: '30 天',
+        apiKeyExpiration90Days: '90 天',
+        apiKeyExpirationSelect: '过期时间',
     },
     album: {
         title: '相册列表',

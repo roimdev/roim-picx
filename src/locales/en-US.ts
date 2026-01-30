@@ -370,6 +370,11 @@ export default {
         apiKeyActive: 'Active',
         apiKeyExpired: 'Expired',
         apiKeyInactive: 'Inactive',
+        apiKeyExpirationNever: 'Never',
+        apiKeyExpiration7Days: '7 Days',
+        apiKeyExpiration30Days: '30 Days',
+        apiKeyExpiration90Days: '90 Days',
+        apiKeyExpirationSelect: 'Expiration',
     },
     album: {
         title: 'Albums',
