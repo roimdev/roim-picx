@@ -13,6 +13,7 @@ import shareRoutes from './routes/share'
 import albumRoutes from './routes/album'
 import adminRoutes from './routes/admin'
 import settingsRoutes from './routes/settings'
+import apiKeyRoutes from './routes/api-keys'
 // 导入 user 路由的处理函数
 import { userMeHandler, userMeStatsHandler } from './routes/user'
 
@@ -30,6 +31,7 @@ app.route('/', shareRoutes)
 app.route('/', albumRoutes) // Albums
 app.route('/admin', adminRoutes)  // 管理员和用户接口
 app.route('/settings', settingsRoutes) // 系统设置接口
+app.route('/', apiKeyRoutes) // API Keys
 app.route('/', imageRoutes) // Must be last due to catch-all route
 
 // Error handling

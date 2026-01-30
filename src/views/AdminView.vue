@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { ElEmpty, ElCard, ElTabs, ElTabPane } from 'element-plus'
 import {
 	faUsers, faChartLine, faClipboardList,
-	faShieldAlt, faCog
+	faShieldAlt, faCog, faKey
 } from '@fortawesome/free-solid-svg-icons'
 import {
 	requestAdminStats,
@@ -18,6 +18,7 @@ import AdminUsers from '../components/admin/AdminUsers.vue'
 import AdminAnalytics from '../components/admin/AdminAnalytics.vue'
 import AdminLogs from '../components/admin/AdminLogs.vue'
 import AdminSettings from '../components/admin/AdminSettings.vue'
+import AdminApiKeys from '../components/admin/AdminApiKeys.vue'
 
 const { t } = useI18n()
 
@@ -28,6 +29,7 @@ const usersRef = ref<InstanceType<typeof AdminUsers> | null>(null)
 const analyticsRef = ref<InstanceType<typeof AdminAnalytics> | null>(null)
 const logsRef = ref<InstanceType<typeof AdminLogs> | null>(null)
 const settingsRef = ref<InstanceType<typeof AdminSettings> | null>(null)
+const apiKeysRef = ref<any>(null)
 
 // 当前用户信息
 const currentUserInfo = ref<CurrentUserInfo | null>(null)
@@ -65,6 +67,8 @@ const handleTabChange = async (tab: string | number) => {
 		logsRef.value?.init()
 	} else if (tabStr === 'settings') {
 		settingsRef.value?.init()
+	} else if (tabStr === 'api-keys') {
+		apiKeysRef.value?.loadApiKeys?.()
 	}
 }
 
@@ -128,6 +132,17 @@ onMounted(async () => {
 							</span>
 						</template>
 						<AdminLogs ref="logsRef" />
+					</el-tab-pane>
+
+					<!-- API Keys -->
+					<el-tab-pane name="api-keys">
+						<template #label>
+							<span class="flex items-center gap-2">
+								<font-awesome-icon :icon="faKey" />
+								{{ $t('admin.apiKeys') }}
+							</span>
+						</template>
+						<AdminApiKeys ref="apiKeysRef" />
 					</el-tab-pane>
 
 					<!-- 系统设置 -->

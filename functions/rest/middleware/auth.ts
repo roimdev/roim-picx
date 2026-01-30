@@ -1,7 +1,7 @@
 import { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
 import type { KVNamespace, R2Bucket, D1Database } from '@cloudflare/workers-types'
-import { FailCode, NotAuth, Fail } from '../type'
+import { FailCode, NotAuth, Fail, ApiKey } from '../type'
 import StatusCode from '../type'
 import type { User, DbUser } from '../type'
 
@@ -29,6 +29,7 @@ export type Bindings = {
 export type Variables = {
     user?: User
     isAdminToken?: boolean  // 是否使用管理员 Token 登录
+    isApiKey?: boolean // 是否使用 API Key 登录
 }
 
 export type AppEnv = { Bindings: Bindings; Variables: Variables }
@@ -166,13 +167,21 @@ export const auth = async (c: Context<AppEnv>, next: Next) => {
 
     // get user token
     let token = c.req.header('Authorization')
-    if (!token) {
+    const xApiKey = c.req.header('X-API-Key')
+
+    if (!token && !xApiKey) {
         return c.json(NotAuth())
     }
 
-    // Fix Bearer prefix if present
-    if (token.startsWith('Bearer ')) {
+    // Use X-API-Key if present, otherwise use Authorization header
+    if (!token && xApiKey) {
+        token = xApiKey
+    } else if (token && token.startsWith('Bearer ')) {
         token = token.substring(7)
+    }
+
+    if (!token) {
+        return c.json(NotAuth())
     }
 
     const authKey = c.env.PICX_AUTH_TOKEN
@@ -182,28 +191,113 @@ export const auth = async (c: Context<AppEnv>, next: Next) => {
 
     // 1. Check if it's the system Admin Token
     if (token === authKey) {
-        // 检查是否允许 Token 登录
+        // ... (existing admin token logic)
         if (c.env.ALLOW_TOKEN_LOGIN !== 'true') {
             return c.json(FailCode('Token login is disabled', StatusCode.NotAuth))
         }
-
-        // Admin access - 加载或创建系统用户
         c.set('isAdminToken', true)
-
-        // 尝试加载系统用户
         try {
             const systemUser = await getOrCreateSystemUser(c.env.DB)
             c.set('user', systemUser)
         } catch (e) {
             console.error('Failed to load system user:', e)
-            // 即使加载失败也允许继续，但没有用户上下文
         }
-
         await next()
         return
     }
 
-    // 2. Try to verify as JWT
+    // 2. Try to verify as API Key
+    if (token.startsWith('px_')) {
+        try {
+            const [rawPrefix, secret] = token.split('.')
+            const prefix = rawPrefix ? rawPrefix.replace(/^px_/, '') : ''
+            if (!prefix || !secret) {
+                return c.json(FailCode('Invalid API Key format', StatusCode.NotAuth))
+            }
+
+            const keyRecord = await c.env.DB.prepare(
+                'SELECT * FROM api_keys WHERE key_prefix = ? AND is_active = 1'
+            ).bind(prefix).first<ApiKey>()
+
+            if (!keyRecord) {
+                return c.json(FailCode('Invalid or inactive API Key', StatusCode.NotAuth))
+            }
+
+            // Simple hash comparison (using a fast hash like SHA-256)
+            const encoder = new TextEncoder()
+            const data = encoder.encode(secret)
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+            const hashArray = Array.from(new Uint8Array(hashBuffer))
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+            if (hashHex !== keyRecord.key_hash) {
+                return c.json(FailCode('Invalid API Key secret', StatusCode.NotAuth))
+            }
+
+            // Check expiration
+            if (keyRecord.expires_at) {
+                const expiresAt = new Date(keyRecord.expires_at).getTime()
+                if (!isNaN(expiresAt) && Date.now() > expiresAt) {
+                    return c.json(FailCode('API Key expired', StatusCode.NotAuth))
+                }
+            }
+
+            // Load user permissions
+            const permissions = await loadUserPermissions(c.env.DB, keyRecord.user_login, c.env.ADMIN_USERS)
+
+            // Get basic user info
+            const dbUser = await c.env.DB.prepare(
+                'SELECT id, login, name, avatar_url FROM users WHERE login = ?'
+            ).bind(keyRecord.user_login).first<DbUser>()
+
+            if (!dbUser) {
+                return c.json(FailCode('User associated with API Key not found', StatusCode.NotAuth))
+            }
+
+            const user: User = {
+                id: dbUser.id,
+                login: dbUser.login,
+                name: dbUser.name || '',
+                avatar_url: dbUser.avatar_url || '',
+                ...permissions
+            }
+            c.set('user', user)
+            c.set('isAdminToken', false)
+            c.set('isApiKey', true)
+
+            // Restrict API Key permissions
+            const path = c.req.path
+            const method = c.req.method
+            const allowedRoutes = [
+                { path: '/rest/upload', method: 'POST' },
+                { path: '/rest/list', method: 'POST' },
+                { path: '/rest/', method: 'DELETE' }, // Batch delete
+                { path: '/rest/checkToken', method: 'GET' }
+            ]
+
+            const isAllowed = allowedRoutes.some(route =>
+                path === route.path && method === route.method
+            ) || (path.startsWith('/rest/del/') && method === 'GET')
+
+            if (!isAllowed) {
+                return c.json(FailCode('API Key has limited permissions. Only upload, list, and delete are allowed.', 403))
+            }
+
+            // Update last_used_at
+            c.executionCtx.waitUntil(
+                c.env.DB.prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?')
+                    .bind(new Date().toISOString(), keyRecord.id).run()
+            )
+
+            await next()
+            return
+        } catch (e) {
+            console.error('API Key validation failed:', e)
+            return c.json(FailCode(`API Key validation failed: ${(e as Error).message}`, StatusCode.NotAuth))
+        }
+    }
+
+    // 3. Try to verify as JWT
     try {
         const payload = await verify(token, authKey, 'HS256')
         const jwtUser = payload as unknown as User

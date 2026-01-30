@@ -207,3 +207,17 @@ export interface AlbumShareInfo {
 	ownerName?: string
 	createdAt?: number
 }
+
+// ============================================
+// API Key 相关类型
+// ============================================
+export interface ApiKey {
+	id: string
+	name: string
+	key_prefix: string
+	key?: string // Only present when just created
+	created_at: string
+	last_used_at: string | null
+	expires_at: string | null
+	is_active: number
+}
