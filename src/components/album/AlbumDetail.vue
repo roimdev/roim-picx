@@ -40,6 +40,7 @@ const selectedKeys = ref<Set<string>>(new Set())
 const shareDialogVisible = ref(false)
 const addImagesDialogVisible = ref(false)
 const editDialogVisible = ref(false)
+const deleteDialogVisible = ref(false)
 const editForm = ref({ name: '', description: '' })
 
 // Big Image Mode
@@ -142,13 +143,22 @@ const handleSaveEdit = async () => {
     }
 }
 
-const handleDeleteAlbum = async () => {
+const handleDeleteAlbum = () => {
+    deleteDialogVisible.value = true
+}
+
+const confirmDeleteAlbum = async () => {
+    loading.value = true
     try {
-        await ElMessageBox.confirm(t('album.confirmDelete'), t('common.warning'), { type: 'warning' })
         await requestDeleteAlbum(albumId)
         ElMessage.success(t('album.deleteSuccess'))
+        deleteDialogVisible.value = false
         router.push('/albums')
-    } catch (e) { /* cancel */ }
+    } catch (e) {
+        // error handled
+    } finally {
+        loading.value = false
+    }
 }
 
 const handleOpenAddImages = () => {
@@ -351,6 +361,12 @@ onMounted(() => {
                         :placeholder="$t('album.descPlaceholder')" />
                 </div>
             </div>
+        </BaseDialog>
+
+        <!-- Delete Confirmation Dialog -->
+        <BaseDialog v-model="deleteDialogVisible" :title="$t('common.warning')" :confirm-text="$t('common.delete')"
+            confirm-type="danger" @confirm="confirmDeleteAlbum" :loading="loading">
+            <p class="text-gray-600 dark:text-gray-400">{{ $t('album.confirmDelete') }}</p>
         </BaseDialog>
 
         <!-- Image Viewer -->
