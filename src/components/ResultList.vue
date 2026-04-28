@@ -1,98 +1,186 @@
 <template>
-  <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick" type="border-card">
-    <el-tab-pane label="Preview" name="first">
-      <image-item :image-list="imageList" ref="imageItem" />
-    </el-tab-pane>
-    <el-tab-pane label="HTML" name="second">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ htmlLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="Markdown" name="third">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ markdownLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="BBCode" name="fourth">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ bbcodeLinks() }}
-      </div>
-    </el-tab-pane>
-    <el-tab-pane label="Link" name="fifth">
-      <div class="text-sm text-gray-600 p-2 bg-gray-100 max-w-full overflow-auto whitespace-pre" @click="copyLink">
-        {{ viewLinks() }}
-      </div>
-    </el-tab-pane>
-  </el-tabs>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+    <el-tabs v-model="activeName" class="custom-tabs" @tab-click="handleClick" type="border-card">
+      <el-tab-pane :label="$t('upload.preview')" name="first">
+        <div class="p-4 bg-white dark:bg-gray-800">
+          <image-item :image-list="imageList" ref="imageItem" />
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane v-for="tab in availableTabs" :key="tab.name" :label="tab.label" :name="tab.name">
+        <div class="relative group">
+          <div
+            class="text-sm font-mono text-gray-700 dark:text-gray-300 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg max-w-full overflow-auto whitespace-pre leading-relaxed min-h-[100px]">
+            {{ getTabContent(tab.name) }}
+          </div>
+          <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              class="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition-colors flex items-center gap-2"
+              @click="copyText(getTabContent(tab.name))">
+              <font-awesome-icon :icon="faCopy" />
+              <span>{{ $t('common.copy') }}</span>
+            </button>
+          </div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ElCard, ElImage, ElMessage, ElTabs, ElTabPane } from 'element-plus'
-import { ref } from 'vue'
+import { ElMessage, ElTabs, ElTabPane } from 'element-plus'
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import type { TabsPaneContext } from 'element-plus'
 import ImageItem from '../components/ImageItem.vue'
 import type { ImgItem } from '../utils/types'
 import copy from 'copy-to-clipboard'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const props = defineProps<{
   imageList: ImgItem[]
 }>()
 
 const activeName = ref('first')
-const htmlLinks = () => {
+
+const availableTabs = computed(() => {
+  const tabs = [
+    { name: 'html', label: 'HTML' },
+    { name: 'markdown', label: 'Markdown' },
+    { name: 'bbcode', label: 'BBCode' },
+    { name: 'link', label: 'Link' },
+  ]
+
+  if (props.imageList.some(it => it.delToken)) {
+    tabs.push({ name: 'delete', label: t('upload.deleteLinks') })
+  }
+
+  return tabs
+})
+
+function getTabContent(name: string) {
+  switch (name) {
+    case 'html': return htmlLinks()
+    case 'markdown': return markdownLinks()
+    case 'bbcode': return bbcodeLinks()
+    case 'link': return viewLinks()
+    case 'delete': return deleteLinks()
+    default: return ''
+  }
+}
+
+function htmlLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
+  for (const it of props.imageList) {
     text += `<a href="${it.url}" target="_blank"><img src="${it.url}"></a>\n`
   }
   return text
 }
-const viewLinks = () => {
+
+function viewLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
+  for (const it of props.imageList) {
     text += `${it.url}\n`
   }
   return text
 }
-const markdownLinks = () => {
+
+function markdownLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
-    text += `![${it.filename}](${it.url})\n`
+  for (const it of props.imageList) {
+    text += `![${it.filename || it.key}](${it.url})\n`
   }
   return text
 }
-const bbcodeLinks = () => {
+
+function bbcodeLinks() {
   let text = ''
-  const length = props.imageList.length
-  for(let i = 0; i < length; i++) {
-    const it = props.imageList[i]
-    text += `![${it.filename}](${it.url})\n`
+  for (const it of props.imageList) {
+    text += `[img]${it.url}[/img]\n`
   }
   return text
 }
-const copyLink = (event: any) => {
-  // console.log(event.target.innerText)
-  const res = copy(event.target.innerText)
+
+function deleteLinks() {
+  let text = ''
+  const origin = window.location.origin
+  for (const it of props.imageList) {
+    if (it.delToken) {
+      text += `${origin}/delete/${it.delToken}\n`
+    }
+  }
+  return text
+}
+
+function copyText(text: string) {
+  const res = copy(text)
   if (res) {
-    ElMessage.success('链接复制成功')
+    ElMessage.success(t('upload.copyToClipboard'))
   } else {
-    ElMessage.success('链接复制失败')
+    ElMessage.error(t('upload.copyFailedManual'))
   }
 }
-const handleClick = (tab: TabsPaneContext, event: Event) => {
+
+function handleClick(tab: TabsPaneContext, event: Event) {
   // console.log(tab, event)
 }
 </script>
 
 <style scoped>
-.demo-tabs > .el-tabs__content {
-  padding: 32px;
-  color: #6b778c;
-  font-size: 32px;
+:deep(.el-tabs--border-card) {
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header) {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark :deep(.el-tabs--border-card > .el-tabs__header) {
+  background-color: #111827;
+  border-bottom: 1px solid #374151;
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item) {
+    color: #6b7280;
+}
+
+.dark :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item) {
+    color: #9ca3af;
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
+  background-color: #ffffff;
+  border-right-color: #e5e7eb;
+  border-left-color: #e5e7eb;
+  color: #4f46e5;
   font-weight: 600;
+}
+
+.dark :deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
+  background-color: #1f2937;
+  border-right-color: #374151;
+  border-left-color: #374151;
+  border-bottom-color: #1f2937;
+  color: #818cf8;
+}
+
+:deep(.el-tabs--border-card > .el-tabs__content) {
+  padding: 24px;
+  background-color: transparent;
+}
+
+@media (max-width: 768px) {
+  :deep(.el-tabs--border-card > .el-tabs__content) {
+    padding: 10px;
+  }
+
+  .p-4 {
+    padding: 10px !important;
+  }
 }
 </style>

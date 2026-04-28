@@ -1,0 +1,158 @@
+<template>
+  <div
+    class="group flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg border hover:shadow-sm transition-all duration-200"
+    :class="selected ? 'border-indigo-500 ring-1 ring-indigo-500/30' : 'border-gray-100 dark:border-gray-700'">
+    
+    <!-- Selection Checkbox -->
+    <div v-if="isSelectMode" class="flex-shrink-0" @click.stop>
+        <div @click="$emit('toggleSelect')" 
+            class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 cursor-pointer"
+            :class="selected ? 'bg-indigo-500 border-indigo-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-indigo-300'">
+            <font-awesome-icon v-if="selected" :icon="faCheck" class="text-white text-[10px]" />
+        </div>
+    </div>
+    <!-- Thumbnail -->
+    <div
+      class="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+      <el-image class="w-full h-full object-cover" :src="src" fit="cover" hide-on-click-modal lazy
+        :class="{ 'blur-md': isNsfw && !showNsfw }"
+        @error="imageError = true" :preview-src-list="[src]">
+        <template #placeholder>
+          <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
+            <font-awesome-icon :icon="faImage" class="text-xl" />
+          </div>
+        </template>
+      </el-image>
+      <div v-if="isNsfw && !showNsfw" class="absolute inset-0 flex items-center justify-center bg-black/10 cursor-pointer" @click="toggleNsfw">
+         <font-awesome-icon :icon="faEyeSlash" class="text-red-500 text-lg drop-shadow-md" />
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="flex-1 min-w-0">
+      <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-1" :title="name">
+        {{ name }}
+      </h4>
+      <p v-if="originalName" class="text-xs text-gray-500 dark:text-gray-400 truncate mb-1" :title="originalName">
+        {{ $t('manage.originalName') }}: {{ originalName }}
+      </p>
+      <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+        <span class="bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-300">{{
+          formatBytes(size) }}</span>
+        <span v-if="uploadedAt">{{ new Date(uploadedAt).toLocaleDateString() }}</span>
+        <span v-if="uploaderName" class="flex items-center gap-1"
+          :title="$t('manage.uploaderLabel') + ': ' + uploaderName">
+          <font-awesome-icon :icon="faUser" class="text-[10px]" />
+          <span class="max-w-[100px] truncate">{{ uploaderName }}</span>
+        </span>
+      </div>
+      <div v-if="tags && tags.length > 0" class="flex flex-wrap gap-1 mt-1">
+        <span v-for="tag in tags.slice(0, 5)" :key="tag"
+          class="inline-block px-1.5 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full">
+          {{ tag }}
+        </span>
+        <span v-if="tags.length > 5" class="text-[10px] text-gray-400">+{{ tags.length - 5 }}</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2">
+      <el-tooltip :content="$t('manage.rename')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('rename')">
+          <font-awesome-icon :icon="faEdit" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-tooltip :content="$t('manage.preview')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('preview')">
+          <font-awesome-icon :icon="faEye" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-tooltip :content="$t('manage.details')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('detail')">
+          <font-awesome-icon :icon="faLink" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-tooltip :content="$t('album.uploadTo')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('addToAlbum')">
+          <font-awesome-icon :icon="faFolderPlus" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-tooltip :content="$t('manage.share')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('share')">
+          <font-awesome-icon :icon="faShareAlt" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-tooltip :content="$t('tags.editTags')" placement="top" :show-after="500">
+        <button
+          class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors flex items-center justify-center"
+          @click.stop="emit('editTags')">
+          <font-awesome-icon :icon="faTag" class="text-sm" />
+        </button>
+      </el-tooltip>
+
+      <el-popconfirm :title="$t('manage.confirmDeleteTitle')" :confirm-button-type="'danger'"
+        :confirm-button-text="$t('manage.deleteShort')" :cancel-button-text="$t('manage.cancelShort')" width="160"
+        @confirm="handleDelete">
+        <template #reference>
+          <button
+            class="w-8 h-8 rounded-full text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center"
+            @click.stop>
+            <font-awesome-icon :icon="faTrashAlt" class="text-sm" />
+          </button>
+        </template>
+      </el-popconfirm>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { faTrashAlt, faLink, faImage, faEdit, faEye, faUser, faShareAlt, faFolderPlus, faTag, faEyeSlash, faCheck } from '@fortawesome/free-solid-svg-icons'
+import copy from 'copy-to-clipboard'
+import formatBytes from '../utils/format-bytes'
+import { ElTooltip, ElPopconfirm, ElImage, ElMessage } from 'element-plus'
+import { ref, computed } from 'vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
+const props = defineProps<{
+  src: string
+  name: string
+  size: number
+  uploadedAt?: number
+  originalName?: string
+  uploaderName?: string
+  tags?: string[]
+  nsfw?: boolean
+  selected?: boolean
+  isSelectMode?: boolean
+}>()
+
+const emit = defineEmits(['delete', 'detail', 'rename', 'preview', 'share', 'addToAlbum', 'editTags', 'toggleSelect'])
+const imageError = ref(false)
+
+const isNsfw = computed(() => props.nsfw)
+const showNsfw = ref(false)
+
+const toggleNsfw = (e: Event) => {
+    e.stopPropagation()
+    showNsfw.value = !showNsfw.value
+}
+
+const handleDelete = () => {
+  emit('delete')
+}
+</script>

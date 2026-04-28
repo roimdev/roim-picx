@@ -1,5 +1,8 @@
-const supportFiles = [{type:'image/png',ext:'png'},{type:'image/jpeg',ext:'jpeg'},{type:'image/gif',ext:'gif'},{type:'image/webp',ext:'webp'},{type:'image/jpg',ext:'jpg'},{type:'image/x-icon',ext:'ico'},{type:'application/x-ico',ext:'ico'},{type:'image/vnd.microsoft.icon',ext:'ico'}]
-const supportFile = 'image/png,image/jpeg,image/gif,image/webp,image/jpg,image/x-icon,application/x-ico,image/vnd.microsoft.icon'
+import { ConfigService } from './services/ConfigService'
+
+// const supportFiles = [{type:'image/png',ext:'png'},{type:'image/jpeg',ext:'jpeg'},{type:'image/gif',ext:'gif'},{type:'image/webp',ext:'webp'},{type:'image/jpg',ext:'jpg'},{type:'image/x-icon',ext:'ico'},{type:'application/x-ico',ext:'ico'},{type:'image/vnd.microsoft.icon',ext:'ico'}]
+// const supportFile = 'image/png,image/jpeg,image/gif,image/webp,image/jpg,image/x-icon,application/x-ico,image/vnd.microsoft.icon'
+
 
 // 字符串编码
 export function randomString(value: number) {
@@ -8,7 +11,7 @@ export function randomString(value: number) {
     let maxPos = baseStr.length;
     const uuid = [];
     let q = value;
-    for(;q > 0;) {
+    for (; q > 0;) {
         let mod = q % maxPos;
         q = (q - mod) / maxPos;
         uuid.push(chars[mod]);
@@ -27,19 +30,24 @@ export function parseRange(encoded: string | null): undefined | { offset: number
     }
     return {
         offset: Number(parts[0]),
-        end:    Number(parts[1]),
+        end: Number(parts[1]),
         length: Number(parts[1]) + 1 - Number(parts[0]),
     }
 }
 
 // 检查文件类是否支持
-export function checkFileType(val : string) : boolean {
-    return supportFile.indexOf(val) > -1
+export async function checkFileType(val: string, db: D1Database): Promise<boolean> {
+    const service = new ConfigService(db)
+    const config = await service.getUploadConfig()
+    return config.some(it => it.type === val)
 }
 
 // 获取文件名
-export async function getFileName(val : string, time : number) : Promise<string> {
-    const types = supportFiles.filter(it => it.type === val)
+export async function getFileName(val: string, time: number, db: D1Database): Promise<string> {
+    const service = new ConfigService(db)
+    const config = await service.getUploadConfig()
+    const types = config.filter(it => it.type === val)
+
     if (!types || types.length < 1) {
         return val
     }

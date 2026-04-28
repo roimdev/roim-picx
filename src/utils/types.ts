@@ -1,6 +1,8 @@
 export type ConvertedImage = {
 	file: File
 	tmpSrc: string
+	nsfw?: boolean
+	nsfwScore?: number
 }
 
 export type UploadedImage = {
@@ -15,30 +17,208 @@ export interface AuthToken {
 	token: string
 }
 export interface ImgItem {
-	key : string
-	url : string
+	key: string
+	url: string
 	size: number
 
-	filename ?: string
+	filename?: string
+	uploadedAt?: number
+	delToken?: string
+	originalName?: string
+	uploaderName?: string
+	uploadedBy?: string
+	storageType?: 'R2' | 'HF'
+	tags?: string[]
+	nsfw?: boolean
+	nsfwScore?: number
+
+	// Folder support
+	isFolder?: boolean
+	name?: string
 }
 
 export interface ImgList {
 	next: boolean
-	cursor ?: string
-	list : Array<ImgItem>
+	cursor?: string
+	list: Array<ImgItem>
 
-	prefixes ?: Array<String>
+	prefixes?: string[]
+	canViewAll?: boolean
+	total?: number
 }
 
 export interface ImgDel {
-	keys : string
+	keys: string
 }
 
 export interface ImgReq {
 	cursor?: string
 	delimiter?: string
 	limit: Number
+	keyword?: string
 }
 export interface Folder {
 	name: string
+}
+
+export interface User {
+	id: number
+	name: string
+	login: string
+	avatar_url: string
+	role?: 'admin' | 'user'
+	canViewAll?: boolean
+}
+
+// ============================================
+// 管理员相关类型
+// ============================================
+
+export interface AdminUser {
+	id: number
+	githubId: number
+	login: string
+	name: string | null
+	avatarUrl: string | null
+	role: 'admin' | 'user'
+	canViewAll: boolean
+	storageQuota: number
+	storageUsed: number
+	uploadCount: number
+	createdAt: string
+	lastLoginAt: string | null
+}
+
+export interface UserStats {
+	totalImages: number
+	totalSize: number
+	totalViews: number
+	recentUploads: number
+}
+
+export interface SystemStats {
+	userCount: number
+	imageCount: number
+	totalSize: number
+	recentUploads: number
+}
+
+export interface AuditLog {
+	id: number
+	user_id: number | null
+	user_login: string
+	action: string
+	target_key: string | null
+	details: string | null
+	ip_address: string | null
+	created_at: string
+}
+
+export interface AnalyticsOverview {
+	todayViews: number
+	weekViews: number
+	monthViews: number
+	topCountries: Array<{ country: string; count: number }>
+	topReferers: Array<{ referer: string; count: number }>
+}
+
+export interface DailyTrend {
+	date: string
+	count: number
+}
+
+export interface TopImage {
+	key: string
+	original_name: string | null
+	user_login: string
+	size: number
+	view_count: number
+	recent_views: number
+}
+
+export interface ImageAnalytics {
+	image: any
+	recentAccess: Array<{
+		accessed_at: string
+		referer: string | null
+		country: string | null
+		city: string | null
+		user_agent: string | null
+	}>
+	dailyTrend: DailyTrend[]
+}
+
+export interface UserAnalytics {
+	totalViews: number
+	topImages: Array<{ key: string; original_name: string | null; view_count: number }>
+	recentActivity: DailyTrend[]
+}
+
+export interface CurrentUserInfo {
+	id?: number
+	login?: string
+	name?: string
+	avatarUrl?: string
+	role: 'admin' | 'user'
+	canViewAll: boolean
+	isAdmin?: boolean
+	storageQuota?: number
+	storageUsed?: number
+	uploadCount?: number
+}
+
+
+export interface UploadConfigItem {
+	type: string;
+	ext: string;
+}
+
+// ============================================
+// 相册相关类型
+// ============================================
+export interface Album {
+	id: number
+	user_id: number
+	name: string
+	description: string | null
+	cover_image: string | null
+	enableRandomImage?: boolean
+	created_at: number
+	updated_at: number
+	imageCount?: number
+	shareInfo?: AlbumShareInfo
+}
+
+export interface AlbumImage {
+	album_id: number
+	image_url: string
+	image_key: string
+	added_at: number
+}
+
+export interface AlbumShareInfo {
+	id: string
+	url: string
+	hasPassword: boolean
+	expireAt?: number
+	maxViews?: number
+	albumName?: string
+	description?: string | null
+	coverImage?: string | null
+	ownerName?: string
+	createdAt?: number
+}
+
+// ============================================
+// API Key 相关类型
+// ============================================
+export interface ApiKey {
+	id: string
+	name: string
+	key_prefix: string
+	key?: string // Only present when just created
+	created_at: string
+	last_used_at: string | null
+	expires_at: string | null
+	is_active: number
 }

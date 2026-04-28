@@ -54,14 +54,26 @@
 </template>
 
 <script setup lang="ts">
-import { faCog, faUpload } from '@fortawesome/free-solid-svg-icons'
-import { useRouter } from 'vue-router'
 import { ElScrollbar, ElConfigProvider } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 	
-const appName = '风尘落微雨的图床'
+const appName = '微雨的图床'
 
+const appName = 'PICX'
 document.title = appName
 
-const router = useRouter()
+onMounted(() => {
+	initTheme()
+})
 </script>
+
+<template>
+	<el-config-provider :locale="elLocale">
+		<div
+			class="w-full h-screen overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+			<el-scrollbar>
+				<router-view />
+			</el-scrollbar>
+		</div>
+	</el-config-provider>
+</template>
